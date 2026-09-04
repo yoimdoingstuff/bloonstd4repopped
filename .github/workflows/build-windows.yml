@@ -1,0 +1,41 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_GAME=ON -DBUILD_BUILDER=ON -DBUILD_TESTS=ON
+
+    - name: Build
+      run: |
+        cmake --build build --config Release --parallel
+
+    - name: Run Tests
+      run: |
+        ctest --test-dir build -C Release --output-on-failure
+
+    - name: Package Artifacts
+      shell: bash
+      run: |
+        mkdir -p package/bin
+        cp build/Release/btd4_game.exe package/bin/ || cp build/btd4_game.exe package/bin/
+        cp build/Release/btd4_builder.exe package/bin/ || cp build/btd4_builder.exe package/bin/
+        7z a btd4-windows-x64.zip ./package/bin/*
+
+    - name: Upload Windows Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: btd4-windows-x64
+        path: btd4-windows-x64.zip

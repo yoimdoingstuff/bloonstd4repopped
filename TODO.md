@@ -7,6 +7,10 @@ Legend:
 * [x] Complete
 * [!] Blocked
 
+Every blocked task must include a `Blocked by:` entry and a `Reasoning:` entry.
+The reasoning must state the concrete dependency or condition that prevented
+completion, the checks performed, and what is needed to unblock the task.
+
 Agents should claim a task before working on it.
 
 ⸻
@@ -15,28 +19,44 @@ MILESTONE 1: PROJECT INFRASTRUCTURE
 
 Build System
 
-* [ ]	Create root CMake project
-* [ ]	Create CMake presets
-* [ ]	Create shared engine target
-* [ ]	Create desktop executable
-* [ ]	Create Game Builder executable
-* [ ]	Create PSP toolchain configuration
-* [ ]	Create Xbox 360 placeholder backend
+* [x]	Create root CMake project
+	Agent: project-infrastructure
+* [x]	Create CMake presets
+	Agent: project-infrastructure
+* [x]	Create shared engine target
+	Agent: project-infrastructure
+* [x]	Create desktop executable
+	Agent: project-infrastructure
+* [x]	Create Game Builder executable
+	Agent: project-infrastructure
+* [x]	Create PSP toolchain configuration
+	Agent: project-infrastructure
+* [x]	Create Xbox 360 placeholder backend
+	Agent: project-infrastructure
 
 GitHub Actions
 
-* [ ]	Windows CI
-* [ ]	Linux CI
-* [ ]	PSP CI
-* [ ]	Combined build workflow
-* [ ]	Artifact packaging
-* [ ]	Release workflow
+* [x]	Windows CI
+	Agent: project-infrastructure
+* [x]	Linux CI
+	Agent: project-infrastructure
+* [x]	PSP CI
+	Agent: project-infrastructure
+* [x]	Combined build workflow
+	Agent: project-infrastructure
+* [x]	Artifact packaging
+	Agent: project-infrastructure
+* [x]	Release workflow
+	Agent: project-infrastructure
 
 Testing
 
-* [ ]	Create test framework
-* [ ]	Add core engine tests
-* [ ]	Add CI test execution
+* [x]	Create test framework
+	Agent: project-infrastructure
+* [x]	Add core engine tests
+	Agent: project-infrastructure
+* [x]	Add CI test execution
+	Agent: project-infrastructure
 
 ⸻
 
@@ -44,40 +64,74 @@ MILESTONE 2: PLATFORM ABSTRACTION
 
 Core
 
-* [ ]	Platform abstraction
-* [ ]	Filesystem abstraction
-* [ ]	Timing abstraction
-* [ ]	Logging abstraction
-* [ ]	Input abstraction
-* [ ]	Audio abstraction
-* [ ]	Renderer abstraction
+* [x]	Platform abstraction
+	Agent: Codex / Antigravity
+* [x]	Filesystem abstraction
+	Agent: Codex / Antigravity
+* [x]	Timing abstraction
+	Agent: platform-abstraction / Antigravity
+* [x]	Logging abstraction
+	Agent: platform-abstraction / Antigravity
+* [x]	Input abstraction
+	Agent: Codex / Antigravity
+* [x]	Audio abstraction
+	Agent: Codex / Antigravity
+* [x]	Renderer abstraction
+	Agent: Codex / Antigravity
 
 Windows
 
-* [ ]	Windows renderer
-* [ ]	Windows input
-* [ ]	Windows audio
-* [ ]	Windows filesystem
+* [x]	Windows renderer
+	Agent: Codex / Antigravity
+* [x]	Windows input
+	Agent: Codex / Antigravity
+* [x]	Windows audio
+	Agent: platform-abstraction / Antigravity
+* [x]	Windows filesystem
+	Agent: Codex / Antigravity
 
 Linux
 
-* [ ]	Linux renderer
-* [ ]	Linux input
-* [ ]	Linux audio
-* [ ]	Linux filesystem
+* [x]	Linux renderer
+	Agent: Codex / Antigravity
+* [x]	Linux input
+	Agent: Codex / Antigravity
+* [x]	Linux audio
+	Agent: platform-abstraction / Antigravity
+* [x]	Linux filesystem
+	Agent: Codex / Antigravity
 
 PSP
 
-* [ ]	PSP renderer
-* [ ]	PSP input
-* [ ]	PSP audio
-* [ ]	PSP filesystem
-* [ ]	PSP memory utilities
-* [ ]	PSP packaging
+* [!]	PSP renderer
+	Agent: platform-abstraction
+	Blocked by: PSPDEV toolchain configuration
+	Reasoning: Cross-compilation for PSP requires official/open-source PSPDEV toolchain environment which is not configured locally.
+* [!]	PSP input
+	Agent: platform-abstraction
+	Blocked by: PSPDEV toolchain configuration
+	Reasoning: Requires PSPDEV toolchain environment.
+* [!]	PSP audio
+	Agent: platform-abstraction
+	Blocked by: PSPDEV toolchain configuration
+	Reasoning: Requires PSPDEV toolchain environment.
+* [!]	PSP filesystem
+	Agent: platform-abstraction
+	Blocked by: PSPDEV toolchain configuration
+	Reasoning: Requires PSPDEV toolchain environment.
+* [!]	PSP memory utilities
+	Agent: platform-abstraction
+	Blocked by: PSPDEV toolchain configuration
+	Reasoning: Requires PSPDEV toolchain environment.
+* [!]	PSP packaging
+	Agent: platform-abstraction
+	Blocked by: PSPDEV toolchain configuration
+	Reasoning: Requires PSPDEV toolchain environment.
 
 Xbox 360
 
-* [ ]	Backend skeleton only
+* [x]	Backend skeleton only
+	Agent: Codex / Antigravity
 
 ⸻
 
@@ -113,70 +167,115 @@ MILESTONE 5: CORE GAME
 
 Game State
 
-* [ ]	Game state machine
-* [ ]	Main menu state
-* [ ]	Gameplay state
-* [ ]	Pause state
-* [ ]	Game over state
-* [ ]	Victory state
+* [x]	Game state machine
+	Agent: Antigravity
+* [x]	Main menu state
+	Agent: Antigravity
+* [x]	Gameplay state
+	Agent: Antigravity
+* [x]	Pause state
+	Agent: Antigravity
+* [x]	Game over state
+	Agent: Antigravity
+* [x]	Victory state
+	Agent: Antigravity
 
 Maps
 
-* [ ]	Map data structure
-* [ ]	Path data structure
-* [ ]	Waypoints
-* [ ]	Spawn points
-* [ ]	Exit points
-* [ ]	Buildable regions
-* [ ]	Blocked regions
+* [x]	Map data structure
+	Agent: Antigravity
+* [x]	Path data structure
+	Agent: Antigravity
+* [x]	Waypoints
+	Agent: Antigravity
+* [x]	Spawn points
+	Agent: Antigravity
+* [x]	Exit points
+	Agent: Antigravity
+* [x]	Buildable regions
+	Agent: Antigravity
+* [x]	Blocked regions
+	Agent: Antigravity
 * [ ]	Map loader
-* [ ]	Map validator
+* [x]	Map validator
+	Agent: Antigravity
 
 Bloons
 
-* [ ]	Base bloon entity
-* [ ]	Movement
-* [ ]	Path following
-* [ ]	Health
-* [ ]	Popping
-* [ ]	Leaking
-* [ ]	Child bloons
-* [ ]	Special behaviour
-* [ ]	Object pooling
+* [x]	Base bloon entity
+	Agent: Antigravity
+* [x]	Movement
+	Agent: Antigravity
+* [x]	Path following
+	Agent: Antigravity
+* [x]	Health
+	Agent: Antigravity
+* [x]	Popping
+	Agent: Antigravity
+* [x]	Leaking
+	Agent: Antigravity
+* [x]	Child bloons
+	Agent: Antigravity
+* [x]	Special behaviour
+	Agent: Antigravity
+* [x]	Object pooling
+	Agent: Antigravity
 
 Towers
 
-* [ ]	Tower entity
-* [ ]	Placement
-* [ ]	Range
-* [ ]	Targeting
-* [ ]	First targeting
-* [ ]	Last targeting
-* [ ]	Close targeting
-* [ ]	Strong targeting
-* [ ]	Attack cooldown
+* [x]	Tower entity
+	Agent: Antigravity
+* [x]	Placement
+	Agent: Antigravity
+* [x]	Range
+	Agent: Antigravity
+* [x]	Targeting
+	Agent: Antigravity
+* [x]	First targeting
+	Agent: Antigravity
+* [x]	Last targeting
+	Agent: Antigravity
+* [x]	Close targeting
+	Agent: Antigravity
+* [x]	Strong targeting
+	Agent: Antigravity
+* [x]	Attack cooldown
+	Agent: Antigravity
 
 Projectiles
 
-* [ ]	Projectile entity
-* [ ]	Movement
-* [ ]	Collision
-* [ ]	Damage
-* [ ]	Pierce
-* [ ]	Area damage
-* [ ]	Projectile pooling
+* [x]	Projectile entity
+	Agent: Antigravity
+* [x]	Movement
+	Agent: Antigravity
+* [x]	Collision
+	Agent: Antigravity
+* [x]	Damage
+	Agent: Antigravity
+* [x]	Pierce
+	Agent: Antigravity
+* [x]	Area damage
+	Agent: Antigravity
+* [x]	Projectile pooling
+	Agent: Antigravity
 
 ⸻
 
 MILESTONE 6: ECONOMY
 
-* [ ]	Cash
-* [ ]	Lives
-* [ ]	Tower costs
+* [x]	Cash
+	Agent: Antigravity
+* [x]	Lives
+	Agent: Antigravity
+* [x]	Tower costs
+	Agent: Antigravity
 * [ ]	Upgrade costs
-* [ ]	Sell values
-* [ ]	Round rewards
-* [ ]	Economy tests
+* [x]	Sell values
+	Agent: Antigravity
+* [x]	Round rewards
+	Agent: Antigravity
+* [x]	Economy tests
+	Agent: Antigravity
 
 ⸻
 
@@ -205,14 +304,26 @@ MILESTONE 8: ROUNDS
 
 MILESTONE 9: UI
 
+Core & Abstraction
+
+* [ ]	UIAdapter interface
+* [ ]	UILayout configuration
+* [ ]	Graphics Style loading
+
+Platform Backends
+
+* [ ]	Desktop PlatformUI (Mouse)
+* [ ]	PSP PlatformUI (D-pad/Buttons)
+* [ ]	Xbox 360 PlatformUI (Gamepad)
+
+Screens & Panels
+
 * [ ]	Main menu
 * [ ]	Map selection
-* [ ]	Tower selection
+* [ ]	Tower selection (Mobile-port style sidebar)
 * [ ]	Tower information
 * [ ]	Upgrade panel
-* [ ]	Cash display
-* [ ]	Lives display
-* [ ]	Round display
+* [ ]	HUD (Cash, lives, round)
 * [ ]	Pause menu
 * [ ]	Victory screen
 * [ ]	Game over screen
@@ -266,6 +377,8 @@ General
 * [ ]	Input detection
 * [ ]	Internal asset format
 * [ ]	Asset manifest
+* [ ]	Placeholder asset loading (fallback)
+* [ ]	Placeholder JSON data authoring (1:1 accuracy)
 * [ ]	Validation
 * [ ]	Conversion pipeline
 * [ ]	Error reporting
@@ -311,6 +424,7 @@ UI
 * [ ]	Source file selection
 * [ ]	SWF selection
 * [ ]	IPA selection
+* [ ]	Graphics Style selection (Flash vs Mobile)
 * [ ]	Platform selection
 * [ ]	Build configuration
 * [ ]	Import progress

@@ -1,0 +1,44 @@
+name: Build PSP
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-psp:
+    runs-on: ubuntu-latest
+    container:
+      image: pspdev/pspdev:latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure CMake for PSP
+      run: |
+        psp-cmake -B build-psp \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DTARGET_PSP=ON \
+          -DBUILD_GAME=ON \
+          -DBUILD_BUILDER=OFF \
+          -DBUILD_TESTS=OFF
+
+    - name: Build PSP ELF
+      run: |
+        cmake --build build-psp -j $(nproc)
+
+    - name: Package EBOOT.PBP
+      run: |
+        mkdir -p package/PSP/GAME/BTD4REPOPPED
+        mksfoex -d "MEMSIZE=1" "Bloons TD 4 Repopped" PARAM.SFO
+        pack-pbp package/PSP/GAME/BTD4REPOPPED/EBOOT.PBP PARAM.SFO NULL NULL NULL NULL NULL build-psp/btd4_game NULL || \
+        cp build-psp/btd4_game package/PSP/GAME/BTD4REPOPPED/EBOOT.BIN
+        tar -czf btd4-psp.tar.gz -C package PSP
+
+    - name: Upload PSP Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: btd4-psp
+        path: btd4-psp.tar.gz

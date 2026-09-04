@@ -1,8 +1,22 @@
-Project: Cross-Platform BTD4-Style Game, Asset Importer and Game Builder
+Project: Cross-Platform BTD4 Game, Asset Importer and Game Builder
 
 Project Goal
 
-Create a high-performance, cross-platform tower-defense game inspired by the classic BTD4 gameplay experience.
+Create a high-performance, cross-platform re-implementation of Bloons Tower Defense 4 (BTD4).
+
+The goal is 1:1 fidelity with the original game wherever possible:
+
+* Same tower roster, names, costs, stats, and upgrade paths as BTD4
+* Same bloon types, speeds, RBE values, and child hierarchies
+* Same 50 rounds of wave data with identical bloon groups and spawn timing
+* Same map layouts, paths, buildable/blocked regions, and names
+* Same economy values (starting cash, round rewards, sell ratios)
+* Same achievement conditions and IDs
+* Same special abilities and tower behaviours
+
+The base UI target is an evolution of the BTD4 mobile (IPA) port, which has
+a more universal layout. The Flash UI is considered secondary. Both visual
+styles (Flash and Mobile) are selectable at build time.
 
 The project must support:
 
@@ -19,14 +33,21 @@ The Game Builder allows the user to:
 1. Select a user-provided SWF file.
 2. Optionally select a user-provided IPA containing the mobile version.
 3. Import and convert supported assets.
-4. Select which platform to build for.
-5. Configure available features.
-6. Build the game automatically.
-7. Produce the appropriate executable/package for the selected platform.
+4. Choose a graphics style (Flash or Mobile).
+5. Select which platform to build for.
+6. Configure available features.
+7. Build the game automatically.
+8. Produce the appropriate executable/package for the selected platform.
 
-The repository must NOT contain proprietary BTD4 assets, source code, sounds, music, maps, or other copyrighted game content.
+The repository must NOT contain proprietary BTD4 assets, source code, sounds,
+music, maps, or other copyrighted game content.
 
 The user supplies their own source files.
+
+Open-source placeholder assets (CC0/MIT-licensed) are included in
+assets/placeholder/ so the engine can compile, launch, and be tested without
+a user-supplied SWF or IPA. When real assets are present they override the
+placeholders at load time.
 
 ⸻
 

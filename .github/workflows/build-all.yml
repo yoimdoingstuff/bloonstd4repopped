@@ -1,0 +1,72 @@
+name: Combined CI
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-matrix:
+    name: Build & Test (${{ matrix.platform.name }})
+    runs-on: ${{ matrix.platform.os }}
+    container: ${{ matrix.platform.container }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: Linux
+            os: ubuntu-latest
+            container: ""
+            cmake-args: "-DCMAKE_BUILD_TYPE=Release -DBUILD_GAME=ON -DBUILD_BUILDER=ON -DBUILD_TESTS=ON"
+          - name: Windows
+            os: windows-latest
+            container: ""
+            cmake-args: "-DCMAKE_BUILD_TYPE=Release -DBUILD_GAME=ON -DBUILD_BUILDER=ON -DBUILD_TESTS=ON"
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Linux Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake libsdl2-dev libgl1-mesa-dev ninja-build
+
+    - name: Configure CMake
+      run: |
+        cmake -B build ${{ matrix.platform.cmake-args }}
+
+    - name: Build
+      run: |
+        cmake --build build --config Release --parallel
+
+    - name: Run Tests
+      run: |
+        ctest --test-dir build -C Release --output-on-failure
+
+  build-psp:
+    name: Build (PSP EBOOT)
+    runs-on: ubuntu-latest
+    container:
+      image: pspdev/pspdev:latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure CMake for PSP
+      run: |
+        psp-cmake -B build-psp \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DTARGET_PSP=ON \
+          -DBUILD_GAME=ON \
+          -DBUILD_BUILDER=OFF \
+          -DBUILD_TESTS=OFF
+
+    - name: Build PSP ELF
+      run: |
+        cmake --build build-psp -j $(nproc)
