@@ -103,30 +103,20 @@ Linux
 
 PSP
 
-* [!]	PSP renderer
-	Agent: platform-abstraction
-	Blocked by: PSPDEV toolchain configuration
-	Reasoning: Cross-compilation for PSP requires official/open-source PSPDEV toolchain environment which is not configured locally.
-* [!]	PSP input
-	Agent: platform-abstraction
-	Blocked by: PSPDEV toolchain configuration
-	Reasoning: Requires PSPDEV toolchain environment.
-* [!]	PSP audio
-	Agent: platform-abstraction
-	Blocked by: PSPDEV toolchain configuration
-	Reasoning: Requires PSPDEV toolchain environment.
-* [!]	PSP filesystem
-	Agent: platform-abstraction
-	Blocked by: PSPDEV toolchain configuration
-	Reasoning: Requires PSPDEV toolchain environment.
-* [!]	PSP memory utilities
-	Agent: platform-abstraction
-	Blocked by: PSPDEV toolchain configuration
-	Reasoning: Requires PSPDEV toolchain environment.
-* [!]	PSP packaging
-	Agent: platform-abstraction
-	Blocked by: PSPDEV toolchain configuration
-	Reasoning: Requires PSPDEV toolchain environment.
+* [ ]	PSP renderer
+	Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [ ]	PSP input
+	Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [ ]	PSP audio
+	Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [ ]	PSP filesystem
+	Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [ ]	PSP memory utilities
+	Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [x]	PSP packaging
+	Agent: Codex - minimal native PSP bootstrap and verified EBOOT packaging
+	Validation: PSP GCC 15.2.0 cross-build and EBOOT structure test passed on Windows; corrupt/missing package checks passed.
+	Notes: Bootstrap only; PPSSPP/hardware and GitHub CI not run. See docs/psp-build.md.
 
 Xbox 360
 
@@ -196,7 +186,10 @@ Maps
 	Agent: Antigravity
 * [x]	Blocked regions
 	Agent: Antigravity
-* [ ]	Map loader
+* [x]	Map loader
+	Agent: Codex - versioned internal map loading
+	Validation: Windows portable Zig C++17 build; 5 new map suites and 7 existing simulation suites passed.
+	Notes: See docs/map-format.md. Full SDL/CMake application build, Linux and PSP not tested in this task.
 * [x]	Map validator
 	Agent: Antigravity
 
@@ -292,13 +285,22 @@ MILESTONE 7: UPGRADES
 
 MILESTONE 8: ROUNDS
 
-* [ ]	Round data format
-* [ ]	Round loader
-* [ ]	Bloon groups
-* [ ]	Spawn timing
-* [ ]	Round completion
-* [ ]	Round rewards
+* [x]	Round data format
+	Agent: Codex - data-driven rounds
+* [x]	Round loader
+	Agent: Codex - data-driven rounds
+* [x]	Bloon groups
+	Agent: Codex - data-driven rounds
+* [x]	Spawn timing
+	Agent: Codex - data-driven rounds
+* [x]	Round completion
+	Agent: Codex - data-driven rounds
+* [x]	Round rewards
+	Agent: Codex - data-driven rounds
 * [ ]	Freeplay framework
+
+Round validation: Windows portable Zig C++17 build; all 19 map, simulation and round suites passed.
+See docs/round-format.md. Full SDL/CMake builds, Linux and PSP were not tested.
 
 ⸻
 

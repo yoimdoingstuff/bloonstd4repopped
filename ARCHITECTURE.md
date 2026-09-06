@@ -515,3 +515,40 @@ tools/
 
 tests/
 ```
+
+## Internal map loading
+
+`engine/map/MapLoader` implements the version 1 JSON map schema documented in
+`docs/map-format.md`. A bounded schema-specific reader builds a temporary Map,
+validates it, and commits it only on success. It reuses Path precomputation and
+IFileSystem; no platform APIs or source-package dependencies enter the engine.
+Future importer and editor output should target this same internal schema.
+
+## Data-driven rounds
+
+`engine/game/Rounds` owns the validated round definitions and sequential spawn
+scheduler. `RoundLoader` reads the version 1 internal schema documented in
+`docs/round-format.md`, checking path references against the selected Map.
+Map and round loaders share bounded JSON token/UTF-8 handling in
+`engine/core/JsonReader.hpp`; their schema validation remains separate.
+
+GameSimulation explicitly starts each round and advances its scheduler after
+movement/combat so new bloons never move for a tick before their birth.
+Scheduled deadlines are retained when the pool is full; no scheduled bloons
+are dropped. Completion waits for surviving children and awards the existing
+Economy round reward once. Final completion produces Victory; defeat wins
+before rewards. Reset retains content but resets progression. Freeplay is not
+implemented. Runtime UI remains independent of this simulation integration.
+
+## Minimal PSP host
+
+`platform/psp/main.cpp` is the PSP-only entry point. Its callback lifecycle
+lives beside it; the shared engine contains no PSP SDK calls. PSP builds exclude
+the SDL and desktop builder/backend-registry sources. The initial host uses
+PSPSDK debug text rather than pretending to implement the GU renderer.
+
+The toolchain delegates to the installed SDK CMake configuration and retains
+exceptions required by internal loaders. PSPSDK `create_pbp_file` owns PRX/SFO/
+EBOOT generation; host-side CMake checks validate package structure. Both PSP
+CI entry points share the same build/test/package workflow. See
+`docs/psp-build.md` for the tested toolchain and runtime validation limits.

@@ -1,5 +1,6 @@
 #include "GameState.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace btd4 {
 
@@ -16,6 +17,7 @@ void GameSimulation::reset() {
     m_projectilePool.clear();
     m_towers.clear();
     m_economy.reset();
+    m_rounds.reset();
     m_state = GameStateType::Playing;
     m_nextTowerId = 1;
     m_currentRound = 1;
@@ -81,7 +83,27 @@ Tower* GameSimulation::findTower(uint32_t towerId) {
     return nullptr;
 }
 
+bool GameSimulation::setRounds(RoundSet rounds, std::string& error) {
+    if (m_rounds.active() || m_rounds.completedRounds() != 0 ||
+        m_bloonPool.activeCount() != 0 || m_projectilePool.activeCount() != 0) {
+        error = "Reset the simulation before replacing rounds";
+        return false;
+    }
+    if (!m_rounds.configure(std::move(rounds), m_map, error)) return false;
+    m_currentRound = 1;
+    return true;
+}
+
+bool GameSimulation::startNextRound() {
+    if (m_state != GameStateType::Playing || m_economy.isDefeated()) return false;
+    if (!m_rounds.start(m_bloonPool, m_map)) return false;
+    m_currentRound = static_cast<int>(m_rounds.completedRounds() + 1);
+    m_projectilePool.clear();
+    return true;
+}
+
 void GameSimulation::update(float deltaTime) {
+    if (!std::isfinite(deltaTime) || deltaTime <= 0) return;
     if (m_state != GameStateType::Playing) {
         return;
     }
@@ -113,6 +135,15 @@ void GameSimulation::update(float deltaTime) {
     if (cashEarned > 0) {
         m_economy.addCash(cashEarned);
         m_totalBloonsPopped += cashEarned;
+    }
+
+    // Spawn at the end of this tick: a new bloon must not move for time before
+    // it existed. Deadlines are quantized to the caller's fixed tick boundary.
+    if (m_rounds.advance(deltaTime, m_bloonPool, m_map)) {
+        m_economy.addCash(Economy::calculateRoundReward(
+            static_cast<int>(m_rounds.completedRounds())));
+        m_projectilePool.clear();
+        if (m_rounds.finished()) m_state = GameStateType::Victory;
     }
 }
 

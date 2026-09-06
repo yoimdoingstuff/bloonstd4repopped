@@ -6,6 +6,7 @@
 #include "Tower.hpp"
 #include "Projectile.hpp"
 #include "Economy.hpp"
+#include "Rounds.hpp"
 #include "../map/Map.hpp"
 
 namespace btd4 {
@@ -52,6 +53,13 @@ public:
     bool sellTower(uint32_t towerId);
     Tower* findTower(uint32_t towerId);
 
+    // Configure before the first round (or after reset). Manual spawning remains
+    // available when no round set is configured. Do not edit the map mid-round.
+    bool setRounds(RoundSet rounds, std::string& error);
+    bool startNextRound();
+    bool roundActive() const { return m_rounds.active(); }
+    size_t completedRounds() const { return m_rounds.completedRounds(); }
+
     // Simulation tick
     void update(float deltaTime);
 
@@ -67,6 +75,7 @@ private:
     ProjectilePool m_projectilePool;
     std::vector<Tower> m_towers;
     Economy m_economy;
+    RoundScheduler m_rounds;
 
     uint32_t m_nextTowerId{1};
     int m_currentRound{1};
