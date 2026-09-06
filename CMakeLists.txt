@@ -10,6 +10,10 @@ option(BUILD_BUILDER "Build Dear ImGui Game Builder desktop app" ON)
 option(BUILD_TESTS "Build automated unit tests" ON)
 option(TARGET_PSP "Target Sony PlayStation Portable" OFF)
 
+if(PSP OR PLATFORM_PSP)
+    set(TARGET_PSP ON)
+endif()
+
 if(TARGET_PSP OR DEFINED CMAKE_TOOLCHAIN_FILE)
     if(CMAKE_TOOLCHAIN_FILE MATCHES "psp")
         set(TARGET_PSP ON)
@@ -109,6 +113,7 @@ add_library(btd4_engine STATIC
     engine/input/InputActions.hpp
     engine/map/Map.hpp
     engine/map/Map.cpp
+    engine/map/MapLoader.cpp
     engine/game/Bloon.hpp
     engine/game/Bloon.cpp
     engine/game/Projectile.hpp
@@ -119,6 +124,8 @@ add_library(btd4_engine STATIC
     engine/game/Economy.cpp
     engine/game/GameState.hpp
     engine/game/GameState.cpp
+    engine/game/Rounds.cpp
+    engine/game/RoundLoader.cpp
 )
 
 target_include_directories(btd4_engine PUBLIC
@@ -129,24 +136,23 @@ target_include_directories(btd4_engine PUBLIC
 # -----------------------------------------------------------------------------
 # Target: btd4_platform
 # -----------------------------------------------------------------------------
-set(PLATFORM_SOURCES
-    platform/common/PlatformBackend.hpp
-    platform/common/PlatformRegistry.hpp
-    platform/common/PlatformRegistry.cpp
-    platform/common/NullAudio.hpp
-    platform/common/NullAudio.cpp
-    platform/linux/LinuxPlatform.hpp
-    platform/linux/LinuxPlatform.cpp
-    platform/windows/WindowsPlatform.hpp
-    platform/windows/WindowsPlatform.cpp
-    platform/psp/PSPBackend.hpp
-    platform/psp/PSPBackend.cpp
-    platform/xbox360/Xbox360Backend.hpp
-    platform/xbox360/Xbox360Backend.cpp
-)
-
-if(NOT TARGET_PSP)
-    list(APPEND PLATFORM_SOURCES
+if(TARGET_PSP)
+    set(PLATFORM_SOURCES platform/psp/PSPLifecycle.cpp)
+else()
+    set(PLATFORM_SOURCES
+        platform/common/PlatformBackend.hpp
+        platform/common/PlatformRegistry.hpp
+        platform/common/PlatformRegistry.cpp
+        platform/common/NullAudio.hpp
+        platform/common/NullAudio.cpp
+        platform/linux/LinuxPlatform.hpp
+        platform/linux/LinuxPlatform.cpp
+        platform/windows/WindowsPlatform.hpp
+        platform/windows/WindowsPlatform.cpp
+        platform/psp/PSPBackend.hpp
+        platform/psp/PSPBackend.cpp
+        platform/xbox360/Xbox360Backend.hpp
+        platform/xbox360/Xbox360Backend.cpp
         platform/common/NativeFileSystem.hpp
         platform/common/NativeFileSystem.cpp
         platform/common/SDLRenderer.hpp
@@ -189,9 +195,25 @@ if(BUILD_GAME)
             target_link_libraries(btd4_game PRIVATE ${SDL2_LIBRARIES})
         endif()
     else()
-        # PSP Target
-        add_executable(btd4_game app/main.cpp)
-        target_link_libraries(btd4_game PRIVATE btd4_engine btd4_platform ${PSP_STANDARD_LIBS})
+        if(NOT COMMAND create_pbp_file)
+            message(FATAL_ERROR "PSP builds require PSPSDK's CMake toolchain (use psp-cmake or the psp-release preset).")
+        endif()
+        add_executable(btd4_game platform/psp/main.cpp)
+        # GCC specs append core SDK stubs after libc; do not duplicate pspuser here.
+        target_link_libraries(btd4_game PRIVATE btd4_platform
+            pspdebug pspdisplay pspge pspctrl)
+        create_pbp_file(TARGET btd4_game TITLE "Bloons TD 4 Repopped"
+            VERSION "01.00" BUILD_PRX)
+        add_custom_command(TARGET btd4_game POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -DPBP_FILE=${CMAKE_CURRENT_BINARY_DIR}/EBOOT.PBP
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/VerifyPBP.cmake
+            BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/EBOOT.PBP
+                ${CMAKE_CURRENT_BINARY_DIR}/btd4_game.prx
+            VERBATIM)
+        enable_testing()
+        add_test(NAME psp_package_structure
+            COMMAND ${CMAKE_COMMAND} -DPBP_FILE=${CMAKE_CURRENT_BINARY_DIR}/EBOOT.PBP
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/VerifyPBP.cmake)
     endif()
 endif()
 
@@ -230,6 +252,8 @@ if(BUILD_TESTS AND NOT TARGET_PSP)
     enable_testing()
     add_executable(btd4_tests
         tests/main.cpp
+        tests/MapLoaderTests.cpp
+        tests/RoundTests.cpp
         tests/TestRunner.hpp
         builder/project/Project.hpp
         builder/project/Project.cpp

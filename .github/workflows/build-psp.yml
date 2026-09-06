@@ -5,6 +5,8 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
   build-psp:
@@ -16,29 +18,32 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Configure CMake for PSP
+    - name: Verify toolchain dependencies
       run: |
-        psp-cmake -B build-psp \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DTARGET_PSP=ON \
-          -DBUILD_GAME=ON \
-          -DBUILD_BUILDER=OFF \
-          -DBUILD_TESTS=OFF
+        psp-gcc --version
+        cmake --version
+        test -f "$PSPDEV/psp/share/pspdev.cmake"
+        test -x "$PSPDEV/bin/pack-pbp"
+        test -x "$PSPDEV/bin/psp-prxgen"
 
-    - name: Build PSP ELF
-      run: |
-        cmake --build build-psp -j $(nproc)
+    - name: Configure CMake for PSP
+      run: cmake --preset psp-release
+
+    - name: Build PSP executable and EBOOT.PBP
+      run: cmake --build build/psp-release --parallel
+
+    - name: Test PSP package structure
+      run: ctest --test-dir build/psp-release --output-on-failure --no-tests=error
 
     - name: Package EBOOT.PBP
       run: |
         mkdir -p package/PSP/GAME/BTD4REPOPPED
-        mksfoex -d "MEMSIZE=1" "Bloons TD 4 Repopped" PARAM.SFO
-        pack-pbp package/PSP/GAME/BTD4REPOPPED/EBOOT.PBP PARAM.SFO NULL NULL NULL NULL NULL build-psp/btd4_game NULL || \
-        cp build-psp/btd4_game package/PSP/GAME/BTD4REPOPPED/EBOOT.BIN
+        cp build/psp-release/EBOOT.PBP package/PSP/GAME/BTD4REPOPPED/EBOOT.PBP
         tar -czf btd4-psp.tar.gz -C package PSP
 
-    - name: Upload PSP Artifact
+    - name: Upload PSP artifact
       uses: actions/upload-artifact@v4
       with:
         name: btd4-psp
         path: btd4-psp.tar.gz
+        if-no-files-found: error
