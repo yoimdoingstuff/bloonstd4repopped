@@ -1,4 +1,5 @@
 #include "BuilderUI.hpp"
+#include "../../tools/asset_importer/AssetImporter.hpp"
 #include <imgui.h>
 #include <cstring>
 #include <chrono>
@@ -13,7 +14,9 @@ BuilderUI::BuilderUI() {
 
 void BuilderUI::initialize() {
     std::strncpy(m_swfPathBuffer, m_project.config().sourceSwf.c_str(), sizeof(m_swfPathBuffer) - 1);
+    m_swfPathBuffer[sizeof(m_swfPathBuffer) - 1] = '\0';
     std::strncpy(m_ipaPathBuffer, m_project.config().sourceIpa.c_str(), sizeof(m_ipaPathBuffer) - 1);
+    m_ipaPathBuffer[sizeof(m_ipaPathBuffer) - 1] = '\0';
 }
 
 void BuilderUI::appendLog(const std::string& line) {
@@ -41,23 +44,25 @@ void BuilderUI::render() {
     ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "BLOONS TD 4 REPOPPED - GAME BUILDER");
     ImGui::Separator();
 
-    ImGui::Columns(2, "BuilderMainColumns", true);
+    if (ImGui::BeginTable("BuilderMainTable", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV)) {
+        ImGui::TableNextColumn();
 
-    // Left column: Setup, files, platform selection
-    renderSourceFilesSection();
-    ImGui::Spacing();
-    renderFeaturesSection();
-    ImGui::Spacing();
-    renderPlatformSection();
-    ImGui::Spacing();
-    renderActionButtons();
+        // Left column: Setup, files, platform selection
+        renderSourceFilesSection();
+        ImGui::Spacing();
+        renderFeaturesSection();
+        ImGui::Spacing();
+        renderPlatformSection();
+        ImGui::Spacing();
+        renderActionButtons();
 
-    ImGui::NextColumn();
+        ImGui::TableNextColumn();
 
-    // Right column: Output & logs
-    renderLogsSection();
+        // Right column: Output & logs
+        renderLogsSection();
 
-    ImGui::Columns(1);
+        ImGui::EndTable();
+    }
     ImGui::End();
 }
 
@@ -154,13 +159,7 @@ void BuilderUI::renderPlatformSection() {
 void BuilderUI::renderActionButtons() {
     ImGui::Separator();
     if (ImGui::Button("Import Assets", ImVec2(130, 32))) {
-        appendLog("[Pipeline] Validating source paths...");
-        if (m_project.config().sourceSwf.empty()) {
-            appendLog("[Error] No SWF file provided. Please specify a user SWF file.");
-        } else {
-            appendLog("[Pipeline] Importing assets from: " + m_project.config().sourceSwf);
-            appendLog("[Pipeline] Asset extraction & normalization complete.");
-        }
+        triggerImport();
     }
 
     ImGui::SameLine();
@@ -215,6 +214,37 @@ void BuilderUI::triggerBuild() {
     }
 
     appendLog("[Build Success] Target " + backend->name() + " successfully built and packaged!");
+    appendLog("=========================================");
+}
+
+void BuilderUI::triggerImport() {
+    appendLog("=========================================");
+    appendLog("[Pipeline] Initiating BTD4 Asset Import Pipeline...");
+
+    if (m_project.config().sourceSwf.empty()) {
+        appendLog("[Error] No SWF file provided. Please specify a source SWF path.");
+        return;
+    }
+
+    tools::ImportOptions options;
+    options.sourceSwf = m_project.config().sourceSwf;
+    options.sourceIpa = m_project.config().sourceIpa;
+    options.outputDir = "game_data";
+
+    auto logCb = [this](const std::string& msg) {
+        appendLog(msg);
+    };
+
+    tools::ImportReport report = tools::AssetImporter::run(options, logCb);
+    if (report.success) {
+        appendLog("[Pipeline Success] Successfully imported assets!");
+        appendLog("  Textures extracted: " + std::to_string(report.texturesExtracted));
+        appendLog("  Audio cues extracted: " + std::to_string(report.soundsExtracted));
+        appendLog("  Symbols mapped: " + std::to_string(report.symbolsMapped));
+        appendLog("  Manifest generated: " + report.manifestPath);
+    } else {
+        appendLog("[Pipeline Error] Import failed: " + report.errorMessage);
+    }
     appendLog("=========================================");
 }
 

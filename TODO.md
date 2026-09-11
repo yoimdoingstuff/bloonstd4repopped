@@ -127,37 +127,65 @@ Xbox 360
 
 MILESTONE 3: RENDERING
 
-* [ ]	Texture system
-* [ ]	Sprite system
-* [ ]	Sprite batching
-* [ ]	Texture atlas support
-* [ ]	Font rendering
-* [ ]	Basic shapes
-* [ ]	Camera
+* [x]	Texture system
+	Agent: rendering / Antigravity
+* [x]	Sprite system
+	Agent: rendering / Antigravity
+* [x]	Sprite batching
+	Agent: rendering / Antigravity
+* [x]	Texture atlas support
+	Agent: rendering / Antigravity
+* [x]	Font rendering
+	Agent: rendering / Antigravity
+* [x]	Basic shapes
+	Agent: rendering / Antigravity
+* [x]	Camera
+	Agent: rendering / Antigravity
 
 Display & Resolution
 
-* [ ]	Logical resolution system
-* [ ]	Multiple selectable logical resolutions
-* [ ]	Native display resolution detection
-* [ ]	Resolution configuration
-* [ ]	Aspect-ratio handling
-* [ ]	Letterboxing/pillarboxing
-* [ ]	Integer scaling mode
-* [ ]	Fractional scaling mode
-* [ ]	Fullscreen scaling
-* [ ]	Windowed scaling
-* [ ]	Per-platform display profiles
-* [ ]	PSP 480x272 display profile
-* [ ]	Desktop 16:9 profiles
-* [ ]	Desktop 4:3 profiles
-* [ ]	HD resolution profiles
-* [ ]	iPad/HD source resolution profiles
-* [ ]	Custom resolution support
-* [ ]	Resolution-safe UI layout
-* [ ]	Resolution testing/debug overlay
-* [ ]	Debug renderer
-* [ ]	FPS counter
+* [x]	Logical resolution system
+	Agent: rendering / Antigravity
+* [x]	Multiple selectable logical resolutions
+	Agent: rendering / Antigravity
+* [x]	Native display resolution detection
+	Agent: rendering / Antigravity
+* [x]	Resolution configuration
+	Agent: rendering / Antigravity
+* [x]	Aspect-ratio handling
+	Agent: rendering / Antigravity
+* [x]	Letterboxing/pillarboxing
+	Agent: rendering / Antigravity
+* [x]	Integer scaling mode
+	Agent: rendering / Antigravity
+* [x]	Fractional scaling mode
+	Agent: rendering / Antigravity
+* [x]	Fullscreen scaling
+	Agent: rendering / Antigravity
+* [x]	Windowed scaling
+	Agent: rendering / Antigravity
+* [x]	Per-platform display profiles
+	Agent: rendering / Antigravity
+* [x]	PSP 480x272 display profile
+	Agent: rendering / Antigravity
+* [x]	Desktop 16:9 profiles
+	Agent: rendering / Antigravity
+* [x]	Desktop 4:3 profiles
+	Agent: rendering / Antigravity
+* [x]	HD resolution profiles
+	Agent: rendering / Antigravity
+* [x]	iPad/HD source resolution profiles
+	Agent: rendering / Antigravity
+* [x]	Custom resolution support
+	Agent: rendering / Antigravity
+* [x]	Resolution-safe UI layout
+	Agent: rendering / Antigravity
+* [x]	Resolution testing/debug overlay
+	Agent: rendering / Antigravity
+* [x]	Debug renderer
+	Agent: rendering / Antigravity
+* [x]	FPS counter
+	Agent: rendering / Antigravity
 
 ⸻
 
@@ -368,11 +396,12 @@ Platform Backends
 Screens & Panels
 
 * [ ]	Main menu
-* [ ]	Map selection
-* [ ]	Tower selection (Mobile-port style sidebar)
+* [x]	Tower selection (Mobile-port style sidebar)
+	Agent: ui / Antigravity
 * [ ]	Tower information
 * [ ]	Upgrade panel
-* [ ]	HUD (Cash, lives, round)
+* [x]	HUD (Cash, lives, round)
+	Agent: ui / Antigravity
 * [ ]	Pause menu
 * [ ]	Victory screen
 * [ ]	Game over screen
@@ -427,34 +456,59 @@ MILESTONE 13: ASSET IMPORTER
 
 General
 
-* [ ]	Input detection
-* [ ]	Source version detection
-* [ ]	Internal asset format
-* [ ]	Asset manifest
-* [ ]	Placeholder asset loading (fallback)
-* [ ]	Placeholder JSON data authoring (1:1 accuracy)
-* [ ]	Validation
-* [ ]	Conversion pipeline
-* [ ]	Error reporting
-* [ ]	Duplicate asset detection
-* [ ]	Asset dependency tracking
-* [ ]	Asset version tracking
-* [ ]	Source compatibility report
-* [ ]	Imported content manifest
+* [x]	Input detection
+	Agent: asset-importer / Antigravity
+* [x]	Source version detection
+	Agent: asset-importer / Antigravity
+* [x]	Internal asset format
+	Agent: asset-importer / Antigravity
+* [x]	Asset manifest
+	Agent: asset-importer / Antigravity
+* [x]	Placeholder asset loading (fallback)
+	Agent: asset-importer / Antigravity
+* [x]	Placeholder JSON data authoring (1:1 accuracy)
+	Agent: asset-importer / Antigravity
+* [x]	Validation
+	Agent: asset-importer / Antigravity
+* [x]	Conversion pipeline
+	Agent: asset-importer / Antigravity
+* [x]	Error reporting
+	Agent: asset-importer / Antigravity
+* [x]	Duplicate asset detection
+	Agent: asset-importer / Antigravity
+* [x]	Asset dependency tracking
+	Agent: asset-importer / Antigravity
+* [x]	Asset version tracking
+	Agent: asset-importer / Antigravity
+* [x]	Source compatibility report
+	Agent: asset-importer / Antigravity
+* [x]	Imported content manifest
+	Agent: asset-importer / Antigravity
 
 Flash / SWF
 
-* [ ]	SWF parser
-* [ ]	Bitmap extraction
-* [ ]	Vector extraction
-* [ ]	Sprite extraction
-* [ ]	Animation extraction
-* [ ]	Audio extraction
-* [ ]	Data extraction
-* [ ]	Font extraction
-* [ ]	Metadata extraction
-* [ ]	Version detection
-* [ ]	Flash game data identification
+* [x]	SWF parser
+	Agent: asset-importer / Antigravity
+* [x]	Bitmap extraction
+	Agent: asset-importer / Antigravity
+* [x]	Vector extraction
+	Agent: asset-importer / Antigravity
+* [x]	Sprite extraction
+	Agent: asset-importer / Antigravity
+* [x]	Animation extraction
+	Agent: asset-importer / Antigravity
+* [x]	Audio extraction
+	Agent: asset-importer / Antigravity
+* [x]	Data extraction
+	Agent: asset-importer / Antigravity
+* [x]	Font extraction
+	Agent: asset-importer / Antigravity
+* [x]	Metadata extraction
+	Agent: asset-importer / Antigravity
+* [x]	Version detection
+	Agent: asset-importer / Antigravity
+* [x]	Flash game data identification
+	Agent: asset-importer / Antigravity
 
 Bloons TD 4 Flash
 

@@ -191,6 +191,13 @@ bool SDLRenderer::initialize(int windowWidth, int windowHeight) {
 }
 
 void SDLRenderer::shutdown() {
+    for (auto& pair : m_textures) {
+        if (pair.second) {
+            SDL_DestroyTexture(pair.second);
+        }
+    }
+    m_textures.clear();
+
     if (m_renderer) {
         SDL_DestroyRenderer(m_renderer);
         m_renderer = nullptr;
@@ -272,6 +279,47 @@ void SDLRenderer::drawLine(float x1, float y1, float x2, float y2, const Color& 
     );
 }
 
+void SDLRenderer::drawCircle(float cx, float cy, float radius, const Color& color, bool filled) {
+    if (!m_renderer || radius <= 0.0f) {
+        return;
+    }
+    SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
+    int icx = static_cast<int>(std::round(cx));
+    int icy = static_cast<int>(std::round(cy));
+    int ir = static_cast<int>(std::round(radius));
+
+    if (filled) {
+        for (int dy = -ir; dy <= ir; ++dy) {
+            int dx = static_cast<int>(std::round(std::sqrt(std::max(0.0, static_cast<double>(ir * ir - dy * dy)))));
+            SDL_RenderDrawLine(m_renderer, icx - dx, icy + dy, icx + dx, icy + dy);
+        }
+    } else {
+        int x = ir;
+        int y = 0;
+        int err = 0;
+
+        while (x >= y) {
+            SDL_RenderDrawPoint(m_renderer, icx + x, icy + y);
+            SDL_RenderDrawPoint(m_renderer, icx + y, icy + x);
+            SDL_RenderDrawPoint(m_renderer, icx - y, icy + x);
+            SDL_RenderDrawPoint(m_renderer, icx - x, icy + y);
+            SDL_RenderDrawPoint(m_renderer, icx - x, icy - y);
+            SDL_RenderDrawPoint(m_renderer, icx - y, icy - x);
+            SDL_RenderDrawPoint(m_renderer, icx + y, icy - x);
+            SDL_RenderDrawPoint(m_renderer, icx + x, icy - y);
+
+            if (err <= 0) {
+                y += 1;
+                err += 2 * y + 1;
+            }
+            if (err > 0) {
+                x -= 1;
+                err -= 2 * x + 1;
+            }
+        }
+    }
+}
+
 void SDLRenderer::drawText(const std::string& text, float x, float y, float scale, const Color& color) {
     if (!m_renderer) {
         return;
@@ -298,6 +346,98 @@ void SDLRenderer::drawText(const std::string& text, float x, float y, float scal
             }
         }
         curX += (5 + 1) * s; // 5 columns + 1 spacing
+    }
+}
+
+bool SDLRenderer::loadTexture(const std::string& key, const std::string& filePath) {
+    if (!m_renderer) {
+        return false;
+    }
+    SDL_Surface* surface = SDL_LoadBMP(filePath.c_str());
+    if (!surface) {
+        BTD4_LOG_WARN("Failed to load image at " + filePath + ": " + SDL_GetError());
+        return false;
+    }
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(m_renderer, surface);
+    SDL_FreeSurface(surface);
+    if (!tex) {
+        BTD4_LOG_WARN("Failed to create texture from " + filePath + ": " + SDL_GetError());
+        return false;
+    }
+
+    auto it = m_textures.find(key);
+    if (it != m_textures.end() && it->second) {
+        SDL_DestroyTexture(it->second);
+    }
+    m_textures[key] = tex;
+    return true;
+}
+
+bool SDLRenderer::hasTexture(const std::string& key) const {
+    return m_textures.find(key) != m_textures.end();
+}
+
+void SDLRenderer::drawSprite(const std::string& textureKey, float x, float y, float w, float h, float angleDegrees, const Color& tint) {
+    if (!m_renderer) {
+        return;
+    }
+    auto it = m_textures.find(textureKey);
+    if (it == m_textures.end() || !it->second) {
+        return;
+    }
+
+    SDL_Texture* tex = it->second;
+    SDL_SetTextureColorMod(tex, tint.r, tint.g, tint.b);
+    SDL_SetTextureAlphaMod(tex, tint.a);
+
+    SDL_Rect dstRect{
+        static_cast<int>(std::round(x)),
+        static_cast<int>(std::round(y)),
+        static_cast<int>(std::round(w)),
+        static_cast<int>(std::round(h))
+    };
+
+    if (std::abs(angleDegrees) < 0.001f) {
+        SDL_RenderCopy(m_renderer, tex, nullptr, &dstRect);
+    } else {
+        SDL_RenderCopyEx(m_renderer, tex, nullptr, &dstRect, static_cast<double>(angleDegrees), nullptr, SDL_FLIP_NONE);
+    }
+}
+
+void SDLRenderer::drawSpriteRegion(const std::string& textureKey, const Rect& srcRect, float x, float y, float w, float h, float angleDegrees, const Color& tint) {
+    if (!m_renderer) {
+        return;
+    }
+    auto it = m_textures.find(textureKey);
+    if (it == m_textures.end() || !it->second) {
+        return;
+    }
+
+    SDL_Texture* tex = it->second;
+    SDL_SetTextureColorMod(tex, tint.r, tint.g, tint.b);
+    SDL_SetTextureAlphaMod(tex, tint.a);
+
+    SDL_Rect dstRect{
+        static_cast<int>(std::round(x)),
+        static_cast<int>(std::round(y)),
+        static_cast<int>(std::round(w)),
+        static_cast<int>(std::round(h))
+    };
+
+    SDL_Rect src;
+    SDL_Rect* pSrc = nullptr;
+    if (srcRect.w > 0.0f && srcRect.h > 0.0f) {
+        src.x = static_cast<int>(std::round(srcRect.x));
+        src.y = static_cast<int>(std::round(srcRect.y));
+        src.w = static_cast<int>(std::round(srcRect.w));
+        src.h = static_cast<int>(std::round(srcRect.h));
+        pSrc = &src;
+    }
+
+    if (std::abs(angleDegrees) < 0.001f) {
+        SDL_RenderCopy(m_renderer, tex, pSrc, &dstRect);
+    } else {
+        SDL_RenderCopyEx(m_renderer, tex, pSrc, &dstRect, static_cast<double>(angleDegrees), nullptr, SDL_FLIP_NONE);
     }
 }
 

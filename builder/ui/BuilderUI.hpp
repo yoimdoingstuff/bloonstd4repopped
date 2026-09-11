@@ -35,6 +35,7 @@ private:
     void renderLogsSection();
 
     void triggerBuild();
+    void triggerImport();
 };
 
 } // namespace btd4

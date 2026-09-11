@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "package_name": "Bloons TD 4 Placeholder Data",
+  "source": "placeholder",
+  "textures": {},
+  "audio": {},
+  "maps": [
+    "maps/original_map.json"
+  ],
+  "rounds": "rounds/default_rounds.json"
+}

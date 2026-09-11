@@ -50,7 +50,13 @@ public:
 
     virtual void drawRect(float x, float y, float w, float h, const Color& color, bool filled = true) = 0;
     virtual void drawLine(float x1, float y1, float x2, float y2, const Color& color) = 0;
+    virtual void drawCircle(float cx, float cy, float radius, const Color& color, bool filled = false) = 0;
     virtual void drawText(const std::string& text, float x, float y, float scale, const Color& color) = 0;
+
+    virtual bool loadTexture(const std::string& key, const std::string& filePath) = 0;
+    virtual bool hasTexture(const std::string& key) const = 0;
+    virtual void drawSprite(const std::string& textureKey, float x, float y, float w, float h, float angleDegrees = 0.0f, const Color& tint = Color::white()) = 0;
+    virtual void drawSpriteRegion(const std::string& textureKey, const Rect& srcRect, float x, float y, float w, float h, float angleDegrees = 0.0f, const Color& tint = Color::white()) = 0;
 
     virtual void onResize(int newWidth, int newHeight) = 0;
 };

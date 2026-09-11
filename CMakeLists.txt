@@ -126,6 +126,20 @@ add_library(btd4_engine STATIC
     engine/game/GameState.cpp
     engine/game/Rounds.cpp
     engine/game/RoundLoader.cpp
+    engine/rendering/TextureAtlas.hpp
+    engine/rendering/TextureAtlas.cpp
+    engine/rendering/SpriteBatch.hpp
+    engine/rendering/SpriteBatch.cpp
+    engine/rendering/Camera.hpp
+    engine/rendering/Camera.cpp
+    engine/rendering/DisplayConfig.hpp
+    engine/rendering/DisplayConfig.cpp
+    engine/rendering/DebugRenderer.hpp
+    engine/rendering/DebugRenderer.cpp
+    engine/assets/AssetManifest.hpp
+    engine/assets/AssetManifest.cpp
+    engine/assets/AssetManager.hpp
+    engine/assets/AssetManager.cpp
 )
 
 target_include_directories(btd4_engine PUBLIC
@@ -218,6 +232,34 @@ if(BUILD_GAME)
 endif()
 
 # -----------------------------------------------------------------------------
+# Target: btd4_importer_lib & btd4_importer
+# -----------------------------------------------------------------------------
+if(NOT TARGET_PSP)
+    add_library(btd4_importer_lib STATIC
+        tools/swf/SwfTypes.hpp
+        tools/swf/SwfReader.hpp
+        tools/swf/SwfReader.cpp
+        tools/swf/Inflate.hpp
+        tools/swf/Inflate.cpp
+        tools/swf/SwfParser.hpp
+        tools/swf/SwfParser.cpp
+        tools/asset_converter/AssetConverter.hpp
+        tools/asset_converter/AssetConverter.cpp
+        tools/asset_importer/AssetImporter.hpp
+        tools/asset_importer/AssetImporter.cpp
+    )
+    target_include_directories(btd4_importer_lib PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/tools
+        ${CMAKE_CURRENT_SOURCE_DIR}/engine
+    )
+
+    add_executable(btd4_importer
+        tools/asset_importer/main.cpp
+    )
+    target_link_libraries(btd4_importer PRIVATE btd4_importer_lib)
+endif()
+
+# -----------------------------------------------------------------------------
 # Target: btd4_builder
 # -----------------------------------------------------------------------------
 if(BUILD_BUILDER AND NOT TARGET_PSP)
@@ -230,12 +272,14 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
     )
     target_include_directories(btd4_builder PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/builder
+        ${CMAKE_CURRENT_SOURCE_DIR}/tools
         ${CMAKE_CURRENT_SOURCE_DIR}/platform/common
         ${CMAKE_CURRENT_SOURCE_DIR}/engine
     )
     target_link_libraries(btd4_builder PRIVATE
         btd4_platform
         btd4_engine
+        btd4_importer_lib
         imgui
     )
     if(TARGET SDL2::SDL2)
@@ -254,6 +298,8 @@ if(BUILD_TESTS AND NOT TARGET_PSP)
         tests/main.cpp
         tests/MapLoaderTests.cpp
         tests/RoundTests.cpp
+        tests/AssetImporterTests.cpp
+        tests/RenderingTests.cpp
         tests/TestRunner.hpp
         builder/project/Project.hpp
         builder/project/Project.cpp
@@ -261,12 +307,14 @@ if(BUILD_TESTS AND NOT TARGET_PSP)
     target_include_directories(btd4_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/tests
         ${CMAKE_CURRENT_SOURCE_DIR}/builder
+        ${CMAKE_CURRENT_SOURCE_DIR}/tools
         ${CMAKE_CURRENT_SOURCE_DIR}/engine
         ${CMAKE_CURRENT_SOURCE_DIR}/platform/common
     )
     target_link_libraries(btd4_tests PRIVATE
         btd4_engine
         btd4_platform
+        btd4_importer_lib
     )
     target_compile_definitions(btd4_tests PRIVATE SDL_MAIN_HANDLED)
     if(TARGET SDL2::SDL2)

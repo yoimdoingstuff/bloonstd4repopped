@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "rounds": [
+    {
+      "groups": [
+        {"type": "red", "count": 20, "spacing_ms": 650, "delay_ms": 0, "path": 0}
+      ]
+    },
+    {
+      "groups": [
+        {"type": "red", "count": 25, "spacing_ms": 500, "delay_ms": 0, "path": 0},
+        {"type": "blue", "count": 5, "spacing_ms": 600, "delay_ms": 1000, "path": 0}
+      ]
+    },
+    {
+      "groups": [
+        {"type": "blue", "count": 15, "spacing_ms": 500, "delay_ms": 0, "path": 0},
+        {"type": "green", "count": 5, "spacing_ms": 700, "delay_ms": 800, "path": 0}
+      ]
+    },
+    {
+      "groups": [
+        {"type": "red", "count": 30, "spacing_ms": 300, "delay_ms": 0, "path": 0},
+        {"type": "blue", "count": 15, "spacing_ms": 400, "delay_ms": 500, "path": 0},
+        {"type": "green", "count": 10, "spacing_ms": 500, "delay_ms": 500, "path": 0}
+      ]
+    },
+    {
+      "groups": [
+        {"type": "green", "count": 20, "spacing_ms": 400, "delay_ms": 0, "path": 0},
+        {"type": "yellow", "count": 6, "spacing_ms": 600, "delay_ms": 1000, "path": 0}
+      ]
+    }
+  ]
+}
