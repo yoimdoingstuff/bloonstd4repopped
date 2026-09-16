@@ -35,7 +35,6 @@ if(NOT TARGET_PSP)
     # SDL2
     find_package(SDL2 QUIET)
     if(NOT SDL2_FOUND)
-        # Try pkg-config
         find_package(PkgConfig QUIET)
         if(PKG_CONFIG_FOUND)
             pkg_check_modules(SDL2 QUIET sdl2)
@@ -59,7 +58,6 @@ if(NOT TARGET_PSP)
         endif()
     endif()
 
-    # Dear ImGui (for Game Builder)
     if(BUILD_BUILDER)
         FetchContent_Declare(
             imgui
@@ -68,8 +66,6 @@ if(NOT TARGET_PSP)
             GIT_SHALLOW TRUE
         )
         FetchContent_MakeAvailable(imgui)
-
-        # ImGui Library Target
         add_library(imgui STATIC
             ${imgui_SOURCE_DIR}/imgui.cpp
             ${imgui_SOURCE_DIR}/imgui_demo.cpp
@@ -126,6 +122,8 @@ add_library(btd4_engine STATIC
     engine/game/GameState.cpp
     engine/game/Rounds.cpp
     engine/game/RoundLoader.cpp
+    engine/game/Freeplay.hpp
+    engine/game/Freeplay.cpp
     engine/rendering/TextureAtlas.hpp
     engine/rendering/TextureAtlas.cpp
     engine/rendering/SpriteBatch.hpp
@@ -213,7 +211,6 @@ if(BUILD_GAME)
             message(FATAL_ERROR "PSP builds require PSPSDK's CMake toolchain (use psp-cmake or the psp-release preset).")
         endif()
         add_executable(btd4_game platform/psp/main.cpp)
-        # GCC specs append core SDK stubs after libc; do not duplicate pspuser here.
         target_link_libraries(btd4_game PRIVATE btd4_platform
             pspdebug pspdisplay pspge pspctrl)
         create_pbp_file(TARGET btd4_game TITLE "Bloons TD 4 Repopped"
@@ -253,9 +250,7 @@ if(NOT TARGET_PSP)
         ${CMAKE_CURRENT_SOURCE_DIR}/engine
     )
 
-    add_executable(btd4_importer
-        tools/asset_importer/main.cpp
-    )
+    add_executable(btd4_importer tools/asset_importer/main.cpp)
     target_link_libraries(btd4_importer PRIVATE btd4_importer_lib)
 endif()
 
@@ -300,6 +295,7 @@ if(BUILD_TESTS AND NOT TARGET_PSP)
         tests/RoundTests.cpp
         tests/AssetImporterTests.cpp
         tests/RenderingTests.cpp
+        tests/FreeplayTests.cpp
         tests/TestRunner.hpp
         builder/project/Project.hpp
         builder/project/Project.cpp
