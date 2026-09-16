@@ -5,12 +5,21 @@
 #include "../platform/common/SDLRenderer.hpp"
 #include "../platform/common/SDLInput.hpp"
 #include <SDL.h>
+#include <filesystem>
 #include <iostream>
 
-int main(int argc, char* argv[]) {
-    (void)argc;
-    (void)argv;
+namespace {
+std::string executableDirectory() {
+    char* base = SDL_GetBasePath();
+    if (!base) return ".";
+    std::string result(base);
+    SDL_free(base);
+    while (!result.empty() && (result.back() == '/' || result.back() == '\\')) result.pop_back();
+    return result.empty() ? "." : result;
+}
+}
 
+int main(int argc, char* argv[]) {
     BTD4_LOG_INFO("Starting Bloons TD 4 Repopped...");
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
@@ -18,12 +27,18 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Default window size: 960x544 (2x logical 480x272)
+    const std::string baseDir = executableDirectory();
+    std::error_code ec;
+    std::filesystem::current_path(baseDir, ec);
+    if (ec) {
+        BTD4_LOG_WARN("Could not switch to executable directory: " + ec.message());
+    }
+
     int windowWidth = 960;
     int windowHeight = 544;
 
     SDL_Window* window = SDL_CreateWindow(
-        "Bloons TD 4 Repopped (Test)",
+        "Bloons TD 4 Repopped",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         windowWidth,
@@ -45,10 +60,20 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Windows follows the Flash-era frontend: mouse-first gameplay plus
-    // keyboard shortcuts, rather than forcing the console control model onto PC.
     btd4::SDLInput input(btd4::FrontendProfile::FlashDesktop);
     btd4::Engine engine(renderer, input, btd4::FrontendProfile::FlashDesktop);
+
+    // Packaged builds keep game_data beside the executable. A command-line
+    // directory is supported for development and builder-generated profiles.
+    if (argc > 1 && argv[1] && argv[1][0] != '\0') {
+        std::filesystem::path requested(argv[1]);
+        if (requested.is_relative()) requested = std::filesystem::path(baseDir) / requested;
+        std::filesystem::current_path(requested, ec);
+        if (ec) {
+            BTD4_LOG_WARN("Could not use requested data directory: " + ec.message());
+            std::filesystem::current_path(baseDir, ec);
+        }
+    }
 
     if (!engine.initialize(windowWidth, windowHeight)) {
         std::cerr << "Failed to initialize engine" << std::endl;
@@ -60,24 +85,19 @@ int main(int argc, char* argv[]) {
 
     bool running = true;
     SDL_Event event;
-
     while (running && engine.isRunning()) {
         input.beginFrame();
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                running = false;
-            } else if (event.type == SDL_WINDOWEVENT) {
-                if (event.window.event == SDL_WINDOWEVENT_RESIZED ||
-                    event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-                    windowWidth = event.window.data1;
-                    windowHeight = event.window.data2;
-                    engine.onResize(windowWidth, windowHeight);
-                }
+            if (event.type == SDL_QUIT) running = false;
+            else if (event.type == SDL_WINDOWEVENT &&
+                     (event.window.event == SDL_WINDOWEVENT_RESIZED ||
+                      event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)) {
+                windowWidth = event.window.data1;
+                windowHeight = event.window.data2;
+                engine.onResize(windowWidth, windowHeight);
             }
-
             input.processEvent(event, engine.currentViewport());
         }
-
         engine.frame(windowWidth, windowHeight);
     }
 
@@ -85,7 +105,6 @@ int main(int argc, char* argv[]) {
     renderer.shutdown();
     SDL_DestroyWindow(window);
     SDL_Quit();
-
     BTD4_LOG_INFO("Bloons TD 4 Repopped exited cleanly.");
     return 0;
 }
