@@ -16,6 +16,7 @@ public:
 
     void appendLog(const std::string& line);
     void clearLogs();
+    void addSourceFile(const std::string& path);
 
     Project& project() { return m_project; }
 
