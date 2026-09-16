@@ -17,7 +17,13 @@ enum class InputAction : uint32_t {
     MoveRight   = 1 << 8,
     NextTarget  = 1 << 9,
     PrevTarget  = 1 << 10,
-    StartRound  = 1 << 11
+    StartRound  = 1 << 11,
+    SelectTower1 = 1 << 12,
+    SelectTower2 = 1 << 13,
+    SelectTower3 = 1 << 14,
+    SelectTower4 = 1 << 15,
+    SelectTower5 = 1 << 16,
+    SelectTower6 = 1 << 17
 };
 
 inline InputAction operator|(InputAction a, InputAction b) {
