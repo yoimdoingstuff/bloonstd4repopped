@@ -99,14 +99,12 @@ void inspectIpa(const std::string& path, ImportReport& report,
             " entries, " + std::to_string(payloadBundles) + " app resources, " +
             std::to_string(plistFiles) + " plist entries.");
 
-    // Keep the raw plist conversion out of the runtime. For now we expose the
-    // selected manifest/resource candidates and leave full IPA-to-internal
-    // conversion to the dedicated importer milestone.
     if (!archive.contains("Info.plist")) {
         for (const auto& entry : archive.entries()) {
-            if (lower(entry.name).rfind("payload/", 0) == 0 &&
-                lower(entry.name).size() >= 9 &&
-                lower(entry.name).rfind("info.plist") == lower(entry.name).size() - 9) {
+            const std::string normalized = lower(entry.name);
+            if (normalized.rfind("payload/", 0) == 0 &&
+                normalized.size() >= 9 &&
+                normalized.rfind("info.plist") == normalized.size() - 9) {
                 std::vector<uint8_t> plistData;
                 if (archive.readEntry(entry.name, plistData, archiveError)) {
                     addFeature(report, "Readable app Info.plist");
@@ -127,7 +125,7 @@ std::string detectSourceFamily(const swf::SwfParser& parser, bool& isBtd4,
     int gameplaySymbols = 0;
 
     for (const auto& symbol : parser.symbols()) {
-        const std::string name = lower(symbol.className);
+        const std::string name = lower(symbol.second);
         if (containsAny(name, {"bloon", "monkey", "tower", "dart", "tack", "boomerang", "sniper", "bomb"})) {
             ++gameplaySymbols;
             ++score;
@@ -324,37 +322,37 @@ ImportReport AssetImporter::run(const ImportOptions& options,
         mf << "  \"detected_features\": [\n";
         for (size_t i = 0; i < report.detectedFeatures.size(); ++i) {
             mf << "    \"" << report.detectedFeatures[i] << "\"";
-            if (i + 1 < report.detectedFeatures.size()) mf << ',';
+            if (i + 1 != report.detectedFeatures.size()) mf << ",";
             mf << "\n";
         }
         mf << "  ],\n";
         mf << "  \"textures\": {\n";
         for (size_t i = 0; i < textureManifestEntries.size(); ++i) {
             mf << textureManifestEntries[i];
-            if (i + 1 < textureManifestEntries.size()) mf << ',';
+            if (i + 1 != textureManifestEntries.size()) mf << ",";
             mf << "\n";
         }
         mf << "  },\n";
         mf << "  \"audio\": {\n";
         for (size_t i = 0; i < audioManifestEntries.size(); ++i) {
             mf << audioManifestEntries[i];
-            if (i + 1 < audioManifestEntries.size()) mf << ',';
+            if (i + 1 != audioManifestEntries.size()) mf << ",";
             mf << "\n";
         }
         mf << "  },\n";
-        mf << "  \"maps\": [\"maps/original_map.json\"],\n";
-        mf << "  \"rounds\": \"rounds/default_rounds.json\"\n";
+        mf << "  \"maps\": [],\n";
+        mf << "  \"rounds\": null\n";
         mf << "}\n";
         mf.close();
 
         report.manifestPath = manifestFile.string();
-        emitLog("[Importer] Manifest saved to: " + report.manifestPath);
+        emitLog("[Importer] Manifest written: " + report.manifestPath);
     }
 
-    if (progressCallback) progressCallback(1.0f, "Import pipeline finished!");
+    if (progressCallback) progressCallback(1.0f, "Import complete.");
 
     report.success = true;
-    emitLog("[Importer Success] Asset pipeline finished successfully. Ready for " + options.targetPlatform + ".");
+    emitLog("[Importer] Import completed successfully. Ready for " + options.targetPlatform + ".");
     return report;
 }
 
