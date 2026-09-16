@@ -6,11 +6,12 @@
 namespace btd4 {
 
 struct ProjectConfig {
-    int version{1};
+    int version{2};
     std::string projectName{"BTD4 Project"};
     std::string sourceDirectory{"assets"};
     std::string sourceSwf;
     std::string sourceIpa;
+    std::string gameEdition{"BTD4 Flash"};
     bool enableMobileContent{false};
     std::string targetPlatform{"Linux"};
     std::string buildConfiguration{"Release"};
@@ -31,6 +32,7 @@ public:
 
     bool discoverSourceAssets();
     bool discoverSourceAssets(const std::string& directory);
+    bool addSourceFile(const std::string& filepath);
 
     bool hasValidSwf() const;
     bool hasValidIpa() const;
