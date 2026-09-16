@@ -37,7 +37,7 @@ private:
 
     void discoverAssets();
     void triggerBuild();
-    void triggerImport();
+    bool triggerImport();
 };
 
 } // namespace btd4
