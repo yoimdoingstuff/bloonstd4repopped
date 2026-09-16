@@ -25,7 +25,7 @@ BuildResult Xbox360Backend::build() {
     return res;
 }
 
-BuildResult Xbox360Backend::package() {
+BuildResult Xbox360Backend::package(const std::string&) {
     BuildResult res;
     res.success = false;
     res.message = "Xbox 360 packaging is scheduled for Phase 11.";
