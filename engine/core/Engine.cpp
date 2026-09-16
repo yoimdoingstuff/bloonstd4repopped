@@ -5,6 +5,25 @@
 
 namespace btd4 {
 
+namespace {
+
+TowerType towerForAction(InputAction action, bool& matched) {
+    matched = true;
+    switch (action) {
+        case InputAction::SelectTower1: return TowerType::DartMonkey;
+        case InputAction::SelectTower2: return TowerType::TackShooter;
+        case InputAction::SelectTower3: return TowerType::BombTower;
+        case InputAction::SelectTower4: return TowerType::BoomerangThrower;
+        case InputAction::SelectTower5: return TowerType::SniperMonkey;
+        case InputAction::SelectTower6: return TowerType::SuperMonkey;
+        default:
+            matched = false;
+            return TowerType::DartMonkey;
+    }
+}
+
+} // namespace
+
 Engine::Engine(IRenderer& renderer, IInput& input)
     : m_renderer(renderer), m_input(input) {
 }
@@ -61,7 +80,7 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
         BTD4_LOG_WARN("Round data unavailable: " + roundErr);
     }
 
-    BTD4_LOG_INFO("Gameplay controls: click a tower, click the map to place it, R starts the next round, P pauses, right-click cancels placement.");
+    BTD4_LOG_INFO("Frontend controls: Flash desktop uses mouse-first tower placement with 1-6 tower shortcuts; console profiles use controller navigation.");
     BTD4_LOG_INFO("BTD4 Engine initialized successfully.");
     return true;
 }
@@ -107,6 +126,25 @@ void Engine::frame(int windowWidth, int windowHeight) {
     PointerState ptr = m_input.pointerState();
     m_testScreen.setCursorPosition(ptr.logicalX, ptr.logicalY);
 
+    const InputAction towerActions[] = {
+        InputAction::SelectTower1,
+        InputAction::SelectTower2,
+        InputAction::SelectTower3,
+        InputAction::SelectTower4,
+        InputAction::SelectTower5,
+        InputAction::SelectTower6
+    };
+    for (const InputAction action : towerActions) {
+        if (m_input.isActionJustPressed(action)) {
+            bool matched = false;
+            const TowerType type = towerForAction(action, matched);
+            if (matched) {
+                selectTowerType(type);
+                break;
+            }
+        }
+    }
+
     if (m_input.isActionJustPressed(InputAction::StartRound)) {
         startNextRound();
     }
@@ -143,6 +181,17 @@ void Engine::frame(int windowWidth, int windowHeight) {
                 }
             }
         }
+    }
+
+    if (m_input.isActionJustPressed(InputAction::Upgrade) && m_selectedTowerId != 0) {
+        // Tower upgrade logic is not implemented yet. Keeping the input action
+        // routed here means each frontend can expose the same gameplay command.
+        BTD4_LOG_INFO("Upgrade requested for selected tower.");
+    }
+
+    if (m_input.isActionJustPressed(InputAction::Sell) && m_selectedTowerId != 0) {
+        // Selling will be implemented by the shared simulation layer later.
+        BTD4_LOG_INFO("Sell requested for selected tower.");
     }
 
     if (m_input.isActionJustPressed(InputAction::Cancel)) {
