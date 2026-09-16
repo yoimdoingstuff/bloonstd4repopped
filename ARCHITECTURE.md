@@ -140,6 +140,126 @@ The engine uses abstract actions such as:
 
 Each platform converts its physical controls into these actions.
 
+## Platform-Specific Game Frontends
+
+The game uses one shared simulation and engine, but each target has its own
+frontend profile. A frontend owns presentation and interaction behavior rather
+than duplicating game rules. This is intentional: BTD4 was released with
+substantially different interaction models on Flash, PSP, and console
+platforms, so forcing every target through one UI/control scheme makes some
+versions effectively unplayable.
+
+The target profiles are:
+
+### Windows / Desktop Flash-style frontend
+
+Windows is mouse-first and should feel like the original Flash game rather
+than like a console port.
+
+- Mouse selects towers and places them on the map.
+- Mouse movement controls the placement cursor.
+- Right-click cancels placement where supported.
+- Keyboard shortcuts are secondary convenience controls.
+- `1`-`6` select the corresponding tower slots.
+- `R` starts the next round.
+- `P` pauses/resumes.
+- `U` and `S` expose upgrade/sell commands.
+- The game remains usable with keyboard and mouse without requiring a
+  controller.
+
+The Windows frontend should preserve the Flash interaction model even when
+running at modern desktop resolutions. Logical game coordinates remain
+independent from the physical window size.
+
+### PSP frontend
+
+PSP uses a controller-driven interaction model based on the BTD PSP port.
+The frontend provides a virtual pointer/cursor so controller input can still
+operate the same map interaction commands without requiring a mouse.
+
+- D-pad/analog navigation moves the virtual cursor.
+- Cross confirms.
+- Circle cancels.
+- Square sells the selected tower.
+- Triangle requests an upgrade.
+- Start controls the round/pause flow as appropriate to the frontend.
+- Select is used for pause/menu behavior where applicable.
+- L/R may be used for contextual tower/target navigation as the PSP UI is
+  implemented further.
+
+The PSP frontend must remain lightweight and avoid introducing desktop UI
+assumptions. PSP-specific rendering, input, audio, and filesystem code belongs
+under `platform/psp/`.
+
+### Xbox 360 frontend
+
+Xbox 360 uses a controller-first interaction model inspired by the BTD5
+console experience.
+
+- Left stick/D-pad navigates the virtual cursor or focused UI selection.
+- A confirms.
+- B cancels.
+- X sells.
+- Y upgrades.
+- LB/RB cycle tower selection or other contextual choices.
+- Start pauses.
+
+The Xbox frontend should use larger controller-friendly focus targets and
+navigation states instead of assuming mouse hover. The actual Xbox backend is
+still a future target, so these rules define the intended frontend contract,
+not proof of Xbox runtime compatibility.
+
+### Frontend architecture
+
+Frontend-specific code should be organized separately from the shared
+simulation:
+
+```
+engine/
+    core/
+    game/                 <- shared simulation/rules
+    input/                <- common actions and input state
+    rendering/            <- shared renderer interfaces
+    ui/                   <- shared UI logic/widgets
+
+platform/
+    windows/
+        ui/               <- Flash-style desktop frontend
+    linux/
+        ui/               <- desktop frontend
+    psp/
+        ui/               <- BTD PSP-style controller frontend
+    xbox360/
+        ui/               <- BTD5-console-style controller frontend
+```
+
+A platform frontend may change layout, focus/navigation, prompts, cursor
+behavior, and input mappings. It must not implement a second copy of tower,
+bloon, economy, round, or other gameplay rules.
+
+Controller platforms should use a virtual cursor/focus layer that translates
+stick/D-pad movement and confirm/cancel actions into the common interaction
+model. This keeps gameplay code independent of physical controller APIs.
+
+The intended dependency is:
+
+```
+Platform input
+      |
+      v
+Frontend profile / UIAdapter
+      |
+      v
+Common Input Actions + pointer/focus state
+      |
+      v
+Shared Engine / Simulation
+```
+
+This architecture deliberately allows the Windows, PSP, and Xbox frontends to
+feel different while keeping saves, simulation, maps, rounds, towers, and other
+core systems shared.
+
 ## Platform Backends
 
 ### Windows
@@ -151,6 +271,7 @@ Provides:
 - Input
 - Audio
 - Filesystem
+- Flash-style game frontend
 
 ### Linux
 
@@ -161,6 +282,7 @@ Provides:
 - Input
 - Audio
 - Filesystem
+- Desktop game frontend
 
 ### PSP
 
@@ -172,12 +294,14 @@ Provides:
 - Filesystem
 - Timing
 - EBOOT packaging
+- BTD PSP-style game frontend
 
 The PSP backend must not contain game logic.
 
 ### Xbox 360
 
-Reserved for future platform-specific functionality.
+Reserved for future platform-specific functionality, including the
+controller-first console frontend defined above.
 
 ## Asset Pipeline
 
@@ -295,6 +419,8 @@ guesswork.
 6. Importers must be separate from runtime code.
 7. New systems should reuse existing abstractions instead of
    creating duplicates.
+8. Frontends may differ in interaction model and presentation, but must
+   consume the same shared simulation and common gameplay actions.
 
 ---
 
@@ -354,7 +480,6 @@ represented through the internal data format:
 ### Map data (`data/maps/<name>.json`)
 - Path waypoints matching original map layouts
 - Buildable / blocked regions
-- Spawn and exit points
 - Background asset reference
 
 All of the above files live in the internal game data package. The importer
@@ -462,6 +587,18 @@ Mobile style requires an IPA file.
 Please add an IPA in the Source Files panel.
 ```
 
+The frontend control profile is independent from the graphics style. For
+example, a Flash-style asset set can still be presented through a controller
+frontend on a console. Graphics determine art; frontend profiles determine
+interaction and controls.
+
+The Game Builder should eventually expose both selections independently:
+
+```
+Graphics Style: Flash / Mobile
+Frontend: Flash Desktop / PSP / Xbox Console
+```
+
 ---
 
 ## Repository Layout (Updated)
@@ -471,23 +608,23 @@ engine/
     core/
     game/
     rendering/
-    audio/
     input/
+    audio/
     assets/
     save/
     achievements/
     map/
-    ui/                ← new: UIAdapter, UILayout, HUD, panels
+    ui/                ← shared UIAdapter, UILayout, HUD, panels
 
 platform/
     windows/
-        ui/            ← desktop PlatformUI
+        ui/            ← Flash-style desktop frontend
     linux/
-        ui/            ← desktop PlatformUI
+        ui/            ← desktop frontend
     psp/
-        ui/            ← PSP D-pad PlatformUI
+        ui/            ← BTD PSP-style controller frontend
     xbox360/
-        ui/            ← controller PlatformUI (reserved)
+        ui/            ← BTD5-console-style controller frontend
 
 builder/
     app/
