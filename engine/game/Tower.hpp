@@ -27,7 +27,7 @@ enum class TargetingMode : uint8_t {
 struct TowerBaseStats {
     int cost{200};
     float range{100.0f};
-    float attackCooldown{0.95f}; // Seconds between attacks
+    float attackCooldown{0.95f};
     float footprintRadius{12.0f};
     ProjectileType projectileType{ProjectileType::Dart};
     DamageType damageType{DamageType::Sharp};
@@ -38,6 +38,8 @@ struct TowerBaseStats {
 };
 
 TowerBaseStats getTowerBaseStats(TowerType type);
+
+struct UpgradeEffect;
 
 class Tower {
 public:
@@ -56,6 +58,11 @@ public:
     float attackCooldown() const { return m_attackCooldown; }
     void setAttackCooldown(float cd) { m_attackCooldown = cd; }
 
+    int projectileDamage() const { return m_projectileDamage; }
+    int projectilePierce() const { return m_projectilePierce; }
+    float projectileSpeed() const { return m_projectileSpeed; }
+    float explosionRadius() const { return m_explosionRadius; }
+
     TargetingMode targetingMode() const { return m_targetingMode; }
     void setTargetingMode(TargetingMode mode) { m_targetingMode = mode; }
     void cycleTargetingMode();
@@ -64,14 +71,15 @@ public:
     void addInvestedCost(int cost) { m_totalInvestedCost += cost; }
     int sellValue() const { return static_cast<int>(m_totalInvestedCost * 0.75f); }
 
+    uint8_t upgradeTier(uint8_t path) const;
+    bool hasUpgrade(uint8_t path, uint8_t tier) const;
+    bool applyUpgrade(const UpgradeEffect& effect, uint8_t path, uint8_t tier);
+
     bool canAttack() const { return m_cooldownTimer <= 0.0f; }
     void resetCooldown() { m_cooldownTimer = m_attackCooldown; }
     void updateCooldown(float deltaTime);
 
-    // Filters and chooses the best target from available active bloons
     const Bloon* selectTarget(const std::vector<Bloon*>& activeBloons) const;
-
-    // Executes an attack if off cooldown and valid target exists
     bool attack(BloonPool& bloonPool, ProjectilePool& projectilePool, const Map& map);
 
 private:
@@ -84,6 +92,11 @@ private:
     float m_cooldownTimer{0.0f};
     TargetingMode m_targetingMode{TargetingMode::First};
     int m_totalInvestedCost{200};
+    int m_projectileDamage{1};
+    int m_projectilePierce{1};
+    float m_projectileSpeed{240.0f};
+    float m_explosionRadius{0.0f};
+    uint8_t m_upgradeTiers[2]{0, 0};
     TowerBaseStats m_stats;
 };
 
