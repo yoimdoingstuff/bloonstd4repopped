@@ -24,8 +24,8 @@ TowerType towerForAction(InputAction action, bool& matched) {
 
 } // namespace
 
-Engine::Engine(IRenderer& renderer, IInput& input)
-    : m_renderer(renderer), m_input(input) {
+Engine::Engine(IRenderer& renderer, IInput& input, FrontendProfile frontendProfile)
+    : m_renderer(renderer), m_input(input), m_frontendProfile(frontendProfile) {
 }
 
 Engine::~Engine() {
@@ -80,7 +80,17 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
         BTD4_LOG_WARN("Round data unavailable: " + roundErr);
     }
 
-    BTD4_LOG_INFO("Frontend controls: Flash desktop uses mouse-first tower placement with 1-6 tower shortcuts; console profiles use controller navigation.");
+    switch (m_frontendProfile) {
+        case FrontendProfile::FlashDesktop:
+            BTD4_LOG_INFO("Frontend: Flash desktop mouse-first controls.");
+            break;
+        case FrontendProfile::PSP:
+            BTD4_LOG_INFO("Frontend: PSP controls with D-pad/analog virtual cursor.");
+            break;
+        case FrontendProfile::XboxConsole:
+            BTD4_LOG_INFO("Frontend: Xbox console controls with gamepad virtual cursor.");
+            break;
+    }
     BTD4_LOG_INFO("BTD4 Engine initialized successfully.");
     return true;
 }
@@ -184,13 +194,10 @@ void Engine::frame(int windowWidth, int windowHeight) {
     }
 
     if (m_input.isActionJustPressed(InputAction::Upgrade) && m_selectedTowerId != 0) {
-        // Tower upgrade logic is not implemented yet. Keeping the input action
-        // routed here means each frontend can expose the same gameplay command.
         BTD4_LOG_INFO("Upgrade requested for selected tower.");
     }
 
     if (m_input.isActionJustPressed(InputAction::Sell) && m_selectedTowerId != 0) {
-        // Selling will be implemented by the shared simulation layer later.
         BTD4_LOG_INFO("Sell requested for selected tower.");
     }
 
@@ -256,16 +263,32 @@ void Engine::frame(int windowWidth, int windowHeight) {
                                          m_simulation.completedRounds() + (m_simulation.roundActive() ? 1 : 0),
                                          m_clock.fps(), m_placementType, m_hasPlacement);
 
+        if (m_frontendProfile != FrontendProfile::FlashDesktop) {
+            m_renderer.drawRect(ptr.logicalX - 4.0f, ptr.logicalY - 4.0f, 8.0f, 8.0f, Color::white(), false);
+        }
+
         if (!m_simulation.roundActive() && m_simulation.state() == GameStateType::Playing) {
-            m_renderer.drawRect(118.0f, 228.0f, 160.0f, 30.0f, {0, 0, 0, 185}, true);
-            m_renderer.drawRect(118.0f, 228.0f, 160.0f, 30.0f, Color::cyan(), false);
-            m_renderer.drawText("R: START ROUND", 132.0f, 238.0f, 1.0f, Color::white());
+            m_renderer.drawRect(108.0f, 228.0f, 184.0f, 30.0f, {0, 0, 0, 185}, true);
+            m_renderer.drawRect(108.0f, 228.0f, 184.0f, 30.0f, Color::cyan(), false);
+            if (m_frontendProfile == FrontendProfile::FlashDesktop) {
+                m_renderer.drawText("R: START ROUND", 122.0f, 238.0f, 1.0f, Color::white());
+            } else if (m_frontendProfile == FrontendProfile::PSP) {
+                m_renderer.drawText("START: NEXT ROUND", 116.0f, 238.0f, 1.0f, Color::white());
+            } else {
+                m_renderer.drawText("RB: NEXT ROUND", 126.0f, 238.0f, 1.0f, Color::white());
+            }
         }
 
         if (m_simulation.state() == GameStateType::Paused) {
             m_renderer.drawRect(90.0f, 100.0f, 220.0f, 72.0f, {0, 0, 0, 210}, true);
             m_renderer.drawText("PAUSED", 170.0f, 118.0f, 2.0f, Color::white());
-            m_renderer.drawText("Press P to resume", 135.0f, 145.0f, 1.0f, Color::cyan());
+            if (m_frontendProfile == FrontendProfile::FlashDesktop) {
+                m_renderer.drawText("Press P to resume", 135.0f, 145.0f, 1.0f, Color::cyan());
+            } else if (m_frontendProfile == FrontendProfile::PSP) {
+                m_renderer.drawText("SELECT to resume", 143.0f, 145.0f, 1.0f, Color::cyan());
+            } else {
+                m_renderer.drawText("START to resume", 145.0f, 145.0f, 1.0f, Color::cyan());
+            }
         } else if (m_simulation.state() == GameStateType::GameOver) {
             m_renderer.drawRect(70.0f, 92.0f, 260.0f, 88.0f, {0, 0, 0, 220}, true);
             m_renderer.drawText("GAME OVER", 145.0f, 112.0f, 2.0f, Color::red());
