@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../engine/input/IInput.hpp"
+#include "../../engine/input/FrontendProfile.hpp"
 #include "../../engine/rendering/LogicalResolution.hpp"
 #include <SDL.h>
 #include <array>
@@ -11,7 +12,7 @@ namespace btd4 {
 
 class SDLInput : public IInput {
 public:
-    SDLInput();
+    explicit SDLInput(FrontendProfile profile = FrontendProfile::FlashDesktop);
     ~SDLInput() override = default;
 
     void beginFrame() override;
@@ -22,19 +23,28 @@ public:
 
     PointerState pointerState() const override;
 
-    // Call from SDL event loop
+    void setProfile(FrontendProfile profile);
+    FrontendProfile profile() const { return m_profile; }
+
+    // Call from SDL event loop.
     void processEvent(const SDL_Event& event, const Viewport& viewport);
 
 private:
+    FrontendProfile m_profile{FrontendProfile::FlashDesktop};
     uint32_t m_currentActions{0};
     uint32_t m_previousActions{0};
     uint32_t m_keyboardActions{0};
     uint32_t m_pointerActions{0};
+    uint32_t m_controllerActions{0};
     std::array<bool, SDL_NUM_SCANCODES> m_keyDown{};
     std::array<uint16_t, 32> m_keyActionCounts{};
 
     PointerState m_pointer;
+    SDL_GameController* m_controller{nullptr};
+
     void mapKey(SDL_Keycode key, SDL_Scancode scancode, bool isDown);
+    void mapControllerButton(SDL_GameControllerButton button, bool isDown);
+    void updateControllerDevice(const SDL_Event& event);
     void updateCurrentActions();
 };
 
