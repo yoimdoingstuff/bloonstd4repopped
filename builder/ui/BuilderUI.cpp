@@ -47,7 +47,6 @@ void BuilderUI::render() {
     if (ImGui::BeginTable("BuilderMainTable", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV)) {
         ImGui::TableNextColumn();
 
-        // Left column: Setup, files, platform selection
         renderSourceFilesSection();
         ImGui::Spacing();
         renderFeaturesSection();
@@ -57,10 +56,7 @@ void BuilderUI::render() {
         renderActionButtons();
 
         ImGui::TableNextColumn();
-
-        // Right column: Output & logs
         renderLogsSection();
-
         ImGui::EndTable();
     }
     ImGui::End();
@@ -230,6 +226,9 @@ void BuilderUI::triggerImport() {
     options.sourceSwf = m_project.config().sourceSwf;
     options.sourceIpa = m_project.config().sourceIpa;
     options.outputDir = "game_data";
+    options.targetPlatform = m_project.config().targetPlatform;
+
+    appendLog("[Pipeline] Import target: " + options.targetPlatform);
 
     auto logCb = [this](const std::string& msg) {
         appendLog(msg);
@@ -238,6 +237,9 @@ void BuilderUI::triggerImport() {
     tools::ImportReport report = tools::AssetImporter::run(options, logCb);
     if (report.success) {
         appendLog("[Pipeline Success] Successfully imported assets!");
+        appendLog("  Source family: " + report.sourceFamily);
+        appendLog("  BTD4 detected: " + std::string(report.btd4Detected ? "yes" : "no"));
+        appendLog("  IPA detected: " + std::string(report.ipaDetected ? "yes" : "no"));
         appendLog("  Textures extracted: " + std::to_string(report.texturesExtracted));
         appendLog("  Audio cues extracted: " + std::to_string(report.soundsExtracted));
         appendLog("  Symbols mapped: " + std::to_string(report.symbolsMapped));
