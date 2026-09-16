@@ -1,9 +1,11 @@
 #include "SDLInput.hpp"
 
+#include <algorithm>
+
 namespace btd4 {
 
 SDLInput::SDLInput(FrontendProfile profile)
-    : m_profile(profile) {
+    : m_profile(profile), m_pointer{240.0f, 136.0f, false, false} {
 }
 
 SDLInput::~SDLInput() {
@@ -73,16 +75,12 @@ void SDLInput::mapKey(SDL_Keycode key, SDL_Scancode scancode, bool isDown) {
                 case SDLK_6: action = InputAction::SelectTower6; break;
                 default: break;
             }
-            if (key == SDLK_w) action = InputAction::MoveUp;
-            if (key == SDLK_a) action = InputAction::MoveLeft;
-            if (key == SDLK_s) action = InputAction::MoveDown;
-            if (key == SDLK_d) action = InputAction::MoveRight;
             break;
 
         case FrontendProfile::PSP:
         case FrontendProfile::XboxConsole:
             // Keyboard remains useful for desktop controller testing, but follows
-            // the console action layout rather than the Flash keyboard layout.
+            // the console action layout instead of duplicating the Flash shortcuts.
             switch (key) {
                 case SDLK_RETURN: action = InputAction::Confirm; break;
                 case SDLK_ESCAPE: action = InputAction::Cancel; break;
@@ -127,6 +125,14 @@ void SDLInput::mapKey(SDL_Keycode key, SDL_Scancode scancode, bool isDown) {
 void SDLInput::mapControllerButton(SDL_GameControllerButton button, bool isDown) {
     InputAction action = InputAction::None;
 
+    const auto movePointer = [this](float dx, float dy) {
+        if (m_profile == FrontendProfile::FlashDesktop) {
+            return;
+        }
+        m_pointer.logicalX = std::clamp(m_pointer.logicalX + dx, 0.0f, 479.0f);
+        m_pointer.logicalY = std::clamp(m_pointer.logicalY + dy, 0.0f, 271.0f);
+    };
+
     switch (m_profile) {
         case FrontendProfile::PSP:
             switch (button) {
@@ -136,10 +142,10 @@ void SDLInput::mapControllerButton(SDL_GameControllerButton button, bool isDown)
                 case SDL_CONTROLLER_BUTTON_Y: action = InputAction::Upgrade; break;      // Triangle
                 case SDL_CONTROLLER_BUTTON_BACK: action = InputAction::Pause; break;     // Select
                 case SDL_CONTROLLER_BUTTON_START: action = InputAction::StartRound; break;
-                case SDL_CONTROLLER_BUTTON_DPAD_UP: action = InputAction::MoveUp; break;
-                case SDL_CONTROLLER_BUTTON_DPAD_DOWN: action = InputAction::MoveDown; break;
-                case SDL_CONTROLLER_BUTTON_DPAD_LEFT: action = InputAction::PrevTarget; break;
-                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: action = InputAction::NextTarget; break;
+                case SDL_CONTROLLER_BUTTON_DPAD_UP: action = InputAction::MoveUp; movePointer(0, -12); break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN: action = InputAction::MoveDown; movePointer(0, 12); break;
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT: action = InputAction::PrevTarget; movePointer(-12, 0); break;
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: action = InputAction::NextTarget; movePointer(12, 0); break;
                 case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: action = InputAction::PrevTarget; break;
                 case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: action = InputAction::NextTarget; break;
                 default: break;
@@ -154,10 +160,10 @@ void SDLInput::mapControllerButton(SDL_GameControllerButton button, bool isDown)
                 case SDL_CONTROLLER_BUTTON_Y: action = InputAction::Upgrade; break;
                 case SDL_CONTROLLER_BUTTON_START: action = InputAction::Pause; break;
                 case SDL_CONTROLLER_BUTTON_BACK: action = InputAction::Cancel; break;
-                case SDL_CONTROLLER_BUTTON_DPAD_UP: action = InputAction::MoveUp; break;
-                case SDL_CONTROLLER_BUTTON_DPAD_DOWN: action = InputAction::MoveDown; break;
-                case SDL_CONTROLLER_BUTTON_DPAD_LEFT: action = InputAction::PrevTarget; break;
-                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: action = InputAction::NextTarget; break;
+                case SDL_CONTROLLER_BUTTON_DPAD_UP: action = InputAction::MoveUp; movePointer(0, -12); break;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN: action = InputAction::MoveDown; movePointer(0, 12); break;
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT: action = InputAction::PrevTarget; movePointer(-12, 0); break;
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: action = InputAction::NextTarget; movePointer(12, 0); break;
                 case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: action = InputAction::PrevTarget; break;
                 case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: action = InputAction::StartRound; break;
                 default: break;
@@ -234,6 +240,19 @@ void SDLInput::processEvent(const SDL_Event& event, const Viewport& viewport) {
         mapControllerButton(static_cast<SDL_GameControllerButton>(event.cbutton.button), true);
     } else if (event.type == SDL_CONTROLLERBUTTONUP) {
         mapControllerButton(static_cast<SDL_GameControllerButton>(event.cbutton.button), false);
+    } else if (event.type == SDL_CONTROLLERAXISMOTION && m_profile != FrontendProfile::FlashDesktop) {
+        constexpr float deadzone = 0.25f;
+        if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX || event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY) {
+            const float value = static_cast<float>(event.caxis.value) / 32767.0f;
+            if (value > deadzone || value < -deadzone) {
+                const float scaled = value * 7.0f;
+                if (event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTX) {
+                    m_pointer.logicalX = std::clamp(m_pointer.logicalX + scaled, 0.0f, 479.0f);
+                } else {
+                    m_pointer.logicalY = std::clamp(m_pointer.logicalY + scaled, 0.0f, 271.0f);
+                }
+            }
+        }
     }
 }
 
