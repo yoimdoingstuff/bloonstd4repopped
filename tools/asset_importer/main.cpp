@@ -7,9 +7,10 @@ void printUsage(const char* progName) {
               << "Usage:\n"
               << "  " << progName << " <source.swf> [options]\n\n"
               << "Options:\n"
-              << "  --out <dir>   Output directory for extracted game_data (default: game_data)\n"
-              << "  --ipa <file>  Optional mobile IPA package path\n"
-              << "  --help        Display this help message\n";
+              << "  --out <dir>        Output directory for extracted game_data (default: game_data)\n"
+              << "  --ipa <file>       Optional mobile IPA package path\n"
+              << "  --platform <name>  Target build platform: Windows, Linux, PSP, Xbox 360, or auto\n"
+              << "  --help             Display this help message\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -21,6 +22,7 @@ int main(int argc, char* argv[]) {
     std::string swfPath;
     std::string outDir = "game_data";
     std::string ipaPath;
+    std::string platform = "auto";
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -31,6 +33,8 @@ int main(int argc, char* argv[]) {
             outDir = argv[++i];
         } else if (arg == "--ipa" && i + 1 < argc) {
             ipaPath = argv[++i];
+        } else if (arg == "--platform" && i + 1 < argc) {
+            platform = argv[++i];
         } else if (arg.rfind("--", 0) != 0 && swfPath.empty()) {
             swfPath = arg;
         }
@@ -46,11 +50,13 @@ int main(int argc, char* argv[]) {
     options.sourceSwf = swfPath;
     options.sourceIpa = ipaPath;
     options.outputDir = outDir;
+    options.targetPlatform = platform;
 
     std::cout << "========================================\n"
               << " BTD4 Asset Importer\n"
               << " Source: " << swfPath << "\n"
               << " Output: " << outDir << "\n"
+              << " Platform: " << platform << "\n"
               << "========================================\n";
 
     auto logCallback = [](const std::string& msg) {
@@ -79,6 +85,11 @@ int main(int argc, char* argv[]) {
 
     std::cout << "\n========================================\n"
               << " Import Summary:\n"
+              << " Target platform: " << report.targetPlatform << "\n"
+              << " Source family: " << report.sourceFamily << "\n"
+              << " BTD4 detected: " << (report.btd4Detected ? "yes" : "no") << "\n"
+              << " IPA detected: " << (report.ipaDetected ? "yes" : "no") << "\n"
+              << " IPA archive detected: " << (report.ipaArchiveDetected ? "yes" : "no") << "\n"
               << " Textures extracted: " << report.texturesExtracted << "\n"
               << " Audio cues extracted: " << report.soundsExtracted << "\n"
               << " Symbols mapped: " << report.symbolsMapped << "\n"
