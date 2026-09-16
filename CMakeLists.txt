@@ -228,6 +228,8 @@ if(NOT TARGET_PSP)
         tools/swf/SwfParser.cpp
         tools/asset_converter/AssetConverter.hpp
         tools/asset_converter/AssetConverter.cpp
+        tools/archive/ZipArchive.hpp
+        tools/archive/ZipArchive.cpp
         tools/asset_importer/AssetImporter.hpp
         tools/asset_importer/AssetImporter.cpp
     )
@@ -261,7 +263,8 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
         imgui
     )
     if(TARGET SDL2::SDL2)
-        target_link_libraries(btd4_builder PRIVATE SDL2::SDL2)
+        target_link_libraries(btd4_builder PRIVATE SDL2::SDL2
+        )
     elseif(SDL2_LIBRARIES)
         target_link_libraries(btd4_builder PRIVATE ${SDL2_LIBRARIES})
     endif()
