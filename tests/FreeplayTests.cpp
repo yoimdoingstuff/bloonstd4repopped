@@ -8,11 +8,10 @@ namespace {
 Map testMap() {
     Map map;
     map.setName("freeplay-test");
-    map.setLogicalSize(800, 600);
     Path path;
-    path.addWaypoint({0.0f, 0.0f});
-    path.addWaypoint({400.0f, 0.0f});
-    path.addWaypoint({800.0f, 0.0f});
+    path.addWaypoint(0.0f, 0.0f);
+    path.addWaypoint(400.0f, 0.0f);
+    path.addWaypoint(800.0f, 0.0f);
     map.paths().push_back(path);
     return map;
 }
