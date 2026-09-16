@@ -16,32 +16,21 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    // Keep the portable builder self-contained. The source assets and generated
-    // game_data directory live beside the executable instead of depending on
-    // whatever directory the OS happened to use as the process working folder.
     if (char* basePath = SDL_GetBasePath()) {
         std::error_code pathError;
         std::filesystem::current_path(basePath, pathError);
         SDL_free(basePath);
         if (pathError) {
-            std::cerr << "Warning: Could not set builder working directory: "
-                      << pathError.message() << std::endl;
+            std::cerr << "Warning: Could not set builder working directory: " << pathError.message() << std::endl;
         }
     }
 
     int windowWidth = 1024;
     int windowHeight = 640;
-
     SDL_WindowFlags windowFlags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Window* window = SDL_CreateWindow(
-        "Bloons TD 4 Repopped - Game Builder",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        windowWidth,
-        windowHeight,
-        windowFlags
-    );
-
+        "Bloons TD 4 Repopped - Game Builder", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        windowWidth, windowHeight, windowFlags);
     if (!window) {
         std::cerr << "Failed to create window: " << SDL_GetError() << std::endl;
         SDL_Quit();
@@ -49,9 +38,7 @@ int main(int argc, char* argv[]) {
     }
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-    if (!renderer) {
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
-    }
+    if (!renderer) renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
     if (!renderer) {
         std::cerr << "Error creating SDL_Renderer: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
@@ -59,13 +46,16 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    // SDL sends OS file drops as SDL_DROPFILE events. Enable them explicitly so
+    // Windows Explorer, Linux file managers, and other SDL-supported desktops
+    // can hand source files straight to the builder.
+    SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
     ImGui::StyleColorsDark();
-
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
 
@@ -77,21 +67,22 @@ int main(int argc, char* argv[]) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT) {
-                running = false;
-            }
+            if (event.type == SDL_QUIT) running = false;
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
-                event.window.windowID == SDL_GetWindowID(window)) {
-                running = false;
+                event.window.windowID == SDL_GetWindowID(window)) running = false;
+
+            if (event.type == SDL_DROPFILE) {
+                if (event.drop.file) {
+                    builderUI.addSourceFile(event.drop.file);
+                    SDL_free(event.drop.file);
+                }
             }
         }
 
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
-
         builderUI.render();
-
         ImGui::Render();
         SDL_SetRenderDrawColor(renderer, 30, 30, 35, 255);
         SDL_RenderClear(renderer);
@@ -102,10 +93,8 @@ int main(int argc, char* argv[]) {
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
-
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-
     return 0;
 }
