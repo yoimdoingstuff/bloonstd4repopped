@@ -20,16 +20,20 @@ bool WindowsPlatform::isAvailable() const {
 }
 BuildResult WindowsPlatform::configure(){BuildResult r;const fs::path root=sourceRoot();if(root.empty()){r.message="Could not locate the BTD4 Repopped source root (CMakeLists.txt).";return r;}if(!isAvailable()){r.message="Windows toolchain (MSVC or MinGW) not detected.";return r;}std::error_code ec;fs::create_directories(buildRoot(),ec);if(ec){r.message="Could not create Windows build directory: "+ec.message();return r;}const fs::path cmakeDir=buildRoot()/"cmake";return runCommand("cmake -S "+quote(root)+" -B "+quote(cmakeDir)+" -DBUILD_GAME=ON -DBUILD_BUILDER=OFF -DBUILD_TESTS=OFF","CMake configuration");}
 BuildResult WindowsPlatform::build(){const fs::path root=sourceRoot();const fs::path cmakeDir=buildRoot()/"cmake";if(root.empty()||!fs::exists(cmakeDir)){BuildResult r;r.message="Windows build is not configured. Run configuration first.";return r;}return runCommand("cmake --build "+quote(cmakeDir)+" --config Release --parallel","Game compilation");}
-BuildResult WindowsPlatform::package(){BuildResult r;const fs::path root=sourceRoot();const fs::path cmakeDir=buildRoot()/"cmake";const fs::path executable=cmakeDir/"Release"/"btd4_game.exe";const fs::path packageDir=buildRoot()/"Playable";const fs::path dataRoot=root/"game_data"/"Windows";if(root.empty()||!fs::exists(executable)){r.message="Windows executable was not produced: "+executable.string();return r;}std::error_code ec;fs::remove_all(packageDir,ec);fs::create_directories(packageDir,ec);if(ec){r.message="Could not create Windows package directory: "+ec.message();return r;}fs::copy_file(executable,packageDir/executable.filename(),fs::copy_options::overwrite_existing,ec);if(ec){r.message="Could not copy Windows executable: "+ec.message();return r;}
+BuildResult WindowsPlatform::package(const std::string& gameEdition){BuildResult r;const fs::path root=sourceRoot();const fs::path cmakeDir=buildRoot()/"cmake";const fs::path executable=cmakeDir/"Release"/"btd4_game.exe";const fs::path packageDir=buildRoot()/"Playable";const fs::path dataRoot=root/"game_data"/"Windows";if(root.empty()||!fs::exists(executable)){r.message="Windows executable was not produced: "+executable.string();return r;}std::error_code ec;fs::remove_all(packageDir,ec);fs::create_directories(packageDir,ec);if(ec){r.message="Could not create Windows package directory: "+ec.message();return r;}fs::copy_file(executable,packageDir/executable.filename(),fs::copy_options::overwrite_existing,ec);if(ec){r.message="Could not copy Windows executable: "+ec.message();return r;}
     const fs::path packageData=packageDir/"game_data";
     fs::create_directories(packageData,ec);
-    if(fs::exists(dataRoot,ec)){
-        fs::path selected=dataRoot;
-        for(const auto& entry:fs::directory_iterator(dataRoot,ec)){if(ec)break;if(entry.is_directory(ec)&&fs::exists(entry.path()/"manifest.json",ec)){selected=entry.path();break;}}
-        if(fs::exists(selected/"manifest.json",ec)) fs::copy(selected,packageData,fs::copy_options::recursive|fs::copy_options::overwrite_existing,ec);
-        if(ec){r.message="Could not copy imported game data: "+ec.message();return r;}
-        r.outputLogs.push_back("[Windows] Packaged selected edition data from "+selected.string());
-    }else r.outputLogs.push_back("[Windows Warning] No imported game_data/Windows directory was found; packaged game will use runtime fallbacks.");
+    if(!gameEdition.empty()&&fs::exists(dataRoot/gameEdition/"manifest.json",ec)){
+        fs::copy(dataRoot/gameEdition,packageData,fs::copy_options::recursive|fs::copy_options::overwrite_existing,ec);
+        if(ec){r.message="Could not copy selected edition data: "+ec.message();return r;}
+        r.outputLogs.push_back("[Windows] Packaged selected edition: "+gameEdition);
+    }else if(fs::exists(dataRoot,ec)){
+        r.message=gameEdition.empty()?"No game edition was selected for packaging.":"Selected game edition has no imported manifest: "+gameEdition;
+        r.outputLogs.push_back("[Windows Error] "+r.message);
+        return r;
+    }else{
+        r.outputLogs.push_back("[Windows Warning] No imported game_data/Windows directory was found; packaged game will use runtime fallbacks.");
+    }
     const fs::path possibleDlls[]={cmakeDir/"SDL2.dll",cmakeDir/"Release"/"SDL2.dll"};
     for(const auto& dll:possibleDlls)if(fs::exists(dll,ec)){fs::copy_file(dll,packageDir/dll.filename(),fs::copy_options::overwrite_existing,ec);if(!ec){r.outputLogs.push_back("[Windows] Packaged "+dll.filename().string());break;}}
     if(!fs::exists(packageData/"manifest.json",ec)) r.outputLogs.push_back("[Windows] No imported manifest was packaged; runtime fallback assets remain enabled.");
