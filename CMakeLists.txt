@@ -276,6 +276,7 @@ if(BUILD_TESTS AND NOT TARGET_PSP)
         tests/AssetImporterTests.cpp
         tests/RenderingTests.cpp
         tests/FreeplayTests.cpp
+        tests/UpgradeTests.cpp
         tests/TestRunner.hpp
         builder/project/Project.hpp
         builder/project/Project.cpp
