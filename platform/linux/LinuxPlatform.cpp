@@ -84,12 +84,12 @@ BuildResult LinuxPlatform::build() {
     return runCommand("cmake --build " + quote(cmakeDir) + " --config Release --parallel", "Game compilation");
 }
 
-BuildResult LinuxPlatform::package() {
+BuildResult LinuxPlatform::package(const std::string& gameEdition) {
     BuildResult result;
     const fs::path root = findSourceRoot();
     const fs::path executable = buildRoot() / "cmake" / "btd4_game";
     const fs::path packageDir = buildRoot() / "Playable";
-    const fs::path dataSource = root / "game_data" / "Linux";
+    const fs::path dataRoot = root / "game_data" / "Linux";
 
     if (root.empty() || !fs::exists(executable)) {
         result.message = "Linux executable was not produced: " + executable.string();
@@ -110,13 +110,22 @@ BuildResult LinuxPlatform::package() {
         return result;
     }
 
-    if (fs::exists(dataSource, ec)) {
-        fs::copy(dataSource, packageDir / "game_data",
+    const fs::path packageData = packageDir / "game_data";
+    fs::create_directories(packageData, ec);
+    if (!gameEdition.empty() && fs::exists(dataRoot / gameEdition / "manifest.json", ec)) {
+        fs::copy(dataRoot / gameEdition, packageData,
                  fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
         if (ec) {
-            result.message = "Could not copy imported game data: " + ec.message();
+            result.message = "Could not copy selected edition data: " + ec.message();
             return result;
         }
+        result.outputLogs.push_back("[Linux] Packaged selected edition: " + gameEdition);
+    } else if (fs::exists(dataRoot, ec)) {
+        result.message = gameEdition.empty()
+            ? "No game edition was selected for packaging."
+            : "Selected game edition has no imported manifest: " + gameEdition;
+        result.outputLogs.push_back("[Linux Error] " + result.message);
+        return result;
     } else {
         result.outputLogs.push_back("[Linux Warning] No imported game_data/Linux directory was found; packaged game will use runtime fallbacks.");
     }
@@ -128,7 +137,7 @@ BuildResult LinuxPlatform::package() {
     result.success = true;
     result.message = "Playable Linux build packaged at " + packageDir.string();
     result.outputLogs.push_back("[Linux] Executable: " + (packageDir / "btd4_game").string());
-    result.outputLogs.push_back("[Linux] Imported data: " + (packageDir / "game_data").string());
+    result.outputLogs.push_back("[Linux] Imported data: " + packageData.string());
     return result;
 }
 
