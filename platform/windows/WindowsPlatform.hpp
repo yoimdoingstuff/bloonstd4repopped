@@ -12,7 +12,7 @@ public:
     bool isAvailable() const override;
     BuildResult configure() override;
     BuildResult build() override;
-    BuildResult package() override;
+    BuildResult package(const std::string& gameEdition = {}) override;
 };
 
 } // namespace btd4
