@@ -34,7 +34,9 @@ bool stringValue(const std::string& object, const char* key, std::string& out) {
     const std::string marker = std::string("\"") + key + "\"";
     const auto keyPos = object.find(marker);
     if (keyPos == std::string::npos) return false;
-    const auto firstQuote = object.find('"', object.find(':', keyPos + marker.size()) + 1);
+    const auto colon = object.find(':', keyPos + marker.size());
+    if (colon == std::string::npos) return false;
+    const auto firstQuote = object.find('"', colon + 1);
     if (firstQuote == std::string::npos) return false;
     const auto secondQuote = object.find('"', firstQuote + 1);
     if (secondQuote == std::string::npos) return false;
@@ -98,11 +100,19 @@ bool parseUpgrades(const std::string& json, UpgradeSet& output, std::string& err
             if (!quoted && c == '{') ++depth;
             if (!quoted && c == '}') --depth;
         }
-        if (depth != 0) { error = "Unterminated upgrade object"; return false; }
+        if (depth != 0) {
+            error = "Unterminated upgrade object";
+            return false;
+        }
+
         const std::string object = json.substr(pos, end - pos);
         std::string id, displayName, towerName;
         double path = 0, tier = 0, cost = 0, rangeAdd = 0, cooldown = 1, damage = 0,
                pierce = 0, speed = 1, explosion = 0;
+
+        // The top-level document object contains nested upgrade objects. When the
+        // current object is not itself an upgrade, advance only one character so
+        // those nested objects are still discovered on the next iteration.
         if (stringValue(object, "id", id) && stringValue(object, "tower", towerName)) {
             UpgradeDefinition u;
             u.id = trim(id);
@@ -129,9 +139,12 @@ bool parseUpgrades(const std::string& json, UpgradeSet& output, std::string& err
             u.effect.projectileSpeedMultiplier = static_cast<float>(speed);
             u.effect.explosionRadiusAdd = static_cast<float>(explosion);
             parsed.upgrades.push_back(std::move(u));
+            pos = end;
+        } else {
+            pos += 1;
         }
-        pos = end;
     }
+
     if (!validateUpgrades(parsed, error)) return false;
     output = std::move(parsed);
     return true;
