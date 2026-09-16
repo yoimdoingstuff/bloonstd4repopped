@@ -20,6 +20,8 @@ std::string executableDirectory() {
 }
 
 int main(int argc, char* argv[]) {
+    (void)argc;
+    (void)argv;
     BTD4_LOG_INFO("Starting Bloons TD 4 Repopped...");
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
@@ -27,16 +29,15 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Packaged builds keep game_data beside the executable. Use the executable
+    // directory as the working directory so double-clicking the game works too.
     const std::string baseDir = executableDirectory();
     std::error_code ec;
     std::filesystem::current_path(baseDir, ec);
-    if (ec) {
-        BTD4_LOG_WARN("Could not switch to executable directory: " + ec.message());
-    }
+    if (ec) BTD4_LOG_WARN("Could not switch to executable directory: " + ec.message());
 
     int windowWidth = 960;
     int windowHeight = 544;
-
     SDL_Window* window = SDL_CreateWindow(
         "Bloons TD 4 Repopped",
         SDL_WINDOWPOS_CENTERED,
@@ -62,18 +63,6 @@ int main(int argc, char* argv[]) {
 
     btd4::SDLInput input(btd4::FrontendProfile::FlashDesktop);
     btd4::Engine engine(renderer, input, btd4::FrontendProfile::FlashDesktop);
-
-    // Packaged builds keep game_data beside the executable. A command-line
-    // directory is supported for development and builder-generated profiles.
-    if (argc > 1 && argv[1] && argv[1][0] != '\0') {
-        std::filesystem::path requested(argv[1]);
-        if (requested.is_relative()) requested = std::filesystem::path(baseDir) / requested;
-        std::filesystem::current_path(requested, ec);
-        if (ec) {
-            BTD4_LOG_WARN("Could not use requested data directory: " + ec.message());
-            std::filesystem::current_path(baseDir, ec);
-        }
-    }
 
     if (!engine.initialize(windowWidth, windowHeight)) {
         std::cerr << "Failed to initialize engine" << std::endl;
