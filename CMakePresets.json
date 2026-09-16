@@ -2,7 +2,7 @@
   "version": 3,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 20,
+    "minor": 21,
     "patch": 0
   },
   "configurePresets": [
@@ -45,7 +45,7 @@
     {
       "name": "windows-debug",
       "displayName": "Windows Debug",
-      "description": "Debug build with symbols for Windows desktop",
+      "description": "Debug build for Windows desktop",
       "binaryDir": "${sourceDir}/build/windows-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
