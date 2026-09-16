@@ -1,10 +1,12 @@
 #include "AssetImporter.hpp"
 #include "../swf/SwfParser.hpp"
 #include "../asset_converter/AssetConverter.hpp"
+#include "../archive/ZipArchive.hpp"
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <sstream>
 #include <iostream>
 
@@ -36,7 +38,14 @@ bool looksLikeIpaArchive(const std::string& path) {
     file.read(reinterpret_cast<char*>(signature), sizeof(signature));
     if (file.gcount() != 4) return false;
     return signature[0] == 'P' && signature[1] == 'K' &&
-           signature[2] == 0x03 && signature[3] == 0x04;
+           (signature[2] == 0x03 || signature[2] == 0x05 || signature[2] == 0x07) &&
+           (signature[3] == 0x04 || signature[3] == 0x06 || signature[3] == 0x08);
+}
+
+void addFeature(ImportReport& report, const std::string& feature) {
+    if (std::find(report.detectedFeatures.begin(), report.detectedFeatures.end(), feature) == report.detectedFeatures.end()) {
+        report.detectedFeatures.push_back(feature);
+    }
 }
 
 void inspectIpa(const std::string& path, ImportReport& report,
@@ -51,35 +60,64 @@ void inspectIpa(const std::string& path, ImportReport& report,
         return;
     }
 
-    report.detectedFeatures.push_back("IPA archive");
+    addFeature(report, "IPA archive");
     emitLog("[Importer] IPA archive detected.");
 
-    // Lightweight resource discovery deliberately avoids depending on a second
-    // ZIP library. This scans archive bytes for common path markers while the
-    // full IPA extraction step remains a separate importer task.
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
-    if (!file) return;
-    const std::streamoff size = file.tellg();
-    if (size <= 0 || size > static_cast<std::streamoff>(256 * 1024 * 1024)) {
-        report.warnings.push_back("IPA resource scan skipped because the archive is empty or exceeds the 256 MiB safety limit.");
+    ZipArchive archive;
+    std::string archiveError;
+    if (!archive.open(path, archiveError)) {
+        report.warnings.push_back("IPA archive could not be indexed: " + archiveError);
+        emitLog("[Importer Warning] " + archiveError);
         return;
     }
-    file.seekg(0, std::ios::beg);
-    std::string bytes(static_cast<size_t>(size), '\0');
-    file.read(bytes.data(), size);
-    if (!file) return;
 
-    const std::string normalized = lower(bytes);
-    if (normalized.find("info.plist") != std::string::npos) {
-        report.detectedFeatures.push_back("Info.plist");
-        emitLog("[Importer] IPA contains Info.plist resources.");
+    size_t payloadBundles = 0;
+    size_t plistFiles = 0;
+    for (const auto& entry : archive.entries()) {
+        const std::string normalized = lower(entry.name);
+        if (normalized.find("payload/") == 0) addFeature(report, "Payload bundle");
+        if (normalized.size() >= 9 && normalized.rfind("info.plist") == normalized.size() - 9) {
+            ++plistFiles;
+            addFeature(report, "Info.plist");
+        }
+        if (normalized.find(".app/") != std::string::npos &&
+            normalized.find("/documents/") != std::string::npos) {
+            addFeature(report, "App document resources");
+        }
+        if (normalized.find("beekeeper") != std::string::npos) {
+            addFeature(report, "Beekeeper candidate");
+        }
+        if (normalized.find("bloon") != std::string::npos || normalized.find("tower") != std::string::npos) {
+            addFeature(report, "BTD gameplay resource candidates");
+        }
+        if (normalized.find("payload/") == 0 && normalized.find(".app/") != std::string::npos) {
+            ++payloadBundles;
+        }
     }
-    if (normalized.find("beekeeper") != std::string::npos) {
-        report.detectedFeatures.push_back("Beekeeper candidate");
-        emitLog("[Importer] Found Beekeeper-related resource names in IPA index data.");
-    }
-    if (normalized.find("payload/") != std::string::npos) {
-        report.detectedFeatures.push_back("Payload bundle");
+
+    emitLog("[Importer] IPA index parsed: " + std::to_string(archive.entries().size()) +
+            " entries, " + std::to_string(payloadBundles) + " app resources, " +
+            std::to_string(plistFiles) + " plist entries.");
+
+    // Keep the raw plist conversion out of the runtime. For now we expose the
+    // selected manifest/resource candidates and leave full IPA-to-internal
+    // conversion to the dedicated importer milestone.
+    if (!archive.contains("Info.plist")) {
+        for (const auto& entry : archive.entries()) {
+            if (lower(entry.name).rfind("payload/", 0) == 0 &&
+                lower(entry.name).size() >= 9 &&
+                lower(entry.name).rfind("info.plist") == lower(entry.name).size() - 9) {
+                std::vector<uint8_t> plistData;
+                if (archive.readEntry(entry.name, plistData, archiveError)) {
+                    addFeature(report, "Readable app Info.plist");
+                    emitLog("[Importer] Read app Info.plist: " + entry.name +
+                            " (" + std::to_string(plistData.size()) + " bytes).");
+                } else {
+                    report.warnings.push_back("Could not read app Info.plist: " + archiveError);
+                }
+                break;
+            }
+        }
     }
 }
 
@@ -183,13 +221,13 @@ ImportReport AssetImporter::run(const ImportOptions& options,
     inspectIpa(options.sourceIpa, report, emitLog);
 
     if (options.targetPlatform == "PSP") {
-        report.detectedFeatures.push_back("PSP asset profile");
+        addFeature(report, "PSP asset profile");
         emitLog("[Importer] PSP profile enabled: preserving source textures while keeping the runtime at 480x272 logical coordinates.");
     } else if (options.targetPlatform == "Windows" || options.targetPlatform == "Linux") {
-        report.detectedFeatures.push_back("Desktop asset profile");
+        addFeature(report, "Desktop asset profile");
         emitLog("[Importer] Desktop profile enabled: using source-resolution assets with logical-resolution scaling in the runtime.");
     } else if (options.targetPlatform == "Xbox 360") {
-        report.detectedFeatures.push_back("Xbox 360 asset profile");
+        addFeature(report, "Xbox 360 asset profile");
         emitLog("[Importer] Xbox 360 profile selected; platform packaging remains dependent on the available backend/toolchain.");
     }
 
