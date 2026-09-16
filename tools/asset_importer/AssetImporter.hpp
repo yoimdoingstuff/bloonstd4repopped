@@ -11,6 +11,7 @@ struct ImportOptions {
     std::string sourceSwf;
     std::string sourceIpa;
     std::string outputDir{"game_data"};
+    std::string targetPlatform{"auto"};
     bool extractTextures{true};
     bool extractAudio{true};
     bool generateManifest{true};
@@ -24,6 +25,12 @@ struct ImportReport {
     uint32_t texturesExtracted{0};
     uint32_t soundsExtracted{0};
     uint32_t symbolsMapped{0};
+    bool btd4Detected{false};
+    bool ipaDetected{false};
+    bool ipaArchiveDetected{false};
+    std::string sourceFamily{"Unknown"};
+    std::string targetPlatform{"auto"};
+    std::vector<std::string> detectedFeatures;
     std::string manifestPath;
     std::vector<std::string> warnings;
     std::vector<std::string> logMessages;
