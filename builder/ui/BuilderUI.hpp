@@ -24,7 +24,7 @@ private:
     std::vector<std::string> m_logs;
     bool m_autoScrollLogs{true};
 
-    // Buffer for text inputs
+    char m_sourceDirectoryBuffer[512]{"assets"};
     char m_swfPathBuffer[512]{""};
     char m_ipaPathBuffer[512]{""};
 
@@ -34,6 +34,7 @@ private:
     void renderActionButtons();
     void renderLogsSection();
 
+    void discoverAssets();
     void triggerBuild();
     void triggerImport();
 };
