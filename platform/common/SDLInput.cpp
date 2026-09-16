@@ -42,6 +42,9 @@ void SDLInput::mapKey(SDL_Keycode key, SDL_Scancode scancode, bool isDown) {
         case SDLK_PAUSE:
             action = InputAction::Pause;
             break;
+        case SDLK_r:
+            action = InputAction::StartRound;
+            break;
         case SDLK_u:
             action = InputAction::Upgrade;
             break;
