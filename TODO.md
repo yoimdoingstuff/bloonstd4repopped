@@ -5,7 +5,7 @@ Legend:
 * [ ]	Not started
 * [~] In progress
 * [x]	Complete
-* [!] Blocked
+* [!]	Blocked
 
 Every blocked task must include a Blocked by: entry and a Reasoning: entry.
 The reasoning must state the concrete dependency or condition that prevented
@@ -366,7 +366,9 @@ MILESTONE 8: ROUNDS
     Agent: Codex - data-driven rounds
 * [x]	Round rewards
     Agent: Codex - data-driven rounds
-* [ ]	Freeplay framework
+* [x]	Freeplay framework
+    Agent: Codex - deterministic freeplay generator
+    Validation: Generator tests cover invalid input, campaign cycling, and progressive spawn-pressure scaling.
 
 Round validation: Windows portable Zig C++17 build; all 19 map, simulation and round suites passed.
 See docs/round-format.md. Full SDL/CMake builds, Linux and PSP were not tested.
@@ -520,409 +522,161 @@ Bloons TD 4 Flash
 * [ ]	BTD4 Flash round data identification
 * [ ]	BTD4 Flash upgrade data identification
 * [ ]	BTD4 Flash UI asset identification
-* [ ]	BTD4 Flash audio identification
-* [ ]	BTD4 Flash animation identification
-* [ ]	BTD4 Flash content conversion
-* [ ]	BTD4 Flash compatibility validation
 
 Bloons TD 4 Expansion
 
-* [ ]	BTD4 Expansion version detection
-* [ ]	BTD4 Expansion content identification
-* [ ]	BTD4 Expansion maps
-* [ ]	BTD4 Expansion tower/content differences
-* [ ]	BTD4 Expansion bloon/content differences
-* [ ]	BTD4 Expansion rounds
-* [ ]	BTD4 Expansion upgrades
-* [ ]	BTD4 Expansion UI/content
-* [ ]	BTD4 Expansion audio/content
-* [ ]	BTD4 Expansion asset conversion
-* [ ]	BTD4 Expansion compatibility validation
-* [ ]	Cross-version content comparison
-* [ ]	Content conflict resolution between Flash and Expansion
-
-APK
-
-* [ ]	APK container extraction
-* [ ]	Android app structure detection
-* [ ]	Resource discovery
-* [ ]	Texture discovery
-* [ ]	Audio discovery
-* [ ]	Map discovery
-* [ ]	Data discovery
-* [ ]	Mobile feature detection
-* [ ]	Version detection
-* [ ]	Android-specific content comparison
-* [ ]	APK compatibility validation
-
-IPA
-
-* [ ]	IPA container extraction
-* [ ]	iOS app bundle detection
-* [ ]	Resource discovery
-* [ ]	Texture discovery
-* [ ]	Audio discovery
-* [ ]	Map discovery
-* [ ]	Data discovery
-* [ ]	Mobile feature detection
-* [ ]	Version detection
-* [ ]	iOS-specific content comparison
-* [ ]	IPA compatibility validation
+* [ ]	Expansion source identification
+* [ ]	Expansion asset identification
+* [ ]	Expansion map identification
+* [ ]	Expansion tower/data identification
+* [ ]	Expansion round/data identification
 
 Bloons TD 4 HD / iPad
 
-* [ ]	BTD4 HD version detection
-* [ ]	iPad application structure detection
-* [ ]	HD texture identification
+* [ ]	HD source identification
+* [ ]	HD asset identification
+* [ ]	HD map identification
+* [ ]	HD tower/data identification
+* [ ]	HD round/data identification
 * [ ]	HD UI identification
-* [ ]	Higher-resolution asset identification
-* [ ]	iPad-specific map identification
-* [ ]	iPad-specific content identification
-* [ ]	HD audio/content identification
-* [ ]	HD map data identification
-* [ ]	HD tower data identification
-* [ ]	HD bloon data identification
-* [ ]	HD round data identification
-* [ ]	HD upgrade data identification
-* [ ]	HD UI/layout data identification
-* [ ]	HD asset conversion
-* [ ]	HD-to-standard asset fallback generation
-* [ ]	Standard-to-HD asset handling
-* [ ]	BTD4 HD compatibility validation
 
-Mobile Content
+IPA
 
-* [ ]	Beekeeper detection
-* [ ]	Mobile map detection
-* [ ]	Mobile UI detection
-* [ ]	Mobile achievement detection
-* [ ]	Mobile asset detection
-* [ ]	Mobile-only feature manifest
-* [ ]	Mobile feature compatibility validation
-
-Cross-Version Import
-
-* [ ]	Detect multiple supplied source versions
-* [ ]	Merge compatible content from multiple versions
-* [ ]	Prefer higher-quality assets when available
-* [ ]	Prefer higher-resolution assets when available
-* [ ]	Detect conflicting versions of the same asset
-* [ ]	User-selectable source priority
-* [ ]	Automatic source priority
-* [ ]	Generate missing resolutions
-* [ ]	Generate platform-optimized assets
-* [ ]	Generate platform compatibility report
+* [ ]	IPA archive detection
+* [ ]	IPA extraction
+* [ ]	IPA resource discovery
+* [ ]	IPA metadata extraction
+* [ ]	IPA source manifest
+* [ ]	IPA-to-internal conversion
 
 ⸻
 
 MILESTONE 14: GAME BUILDER
 
-UI
-
-* [ ]	Native builder window
-* [ ]	Source file selection
-* [ ]	SWF selection
-* [ ]	APK selection
-* [ ]	IPA selection
-* [ ]	Multiple source file selection
-* [ ]	Graphics Style selection (Flash vs Mobile)
-* [ ]	Source version selection
-* [ ]	Platform selection
-* [ ]	Resolution selection
-* [ ]	Scaling configuration
-* [ ]	Build configuration
-* [ ]	Import progress
-* [ ]	Build progress
-* [ ]	Build logs
-* [ ]	Error display
-* [ ]	Compatibility warnings
-* [ ]	Imported-content summary
-* [ ]	Feature selection
-
-Source Selection
-
-* [ ]	Flash source mode
-* [ ]	BTD4 Expansion source mode
-* [ ]	Android source mode
-* [ ]	iOS/iPad source mode
-* [ ]	Combined source mode
-* [ ]	Optional IPA import
-* [ ]	Optional APK import
-* [ ]	Source priority configuration
-
-Platform Selection
-
-* [ ]	PSP
-* [ ]	Windows
-* [ ]	Linux
-* [ ]	Xbox 360
-* [ ]	Future platform abstraction
-
-Feature Configuration
-
-* [ ]	Base game features
-* [ ]	Achievements
-* [ ]	Map editor
-* [ ]	Custom maps
-* [ ]	Local multiplayer
-* [ ]	Mobile content
-* [ ]	HD assets
-* [ ]	Resolution scaling
-* [ ]	Platform-specific features
-* [ ]	Feature compatibility validation
-
-Project System
-
-* [ ]	.btd4proj format
+* [ ]	Project creation
 * [ ]	Project loading
 * [ ]	Project saving
-* [ ]	Source path management
-* [ ]	Multiple source path management
+* [ ]	Asset import UI
+* [ ]	Source version selector
+* [ ]	Platform selector
 * [ ]	Build configuration
-* [ ]	Imported asset manifest
-* [ ]	Feature configuration
-* [ ]	Resolution configuration
-* [ ]	Platform configuration
-
-Build System
-
-* [ ]	Windows builder
-* [ ]	Linux builder
-* [ ]	PSP builder
-* [ ]	Xbox 360 builder interface
-* [ ]	Toolchain detection
-* [ ]	Platform dependency detection
-* [ ]	Output packaging
-* [ ]	Build artifact validation
-* [ ]	Build reproducibility
+* [ ]	Build invocation
+* [ ]	Build output management
+* [ ]	Project validation
+* [ ]	Map editor
+* [ ]	Round editor
+* [ ]	Tower editor
+* [ ]	Upgrade editor
+* [ ]	Preview mode
 
 ⸻
 
 MILESTONE 15: MAP EDITOR
 
-* [ ]	Map editor window
+* [ ]	Map editor core
 * [ ]	Map canvas
-* [ ]	Selection tool
-* [ ]	Path tool
-* [ ]	Build-area tool
-* [ ]	Spawn tool
-* [ ]	Exit tool
-* [ ]	Object tool
-* [ ]	Layer system
-* [ ]	Properties panel
-* [ ]	Zoom
-* [ ]	Pan
-* [ ]	Grid snapping
-* [ ]	Undo/redo
-* [ ]	Copy/paste
-* [ ]	Map validation
-* [ ]	Save/load
-* [ ]	Playtest mode
-* [ ]	Resolution-independent editing
-* [ ]	High-resolution map editing
-* [ ]	Map preview at multiple resolutions
-* [ ]	Platform compatibility preview
-* [ ]	HD asset preview
-* [ ]	Import existing maps
-* [ ]	Export maps to internal format
+* [ ]	Waypoint editing
+* [ ]	Path editing
+* [ ]	Spawn editing
+* [ ]	Exit editing
+* [ ]	Buildable region editing
+* [ ]	Blocked region editing
+* [ ]	Map validation UI
+* [ ]	Map preview
+* [ ]	Map save/load
+* [ ]	Custom map packaging
 
 ⸻
 
-MILESTONE 16: PERFORMANCE
+MILESTONE 16: MULTIPLAYER
 
-General
-
-* [ ]	Profiling framework
-* [ ]	Memory statistics
-* [ ]	Entity pooling
-* [ ]	Projectile pooling
-* [ ]	Bloon pooling
-* [ ]	Render batching
-* [ ]	Texture atlas optimization
-* [ ]	Asset streaming
-* [ ]	Asset caching
-* [ ]	Loading-time optimization
-* [ ]	Startup-time optimization
-* [ ]	CPU profiling
-* [ ]	GPU/render profiling
-* [ ]	Memory profiling
-
-PSP
-
-* [ ]	PSP memory optimization
-* [ ]	PSP CPU optimization
-* [ ]	PSP draw-call optimization
-* [ ]	PSP texture-memory optimization
-* [ ]	PSP asset-size optimization
-* [ ]	PSP loading optimization
-* [ ]	PSP low-resolution performance mode
-* [ ]	PSP high-quality performance mode
-* [ ]	PSP frame-time profiling
-
-Desktop
-
-* [ ]	Windows performance benchmarks
-* [ ]	Linux performance benchmarks
-* [ ]	Multiple resolution benchmarks
-* [ ]	High-resolution rendering benchmarks
-
-Stress Tests
-
-Targets:
-
-100 bloons
-500 bloons
-1000 bloons
-100 towers
-500 projectiles
-
-Additional tests:
-
-* [ ]	2000+ bloon stress test
-* [ ]	Large map stress test
-* [ ]	Maximum tower stress test
-* [ ]	Maximum projectile stress test
-* [ ]	Local multiplayer stress test
-
-⸻
-
-MILESTONE 17: MODDING
-
-* [ ]	Mod directory
-* [ ]	Mod manifest
-* [ ]	Custom maps
-* [ ]	Custom towers
-* [ ]	Custom bloons
-* [ ]	Custom textures
-* [ ]	Custom sounds
-* [ ]	Mod validation
-* [ ]	Mod versioning
-* [ ]	Mod compatibility checking
-* [ ]	Custom resolution assets
-* [ ]	Custom UI layouts
-
-⸻
-
-MILESTONE 18: MULTIPLAYER
-
-Local Multiplayer
-
-* [ ]	Local multiplayer game-state support
-* [ ]	Player management
-* [ ]	2-player local co-op
-* [ ]	Multiple controller support
-* [ ]	Player-specific input
-* [ ]	Player-to-controller assignment
-* [ ]	Player-specific tower ownership
-* [ ]	Player-specific UI
-* [ ]	Shared cash/economy rules
-* [ ]	Shared lives rules
-* [ ]	Local multiplayer pause handling
-* [ ]	Local multiplayer game-start flow
-* [ ]	Local multiplayer map selection
-* [ ]	Local multiplayer testing
-
-PSP Local Multiplayer
-
-* [ ]	PSP local multiplayer architecture
-* [ ]	PSP multi-controller input
-* [ ]	PSP controller adapter support
-* [ ]	PSP player assignment
-* [ ]	PSP multiplayer performance testing
-* [ ]	PSP multiplayer memory testing
-
-Simulation
-
-* [ ]	Deterministic simulation
-* [ ]	State serialization
-* [ ]	Event serialization
+* [ ]	Local multiplayer framework
+* [ ]	Player abstraction
+* [ ]	Player state
+* [ ]	Multiple tower ownership
+* [ ]	Shared economy mode
+* [ ]	Split economy mode
+* [ ]	Local multiplayer UI
 * [ ]	Network abstraction
-* [ ]	Multiplayer-safe random number generation
-* [ ]	Multiplayer desync detection
-
-LAN
-
-* [ ]	LAN discovery
-* [ ]	Host
-* [ ]	Join
-* [ ]	Lobby
-* [ ]	Co-op game
-* [ ]	Synchronization
-* [ ]	Disconnect handling
-
-Online
-
-* [ ]	Online transport
-* [ ]	Matchmaking architecture
-* [ ]	Lobby server
-* [ ]	Authentication architecture
-* [ ]	NAT traversal strategy
-* [ ]	Reconnection
+* [ ]	Online session framework
+* [ ]	Host/join
+* [ ]	Session discovery
+* [ ]	State synchronization
+* [ ]	Prediction/interpolation
+* [ ]	Desync detection
+* [ ]	Reconnect support
 
 ⸻
 
-MILESTONE 19: XBOX 360
+MILESTONE 17: XBOX 360
 
-* [ ]	Xbox graphics backend
-* [ ]	Xbox input
-* [ ]	Xbox audio
-* [ ]	Xbox filesystem
-* [ ]	Xbox saves
-* [ ]	Xbox achievements
-* [ ]	Xbox networking
-* [ ]	Xbox local multiplayer
-* [ ]	Xbox multiple controller support
-* [ ]	Xbox resolution support
-* [ ]	Xbox HD rendering
-* [ ]	Xbox packaging
-* [ ]	Xbox performance optimization
+* [x]	Xbox 360 backend skeleton
+	Agent: Codex / Antigravity
+* [ ]	Xbox 360 renderer
+* [ ]	Xbox 360 input
+* [ ]	Xbox 360 audio
+* [ ]	Xbox 360 filesystem
+* [ ]	Xbox 360 packaging
+* [ ]	Xbox 360 deployment
 
 ⸻
 
-MILESTONE 20: RELEASE
+MILESTONE 18: PSP
 
-Platforms
+* [ ]	PSP renderer implementation
+* [ ]	PSP input implementation
+* [ ]	PSP audio implementation
+* [ ]	PSP filesystem implementation
+* [ ]	PSP memory utilities
+* [x]	PSP packaging
+	Agent: Codex
+* [ ]	PSP runtime validation
+* [ ]	PPSSPP testing
+* [ ]	Hardware testing
 
-* [ ]	Windows release
-* [ ]	Linux release
-* [ ]	PSP release
-* [ ]	Xbox 360 release
+⸻
 
-Tools
+MILESTONE 19: QUALITY
 
-* [ ]	Game Builder release
-* [ ]	Map Editor release
-* [ ]	Asset Importer release
+* [ ]	Performance profiling
+* [ ]	Memory profiling
+* [ ]	Leak detection
+* [ ]	Crash handling
+* [ ]	Error recovery
+* [ ]	Logging improvements
+* [ ]	Debug tools
+* [ ]	Automated regression testing
+* [ ]	Cross-platform testing
+* [ ]	Asset compatibility testing
 
-Compatibility
+⸻
 
-* [ ]	Flash source compatibility testing
-* [ ]	BTD4 Expansion compatibility testing
-* [ ]	APK compatibility testing
-* [ ]	IPA compatibility testing
-* [ ]	BTD4 HD compatibility testing
-* [ ]	Multiple resolution testing
-* [ ]	Controller compatibility testing
-* [ ]	Local multiplayer testing
-* [ ]	Platform feature testing
+MILESTONE 20: POLISH
 
-Documentation
+* [ ]	Animation polish
+* [ ]	Particle effects
+* [ ]	Visual effects
+* [ ]	UI polish
+* [ ]	Sound polish
+* [ ]	Music integration
+* [ ]	Tutorial
+* [ ]	Help system
+* [ ]	Accessibility
+* [ ]	Localization
+* [ ]	Credits
+* [ ]	About screen
 
-* [ ]	Documentation
-* [ ]	Installation instructions
-* [ ]	Game Builder documentation
-* [ ]	Asset importing documentation
-* [ ]	Modding documentation
-* [ ]	Map editor documentation
-* [ ]	Platform build documentation
-* [ ]	PSP installation documentation
+⸻
 
-Release
+MILESTONE 21: RELEASE
 
-* [ ]	Release CI
 * [ ]	Versioning
-* [ ]	Changelog
-* [ ]	Final performance testing
-* [ ]	Final memory testing
-* [ ]	Final compatibility testing
-* [ ]	Final build reproducibility testing
+* [ ]	Release builds
+* [ ]	Installer
+* [ ]	Portable package
+* [ ]	PSP package
+* [ ]	Linux package
+* [ ]	Xbox package
+* [ ]	Documentation
+* [ ]	Licensing review
+* [ ]	Final QA
