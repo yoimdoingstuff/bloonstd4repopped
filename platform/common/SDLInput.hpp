@@ -13,7 +13,7 @@ namespace btd4 {
 class SDLInput : public IInput {
 public:
     explicit SDLInput(FrontendProfile profile = FrontendProfile::FlashDesktop);
-    ~SDLInput() override = default;
+    ~SDLInput() override;
 
     void beginFrame() override;
 
