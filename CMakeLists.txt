@@ -100,6 +100,7 @@ add_library(btd4_engine STATIC
     engine/rendering/TestScreen.cpp
     engine/input/IInput.hpp
     engine/input/InputActions.hpp
+    engine/input/FrontendProfile.hpp
     engine/map/Map.hpp
     engine/map/Map.cpp
     engine/map/MapLoader.cpp
@@ -263,26 +264,11 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
         imgui
     )
     if(TARGET SDL2::SDL2)
-        target_link_libraries(btd4_builder PRIVATE SDL2::SDL2)
+        target_link_libraries(btd4_builder PRIVATE SDL2::SDL2
+        )
     elseif(SDL2_LIBRARIES)
         target_link_libraries(btd4_builder PRIVATE ${SDL2_LIBRARIES})
     endif()
-endif()
-
-# Keep Windows desktop executables self-contained with the SDL2 runtime DLL beside them.
-# TARGET_RUNTIME_DLLS resolves both fetched and system-provided DLL dependencies.
-if(WIN32 AND NOT TARGET_PSP)
-    foreach(runtime_target IN ITEMS btd4_game btd4_builder)
-        if(TARGET ${runtime_target})
-            add_custom_command(TARGET ${runtime_target} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    $<TARGET_RUNTIME_DLLS:${runtime_target}>
-                    $<TARGET_FILE_DIR:${runtime_target}>
-                COMMAND_EXPAND_LISTS
-                COMMENT "Bundling runtime DLLs for ${runtime_target}"
-            )
-        endif()
-    endforeach()
 endif()
 
 if(BUILD_TESTS AND NOT TARGET_PSP)
