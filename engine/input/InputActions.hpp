@@ -16,7 +16,8 @@ enum class InputAction : uint32_t {
     MoveLeft    = 1 << 7,
     MoveRight   = 1 << 8,
     NextTarget  = 1 << 9,
-    PrevTarget  = 1 << 10
+    PrevTarget  = 1 << 10,
+    StartRound  = 1 << 11
 };
 
 inline InputAction operator|(InputAction a, InputAction b) {
