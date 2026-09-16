@@ -1,6 +1,7 @@
 #define SDL_MAIN_HANDLED
 #include "../engine/core/Engine.hpp"
 #include "../engine/core/Logger.hpp"
+#include "../engine/input/FrontendProfile.hpp"
 #include "../platform/common/SDLRenderer.hpp"
 #include "../platform/common/SDLInput.hpp"
 #include <SDL.h>
@@ -44,7 +45,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    btd4::SDLInput input;
+    // Windows follows the Flash-era frontend: mouse-first gameplay plus
+    // keyboard shortcuts, rather than forcing the console control model onto PC.
+    btd4::SDLInput input(btd4::FrontendProfile::FlashDesktop);
     btd4::Engine engine(renderer, input);
 
     if (!engine.initialize(windowWidth, windowHeight)) {
