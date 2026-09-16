@@ -26,7 +26,9 @@ public:
     // an actionable message.
     virtual BuildResult configure() = 0;
     virtual BuildResult build() = 0;
-    virtual BuildResult package() = 0;
+    // Package only the edition selected by the Game Builder. An empty edition
+    // keeps compatibility with backends that do not yet package game data.
+    virtual BuildResult package(const std::string& gameEdition = {}) = 0;
 };
 
 } // namespace btd4
