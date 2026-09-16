@@ -8,6 +8,7 @@ namespace btd4 {
 struct ProjectConfig {
     int version{1};
     std::string projectName{"BTD4 Project"};
+    std::string sourceDirectory{"assets"};
     std::string sourceSwf;
     std::string sourceIpa;
     bool enableMobileContent{false};
@@ -27,6 +28,9 @@ public:
 
     std::string serialize() const;
     bool deserialize(const std::string& json);
+
+    bool discoverSourceAssets();
+    bool discoverSourceAssets(const std::string& directory);
 
     bool hasValidSwf() const;
     bool hasValidIpa() const;
