@@ -29,23 +29,20 @@ public:
 
     bool hasManifest() const { return m_hasManifest; }
     const AssetManifest& manifest() const { return m_manifest; }
+    const std::string& dataDirectory() const { return m_dataDir; }
 
     std::string resolveTexturePath(const std::string& assetId) const;
     std::string resolveAudioPath(const std::string& assetId) const;
 
-    // Placeholder procedural fallbacks
     bool isUsingFallback(const std::string& assetId) const;
     PlaceholderColor getPlaceholderColor(const std::string& assetId) const;
 
-    // Preloads all manifest textures into the renderer
     size_t preloadTextures(IRenderer& renderer);
 
-    // Asset ID resolvers
     static std::string getBloonAssetId(BloonType type);
     static std::string getTowerAssetId(TowerType type);
     static std::string getProjectileAssetId(ProjectileType type);
 
-    // Entity rendering with sprite or procedural fallback
     void drawBloon(IRenderer& renderer, const Bloon& bloon) const;
     void drawTower(IRenderer& renderer, const Tower& tower, bool isSelected = false) const;
     void drawProjectile(IRenderer& renderer, const Projectile& proj) const;
