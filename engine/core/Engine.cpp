@@ -46,18 +46,22 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
     gameMap.addBlockedRegion({200.0f, 40.0f, 40.0f, 190.0f});
     gameMap.addBlockedRegion({320.0f, 116.0f, 40.0f, 114.0f});
     m_simulation.setMap(std::move(gameMap));
+    m_simulation.setState(GameStateType::Playing);
 
     std::string roundErr;
     RoundSet roundSet;
     std::string roundPath = "assets/placeholder/rounds/default_rounds.json";
     if (loadRounds(fs, roundPath, m_simulation.map(), roundSet, roundErr)) {
-        m_simulation.setRounds(std::move(roundSet), roundErr);
-        BTD4_LOG_INFO("Loaded round data successfully.");
+        if (!m_simulation.setRounds(std::move(roundSet), roundErr)) {
+            BTD4_LOG_WARN("Round data loaded but could not be configured: " + roundErr);
+        } else {
+            BTD4_LOG_INFO("Loaded round data successfully.");
+        }
     } else {
         BTD4_LOG_WARN("Round data unavailable: " + roundErr);
     }
 
-    BTD4_LOG_INFO("Gameplay controls: click a tower, click the map to place it, R starts the next round, right-click cancels placement.");
+    BTD4_LOG_INFO("Gameplay controls: click a tower, click the map to place it, R starts the next round, P pauses, right-click cancels placement.");
     BTD4_LOG_INFO("BTD4 Engine initialized successfully.");
     return true;
 }
@@ -92,6 +96,8 @@ void Engine::cancelPlacement() {
 }
 
 void Engine::frame(int windowWidth, int windowHeight) {
+    (void)windowWidth;
+    (void)windowHeight;
     if (!m_running) {
         return;
     }
@@ -147,7 +153,7 @@ void Engine::frame(int windowWidth, int windowHeight) {
     if (m_input.isActionJustPressed(InputAction::Pause)) {
         if (m_simulation.state() == GameStateType::Paused) {
             m_simulation.resume();
-        } else {
+        } else if (m_simulation.state() == GameStateType::Playing) {
             m_simulation.pause();
         }
     }
@@ -174,7 +180,8 @@ void Engine::frame(int windowWidth, int windowHeight) {
 
         if (m_hasPlacement && ptr.logicalX < 400.0f) {
             auto stats = getTowerBaseStats(m_placementType);
-            bool canPlace = m_simulation.map().canPlaceTower(ptr.logicalX, ptr.logicalY, stats.footprintRadius);
+            bool canPlace = m_simulation.map().canPlaceTower(ptr.logicalX, ptr.logicalY, stats.footprintRadius) &&
+                            m_simulation.economy().canAfford(stats.cost);
             Color rangeColor = canPlace ? Color::cyan() : Color::red();
             DebugRenderer::drawTowerRange(m_renderer, ptr.logicalX, ptr.logicalY, stats.range, rangeColor, {rangeColor.r, rangeColor.g, rangeColor.b, 30});
             Tower previewTower(0, m_placementType, ptr.logicalX, ptr.logicalY);
@@ -200,6 +207,12 @@ void Engine::frame(int windowWidth, int windowHeight) {
                                          m_simulation.completedRounds() + (m_simulation.roundActive() ? 1 : 0),
                                          m_clock.fps(), m_placementType, m_hasPlacement);
 
+        if (!m_simulation.roundActive() && m_simulation.state() == GameStateType::Playing) {
+            m_renderer.drawRect(118.0f, 228.0f, 160.0f, 30.0f, {0, 0, 0, 185}, true);
+            m_renderer.drawRect(118.0f, 228.0f, 160.0f, 30.0f, Color::cyan(), false);
+            m_renderer.drawText("R: START ROUND", 132.0f, 238.0f, 1.0f, Color::white());
+        }
+
         if (m_simulation.state() == GameStateType::Paused) {
             m_renderer.drawRect(90.0f, 100.0f, 220.0f, 72.0f, {0, 0, 0, 210}, true);
             m_renderer.drawText("PAUSED", 170.0f, 118.0f, 2.0f, Color::white());
@@ -207,7 +220,7 @@ void Engine::frame(int windowWidth, int windowHeight) {
         } else if (m_simulation.state() == GameStateType::GameOver) {
             m_renderer.drawRect(70.0f, 92.0f, 260.0f, 88.0f, {0, 0, 0, 220}, true);
             m_renderer.drawText("GAME OVER", 145.0f, 112.0f, 2.0f, Color::red());
-            m_renderer.drawText("Press ESC to stop", 135.0f, 145.0f, 1.0f, Color::white());
+            m_renderer.drawText("Press ESC to exit", 135.0f, 145.0f, 1.0f, Color::white());
         } else if (m_simulation.state() == GameStateType::Victory) {
             m_renderer.drawRect(70.0f, 92.0f, 260.0f, 88.0f, {0, 0, 0, 220}, true);
             m_renderer.drawText("VICTORY!", 145.0f, 112.0f, 2.0f, Color::green());
