@@ -7,6 +7,7 @@
 #include "../rendering/TestScreen.hpp"
 #include "../input/IInput.hpp"
 #include "../input/InputActions.hpp"
+#include "../input/FrontendProfile.hpp"
 #include "../game/GameState.hpp"
 #include "../assets/AssetManager.hpp"
 
@@ -14,7 +15,8 @@ namespace btd4 {
 
 class Engine {
 public:
-    Engine(IRenderer& renderer, IInput& input);
+    Engine(IRenderer& renderer, IInput& input,
+           FrontendProfile frontendProfile = FrontendProfile::FlashDesktop);
     ~Engine();
 
     bool initialize(int windowWidth, int windowHeight);
@@ -33,6 +35,8 @@ public:
 
     const Viewport& currentViewport() const;
 
+    FrontendProfile frontendProfile() const { return m_frontendProfile; }
+
     GameSimulation& simulation() { return m_simulation; }
     const GameSimulation& simulation() const { return m_simulation; }
 
@@ -43,6 +47,7 @@ public:
 private:
     IRenderer& m_renderer;
     IInput& m_input;
+    FrontendProfile m_frontendProfile{FrontendProfile::FlashDesktop};
     Clock m_clock;
     TestScreen m_testScreen;
     GameSimulation m_simulation;
