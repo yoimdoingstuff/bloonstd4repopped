@@ -19,7 +19,6 @@ TEST_CASE(UpgradeParserLoadsDefinitions) {
     std::string error;
     TEST_ASSERT(parseUpgrades(json, upgrades, error));
     TEST_ASSERT_EQ(upgrades.upgrades.size(), static_cast<size_t>(2));
-
     const UpgradeDefinition* dart = findUpgrade(upgrades, TowerType::DartMonkey, 0, 1);
     TEST_ASSERT(dart != nullptr);
     TEST_ASSERT_EQ(dart->effect.cost, 100);
@@ -29,16 +28,54 @@ TEST_CASE(UpgradeParserLoadsDefinitions) {
 TEST_CASE(UpgradeValidationRejectsDuplicateTier) {
     UpgradeSet upgrades;
     UpgradeDefinition a;
-    a.id = "a";
-    a.displayName = "A";
-    a.tower = TowerType::DartMonkey;
-    a.path = 0;
-    a.tier = 1;
-    UpgradeDefinition b = a;
-    b.id = "b";
+    a.id = "a"; a.displayName = "A"; a.tower = TowerType::DartMonkey; a.path = 0; a.tier = 1;
+    UpgradeDefinition b = a; b.id = "b";
     upgrades.upgrades = {a, b};
-
     std::string error;
     TEST_ASSERT(!validateUpgrades(upgrades, error));
     TEST_ASSERT(!error.empty());
+}
+
+TEST_CASE(TowerAppliesUpgradeEffect) {
+    Tower tower(1, TowerType::DartMonkey, 10.0f, 10.0f);
+    const float baseRange = tower.range();
+    const float baseCooldown = tower.attackCooldown();
+    const int baseDamage = tower.projectileDamage();
+    const int baseCost = tower.totalInvestedCost();
+
+    UpgradeEffect effect;
+    effect.cost = 125;
+    effect.rangeAdd = 15.0f;
+    effect.cooldownMultiplier = 0.8f;
+    effect.damageAdd = 1;
+    effect.pierceAdd = 2;
+    effect.projectileSpeedMultiplier = 1.25f;
+
+    TEST_ASSERT(tower.applyUpgrade(effect, 0, 1));
+    TEST_ASSERT_EQ(tower.upgradeTier(0), static_cast<uint8_t>(1));
+    TEST_ASSERT(tower.hasUpgrade(0, 1));
+    TEST_ASSERT(tower.range() > baseRange);
+    TEST_ASSERT(tower.attackCooldown() < baseCooldown);
+    TEST_ASSERT_EQ(tower.projectileDamage(), baseDamage + 1);
+    TEST_ASSERT_EQ(tower.totalInvestedCost(), baseCost + 125);
+}
+
+TEST_CASE(TowerRejectsSkippedUpgradeTier) {
+    Tower tower(2, TowerType::TackShooter, 0.0f, 0.0f);
+    UpgradeEffect effect;
+    effect.cost = 100;
+    TEST_ASSERT(!tower.applyUpgrade(effect, 0, 2));
+    TEST_ASSERT_EQ(tower.upgradeTier(0), static_cast<uint8_t>(0));
+}
+
+TEST_CASE(TowerSupportsIndependentUpgradePaths) {
+    Tower tower(3, TowerType::BombTower, 0.0f, 0.0f);
+    UpgradeEffect pathA; pathA.cost = 100; pathA.damageAdd = 1;
+    UpgradeEffect pathB; pathB.cost = 200; pathB.rangeAdd = 10.0f;
+
+    TEST_ASSERT(tower.applyUpgrade(pathA, 0, 1));
+    TEST_ASSERT(tower.applyUpgrade(pathB, 1, 1));
+    TEST_ASSERT_EQ(tower.upgradeTier(0), static_cast<uint8_t>(1));
+    TEST_ASSERT_EQ(tower.upgradeTier(1), static_cast<uint8_t>(1));
+    TEST_ASSERT_EQ(tower.totalInvestedCost(), 550 + 100 + 200);
 }
