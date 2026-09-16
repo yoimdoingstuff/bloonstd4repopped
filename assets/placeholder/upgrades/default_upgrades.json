@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "upgrades": [
+    {
+      "id": "dart_sharp_shots",
+      "tower": "DartMonkey",
+      "path": 0,
+      "tier": 1,
+      "displayName": "Sharp Shots",
+      "cost": 100,
+      "pierceAdd": 1
+    },
+    {
+      "id": "dart_razor_sharp",
+      "tower": "DartMonkey",
+      "path": 0,
+      "tier": 2,
+      "displayName": "Razor Sharp Shots",
+      "cost": 200,
+      "pierceAdd": 1
+    },
+    {
+      "id": "dart_quick_shots",
+      "tower": "DartMonkey",
+      "path": 1,
+      "tier": 1,
+      "displayName": "Quick Shots",
+      "cost": 120,
+      "cooldownMultiplier": 0.85
+    },
+    {
+      "id": "dart_faster_shooting",
+      "tower": "DartMonkey",
+      "path": 1,
+      "tier": 2,
+      "displayName": "Faster Shooting",
+      "cost": 250,
+      "cooldownMultiplier": 0.80
+    },
+    {
+      "id": "tack_faster_firing",
+      "tower": "TackShooter",
+      "path": 0,
+      "tier": 1,
+      "displayName": "Faster Firing",
+      "cost": 150,
+      "cooldownMultiplier": 0.80
+    },
+    {
+      "id": "bomb_extra_radius",
+      "tower": "BombTower",
+      "path": 0,
+      "tier": 1,
+      "displayName": "Bigger Bombs",
+      "cost": 250,
+      "explosionRadiusAdd": 8,
+      "damageAdd": 1
+    },
+    {
+      "id": "sniper_full_metal",
+      "tower": "SniperMonkey",
+      "path": 0,
+      "tier": 1,
+      "displayName": "Full Metal Jacket",
+      "cost": 350,
+      "damageAdd": 2
+    },
+    {
+      "id": "super_laser_focus",
+      "tower": "SuperMonkey",
+      "path": 0,
+      "tier": 1,
+      "displayName": "Laser Focus",
+      "cost": 1000,
+      "rangeAdd": 15,
+      "projectileSpeedMultiplier": 1.20
+    }
+  ]
+}

@@ -28,11 +28,7 @@ endif()
 
 include(FetchContent)
 
-# -----------------------------------------------------------------------------
-# Dependencies (Desktop targets)
-# -----------------------------------------------------------------------------
 if(NOT TARGET_PSP)
-    # SDL2
     find_package(SDL2 QUIET)
     if(NOT SDL2_FOUND)
         find_package(PkgConfig QUIET)
@@ -88,9 +84,6 @@ if(NOT TARGET_PSP)
     endif()
 endif()
 
-# -----------------------------------------------------------------------------
-# Target: btd4_engine
-# -----------------------------------------------------------------------------
 add_library(btd4_engine STATIC
     engine/core/Logger.hpp
     engine/core/Logger.cpp
@@ -116,6 +109,8 @@ add_library(btd4_engine STATIC
     engine/game/Projectile.cpp
     engine/game/Tower.hpp
     engine/game/Tower.cpp
+    engine/game/Upgrade.hpp
+    engine/game/Upgrade.cpp
     engine/game/Economy.hpp
     engine/game/Economy.cpp
     engine/game/GameState.hpp
@@ -145,9 +140,6 @@ target_include_directories(btd4_engine PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/platform/common
 )
 
-# -----------------------------------------------------------------------------
-# Target: btd4_platform
-# -----------------------------------------------------------------------------
 if(TARGET_PSP)
     set(PLATFORM_SOURCES platform/psp/PSPLifecycle.cpp)
 else()
@@ -194,9 +186,6 @@ if(NOT TARGET_PSP)
     endif()
 endif()
 
-# -----------------------------------------------------------------------------
-# Target: btd4_game
-# -----------------------------------------------------------------------------
 if(BUILD_GAME)
     if(NOT TARGET_PSP)
         add_executable(btd4_game app/main.cpp)
@@ -228,9 +217,6 @@ if(BUILD_GAME)
     endif()
 endif()
 
-# -----------------------------------------------------------------------------
-# Target: btd4_importer_lib & btd4_importer
-# -----------------------------------------------------------------------------
 if(NOT TARGET_PSP)
     add_library(btd4_importer_lib STATIC
         tools/swf/SwfTypes.hpp
@@ -254,9 +240,6 @@ if(NOT TARGET_PSP)
     target_link_libraries(btd4_importer PRIVATE btd4_importer_lib)
 endif()
 
-# -----------------------------------------------------------------------------
-# Target: btd4_builder
-# -----------------------------------------------------------------------------
 if(BUILD_BUILDER AND NOT TARGET_PSP)
     add_executable(btd4_builder
         builder/main.cpp
@@ -284,9 +267,6 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
     endif()
 endif()
 
-# -----------------------------------------------------------------------------
-# Target: btd4_tests
-# -----------------------------------------------------------------------------
 if(BUILD_TESTS AND NOT TARGET_PSP)
     enable_testing()
     add_executable(btd4_tests
@@ -296,6 +276,7 @@ if(BUILD_TESTS AND NOT TARGET_PSP)
         tests/AssetImporterTests.cpp
         tests/RenderingTests.cpp
         tests/FreeplayTests.cpp
+        tests/UpgradeTests.cpp
         tests/TestRunner.hpp
         builder/project/Project.hpp
         builder/project/Project.cpp
