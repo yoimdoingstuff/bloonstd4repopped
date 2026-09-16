@@ -35,7 +35,7 @@ BuildResult PSPBackend::build() {
     return res;
 }
 
-BuildResult PSPBackend::package() {
+BuildResult PSPBackend::package(const std::string&) {
     BuildResult res;
     if (!isAvailable()) {
         res.message = "PSP toolchain not available.";
