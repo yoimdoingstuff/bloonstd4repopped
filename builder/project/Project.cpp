@@ -2,8 +2,11 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <filesystem>
 
 namespace btd4 {
+
+namespace fs = std::filesystem;
 
 Project::Project() = default;
 
@@ -70,6 +73,7 @@ std::string Project::serialize() const {
     ss << "{\n";
     ss << "  \"version\": " << m_config.version << ",\n";
     ss << "  \"project_name\": \"" << m_config.projectName << "\",\n";
+    ss << "  \"source_directory\": \"" << m_config.sourceDirectory << "\",\n";
     ss << "  \"source_swf\": \"" << m_config.sourceSwf << "\",\n";
     ss << "  \"source_ipa\": \"" << m_config.sourceIpa << "\",\n";
     ss << "  \"enable_mobile_content\": " << (m_config.enableMobileContent ? "true" : "false") << ",\n";
@@ -86,6 +90,8 @@ bool Project::deserialize(const std::string& json) {
     std::string name = extractJsonString(json, "project_name");
     if (!name.empty()) m_config.projectName = name;
 
+    std::string sourceDirectory = extractJsonString(json, "source_directory");
+    if (!sourceDirectory.empty()) m_config.sourceDirectory = sourceDirectory;
     m_config.sourceSwf = extractJsonString(json, "source_swf");
     m_config.sourceIpa = extractJsonString(json, "source_ipa");
     m_config.enableMobileContent = extractJsonBool(json, "enable_mobile_content", false);
@@ -116,12 +122,61 @@ bool Project::saveToFile(const std::string& filepath) const {
     return true;
 }
 
+bool Project::discoverSourceAssets() {
+    return discoverSourceAssets(m_config.sourceDirectory);
+}
+
+bool Project::discoverSourceAssets(const std::string& directory) {
+    m_config.sourceDirectory = directory;
+    m_config.sourceSwf.clear();
+    m_config.sourceIpa.clear();
+
+    if (directory.empty()) return false;
+
+    std::error_code ec;
+    const fs::path root(directory);
+    if (!fs::exists(root, ec) || !fs::is_directory(root, ec)) return false;
+
+    std::vector<fs::path> candidates;
+    for (fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied, ec), end;
+         it != end && !ec; it.increment(ec)) {
+        if (!it->is_regular_file(ec)) continue;
+        const std::string ext = it->path().extension().string();
+        std::string normalized = ext;
+        std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        if (normalized == ".swf" || normalized == ".ipa") candidates.push_back(it->path());
+    }
+
+    std::sort(candidates.begin(), candidates.end());
+    for (const auto& candidate : candidates) {
+        std::string normalized = candidate.extension().string();
+        std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        if (normalized == ".swf" && m_config.sourceSwf.empty()) {
+            m_config.sourceSwf = candidate.string();
+        } else if (normalized == ".ipa" && m_config.sourceIpa.empty()) {
+            m_config.sourceIpa = candidate.string();
+        }
+    }
+
+    return !m_config.sourceSwf.empty();
+}
+
 bool Project::hasValidSwf() const {
-    return !m_config.sourceSwf.empty() && (m_config.sourceSwf.find(".swf") != std::string::npos);
+    if (m_config.sourceSwf.empty()) return false;
+    std::string path = m_config.sourceSwf;
+    std::transform(path.begin(), path.end(), path.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return path.size() >= 4 && path.compare(path.size() - 4, 4, ".swf") == 0;
 }
 
 bool Project::hasValidIpa() const {
-    return !m_config.sourceIpa.empty() && (m_config.sourceIpa.find(".ipa") != std::string::npos);
+    if (m_config.sourceIpa.empty()) return false;
+    std::string path = m_config.sourceIpa;
+    std::transform(path.begin(), path.end(), path.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return path.size() >= 4 && path.compare(path.size() - 4, 4, ".ipa") == 0;
 }
 
 } // namespace btd4
