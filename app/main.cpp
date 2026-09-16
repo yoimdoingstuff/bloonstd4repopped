@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     // Windows follows the Flash-era frontend: mouse-first gameplay plus
     // keyboard shortcuts, rather than forcing the console control model onto PC.
     btd4::SDLInput input(btd4::FrontendProfile::FlashDesktop);
-    btd4::Engine engine(renderer, input);
+    btd4::Engine engine(renderer, input, btd4::FrontendProfile::FlashDesktop);
 
     if (!engine.initialize(windowWidth, windowHeight)) {
         std::cerr << "Failed to initialize engine" << std::endl;
