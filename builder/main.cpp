@@ -5,6 +5,7 @@
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
 #include <iostream>
+#include <filesystem>
 
 int main(int argc, char* argv[]) {
     (void)argc;
@@ -13,6 +14,19 @@ int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         std::cerr << "Error: " << SDL_GetError() << std::endl;
         return -1;
+    }
+
+    // Keep the portable builder self-contained. The source assets and generated
+    // game_data directory live beside the executable instead of depending on
+    // whatever directory the OS happened to use as the process working folder.
+    if (char* basePath = SDL_GetBasePath()) {
+        std::error_code pathError;
+        std::filesystem::current_path(basePath, pathError);
+        SDL_free(basePath);
+        if (pathError) {
+            std::cerr << "Warning: Could not set builder working directory: "
+                      << pathError.message() << std::endl;
+        }
     }
 
     int windowWidth = 1024;
@@ -45,16 +59,13 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    // Setup Dear ImGui style
     ImGui::StyleColorsDark();
 
-    // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
 
@@ -75,15 +86,12 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // Start Dear ImGui frame
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        // Render Builder UI
         builderUI.render();
 
-        // Rendering
         ImGui::Render();
         SDL_SetRenderDrawColor(renderer, 30, 30, 35, 255);
         SDL_RenderClear(renderer);
@@ -91,7 +99,6 @@ int main(int argc, char* argv[]) {
         SDL_RenderPresent(renderer);
     }
 
-    // Cleanup
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
