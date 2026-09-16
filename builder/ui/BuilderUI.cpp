@@ -13,10 +13,13 @@ BuilderUI::BuilderUI() {
 }
 
 void BuilderUI::initialize() {
+    std::strncpy(m_sourceDirectoryBuffer, m_project.config().sourceDirectory.c_str(), sizeof(m_sourceDirectoryBuffer) - 1);
+    m_sourceDirectoryBuffer[sizeof(m_sourceDirectoryBuffer) - 1] = '\0';
     std::strncpy(m_swfPathBuffer, m_project.config().sourceSwf.c_str(), sizeof(m_swfPathBuffer) - 1);
     m_swfPathBuffer[sizeof(m_swfPathBuffer) - 1] = '\0';
     std::strncpy(m_ipaPathBuffer, m_project.config().sourceIpa.c_str(), sizeof(m_ipaPathBuffer) - 1);
     m_ipaPathBuffer[sizeof(m_ipaPathBuffer) - 1] = '\0';
+    discoverAssets();
 }
 
 void BuilderUI::appendLog(const std::string& line) {
@@ -64,36 +67,38 @@ void BuilderUI::render() {
 
 void BuilderUI::renderSourceFilesSection() {
     if (ImGui::CollapsingHeader("1. Source Game Files", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::TextDisabled("Select user-provided game packages to extract clean game assets from.");
+        ImGui::TextDisabled("Put the source SWF and optional IPA in the project's asset folder.");
+        ImGui::TextDisabled("The builder can discover them automatically on Windows and Linux.");
         ImGui::Spacing();
 
-        ImGui::Text("SWF File (Required):");
+        ImGui::Text("Asset Folder:");
+        if (ImGui::InputText("##SourceDirectory", m_sourceDirectoryBuffer, sizeof(m_sourceDirectoryBuffer))) {
+            m_project.config().sourceDirectory = m_sourceDirectoryBuffer;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Rescan Assets")) {
+            discoverAssets();
+        }
+
+        ImGui::Spacing();
+        ImGui::Text("SWF File:");
         if (ImGui::InputText("##SWFPath", m_swfPathBuffer, sizeof(m_swfPathBuffer))) {
             m_project.config().sourceSwf = m_swfPathBuffer;
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Browse SWF...")) {
-            appendLog("[Browse] Select SWF file path.");
-        }
 
-        ImGui::Spacing();
-        ImGui::Text("IPA File (Optional - Mobile Content):");
+        ImGui::Text("IPA File (Optional):");
         if (ImGui::InputText("##IPAPath", m_ipaPathBuffer, sizeof(m_ipaPathBuffer))) {
             m_project.config().sourceIpa = m_ipaPathBuffer;
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Browse IPA...")) {
-            appendLog("[Browse] Select IPA file path.");
-        }
 
         if (m_project.hasValidSwf()) {
-            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[OK] Base game SWF specified.");
+            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[OK] Base game SWF found.");
         } else {
-            ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.2f, 1.0f), "[!] Please specify a valid .swf file.");
+            ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.2f, 1.0f), "[!] No SWF found. Put one in the asset folder.");
         }
 
         if (m_project.hasValidIpa()) {
-            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[OK] Mobile IPA package detected.");
+            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[OK] Optional mobile IPA found.");
         }
     }
 }
@@ -173,6 +178,23 @@ void BuilderUI::renderActionButtons() {
     }
 }
 
+void BuilderUI::discoverAssets() {
+    const bool found = m_project.discoverSourceAssets();
+    std::strncpy(m_swfPathBuffer, m_project.config().sourceSwf.c_str(), sizeof(m_swfPathBuffer) - 1);
+    m_swfPathBuffer[sizeof(m_swfPathBuffer) - 1] = '\0';
+    std::strncpy(m_ipaPathBuffer, m_project.config().sourceIpa.c_str(), sizeof(m_ipaPathBuffer) - 1);
+    m_ipaPathBuffer[sizeof(m_ipaPathBuffer) - 1] = '\0';
+
+    if (found) {
+        appendLog("[Assets] Discovered source SWF: " + m_project.config().sourceSwf);
+        if (m_project.hasValidIpa()) {
+            appendLog("[Assets] Discovered optional IPA: " + m_project.config().sourceIpa);
+        }
+    } else {
+        appendLog("[Assets] No SWF found in " + m_project.config().sourceDirectory + ".");
+    }
+}
+
 void BuilderUI::triggerBuild() {
     PlatformBackend* backend = PlatformRegistry::instance().findBackend(m_project.config().targetPlatform);
     if (!backend) {
@@ -217,18 +239,23 @@ void BuilderUI::triggerImport() {
     appendLog("=========================================");
     appendLog("[Pipeline] Initiating BTD4 Asset Import Pipeline...");
 
-    if (m_project.config().sourceSwf.empty()) {
-        appendLog("[Error] No SWF file provided. Please specify a source SWF path.");
+    if (!m_project.hasValidSwf()) {
+        discoverAssets();
+    }
+
+    if (!m_project.hasValidSwf()) {
+        appendLog("[Error] No SWF file found. Put the base game SWF in the asset folder and rescan.");
         return;
     }
 
     tools::ImportOptions options;
     options.sourceSwf = m_project.config().sourceSwf;
     options.sourceIpa = m_project.config().sourceIpa;
-    options.outputDir = "game_data";
+    options.outputDir = std::string("game_data/") + m_project.config().targetPlatform;
     options.targetPlatform = m_project.config().targetPlatform;
 
     appendLog("[Pipeline] Import target: " + options.targetPlatform);
+    appendLog("[Pipeline] Output: " + options.outputDir);
 
     auto logCb = [this](const std::string& msg) {
         appendLog(msg);
