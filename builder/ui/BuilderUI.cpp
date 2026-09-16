@@ -135,8 +135,8 @@ void BuilderUI::discoverAssets(){
 void BuilderUI::triggerBuild(){
     if(!m_project.hasValidSwf()) discoverAssets();
     if(!m_project.hasValidSwf()){appendLog("[Build Error] No SWF source is selected. Import source assets first.");return;}
-    // A build always refreshes the target data first. This prevents packaging an old import.
-    triggerImport();
+    // A build always refreshes the target data first. Never package stale or partial imports.
+    if(!triggerImport()){appendLog("[Build Error] Asset import did not complete; build aborted before compilation/package.");return;}
     PlatformBackend* backend=PlatformRegistry::instance().findBackend(m_project.config().targetPlatform);
     if(!backend){appendLog("[Build Error] Unknown target platform: "+m_project.config().targetPlatform);return;}
     appendLog("========================================="); appendLog("[Build] Initiating playable build for: "+backend->name());
@@ -145,25 +145,23 @@ void BuilderUI::triggerBuild(){
     if(!cfgRes.success){appendLog("[Build Error] Configuration failed: "+cfgRes.message);return;}
     BuildResult bldRes=backend->build(); for(const auto& line:bldRes.outputLogs)appendLog("  "+line);
     if(!bldRes.success){appendLog("[Build Error] Compilation failed: "+bldRes.message);return;}
-    BuildResult pkgRes=backend->package(); for(const auto& line:pkgRes.outputLogs)appendLog("  "+line);
+    BuildResult pkgRes=backend->package(m_project.config().gameEdition); for(const auto& line:pkgRes.outputLogs)appendLog("  "+line);
     if(!pkgRes.success){appendLog("[Build Error] Packaging failed: "+pkgRes.message);return;}
     appendLog("[Build Success] Playable "+backend->name()+" build created.");
     appendLog("[Build] Run the executable from the Playable directory."); appendLog("=========================================");
 }
 
-void BuilderUI::triggerImport(){
+bool BuilderUI::triggerImport(){
     appendLog("========================================="); appendLog("[Pipeline] Initiating BTD4 Asset Import Pipeline...");
     if(!m_project.hasValidSwf()) discoverAssets();
-    if(!m_project.hasValidSwf()){appendLog("[Error] No SWF file found. Browse or drop the base game SWF into the builder.");return;}
+    if(!m_project.hasValidSwf()){appendLog("[Error] No SWF file found. Browse or drop the base game SWF into the builder.");return false;}
     tools::ImportOptions options;
     options.sourceSwf=m_project.config().sourceSwf; options.sourceIpa=m_project.config().sourceIpa;
     options.outputDir=std::string("game_data/")+m_project.config().targetPlatform+"/"+m_project.config().gameEdition;
     options.targetPlatform=m_project.config().targetPlatform;
     appendLog("[Pipeline] Game edition: "+m_project.config().gameEdition); appendLog("[Pipeline] Import target: "+options.targetPlatform); appendLog("[Pipeline] Output: "+options.outputDir);
     tools::ImportReport report=tools::AssetImporter::run(options,[this](const std::string& msg){appendLog(msg);});
-    if(!report.success){appendLog("[Pipeline Error] Import failed: "+report.errorMessage);appendLog("=========================================");return;}
-    // The source-specific map/round converters are still being implemented. Keep a
-    // minimal internal round set beside the imported assets so the result is playable.
+    if(!report.success){appendLog("[Pipeline Error] Import failed: "+report.errorMessage);appendLog("=========================================");return false;}
     try{
         namespace fs=std::filesystem;
         const fs::path outputRounds=fs::path(options.outputDir)/"rounds"/"default_rounds.json";
@@ -176,6 +174,7 @@ void BuilderUI::triggerImport(){
     appendLog("  BTD4 detected: "+std::string(report.btd4Detected?"yes":"no")); appendLog("  IPA detected: "+std::string(report.ipaDetected?"yes":"no"));
     appendLog("  Textures extracted: "+std::to_string(report.texturesExtracted)); appendLog("  Audio cues extracted: "+std::to_string(report.soundsExtracted));
     appendLog("  Symbols mapped: "+std::to_string(report.symbolsMapped)); appendLog("  Manifest generated: "+report.manifestPath); appendLog("=========================================");
+    return true;
 }
 
 void BuilderUI::renderLogsSection(){
