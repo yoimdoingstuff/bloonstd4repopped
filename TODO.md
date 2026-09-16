@@ -555,10 +555,14 @@ MILESTONE 14: GAME BUILDER
 
 * [ ]	Project creation
 * [ ]	Project loading
-* [ ]	Project saving
-* [ ]	Asset import UI
-* [ ]	Source version selector
-* [ ]	Platform selector
+* [x]	Project saving
+    Agent: builder
+* [x]	Asset import UI
+    Agent: builder - native file picker, Explorer/file-manager drag-and-drop, SWF/IPA paths
+* [x]	Source edition selector
+    Agent: builder - BTD4 Flash / BTD4 Expansion / BTD4 HD (iPad), isolated output directories
+* [x]	Platform selector
+    Agent: builder
 * [ ]	Build configuration
 * [ ]	Build invocation
 * [ ]	Build output management
