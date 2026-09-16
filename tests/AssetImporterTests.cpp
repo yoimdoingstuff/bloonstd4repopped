@@ -9,6 +9,7 @@
 #include "../engine/assets/AssetManifest.hpp"
 #include "../engine/assets/AssetManager.hpp"
 #include "../platform/common/NativeFileSystem.hpp"
+#include "../builder/project/Project.hpp"
 #include <vector>
 #include <string>
 #include <fstream>
@@ -150,4 +151,28 @@ TEST_CASE(ZipArchiveStoredEntry) {
     TEST_ASSERT(archive.readEntry(name, result, error));
     TEST_ASSERT_EQ(std::string(result.begin(), result.end()), payload);
     std::error_code ec; std::filesystem::remove(testPath, ec);
+}
+
+TEST_CASE(ProjectDiscoversDroppedAssets) {
+    const std::filesystem::path root = std::filesystem::temp_directory_path() / "btd4_builder_assets";
+    std::error_code ec;
+    std::filesystem::remove_all(root, ec);
+    std::filesystem::create_directories(root / "nested", ec);
+    TEST_ASSERT(!ec);
+
+    std::ofstream swf(root / "nested" / "BTD4.swf", std::ios::binary);
+    swf << "synthetic test asset";
+    swf.close();
+    std::ofstream ipa(root / "MobileContent.IPA", std::ios::binary);
+    ipa << "synthetic test package";
+    ipa.close();
+
+    btd4::Project project;
+    TEST_ASSERT(project.discoverSourceAssets(root.string()));
+    TEST_ASSERT(project.hasValidSwf());
+    TEST_ASSERT(project.hasValidIpa());
+    TEST_ASSERT(project.config().sourceSwf.find("BTD4.swf") != std::string::npos);
+    TEST_ASSERT(project.config().sourceIpa.find("MobileContent.IPA") != std::string::npos);
+
+    std::filesystem::remove_all(root, ec);
 }
