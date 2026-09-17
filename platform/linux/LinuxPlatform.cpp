@@ -91,11 +91,29 @@ BuildResult LinuxPlatform::configure() {
 
 BuildResult LinuxPlatform::build() {
     BuildResult result;
+    const fs::path root = findSourceRoot();
     const fs::path cmakeDir = buildRoot() / "cmake";
-    if (cmakeDir.empty() || !fs::exists(cmakeDir)) {
+    if (root.empty() || !fs::exists(cmakeDir)) {
         result.message = "Linux build is not configured. Run configuration first.";
         return result;
     }
+
+    std::error_code ec;
+    const fs::path dataRoot = root / "game_data" / "Linux";
+    bool importedData = false;
+    if (fs::exists(dataRoot, ec) && fs::is_directory(dataRoot, ec)) {
+        for (fs::directory_iterator it(dataRoot, ec), end; it != end && !ec; it.increment(ec)) {
+            if (it->is_directory(ec) && fs::exists(it->path() / "manifest.json", ec)) {
+                importedData = true;
+                break;
+            }
+        }
+    }
+    if (!importedData) {
+        result.message = "No imported Linux game data is available. Import source assets before building.";
+        return result;
+    }
+
     return runCommand("cmake --build " + quote(cmakeDir) + " --config Release --parallel", "Game compilation");
 }
 
