@@ -77,7 +77,7 @@ void SDLInput::mapKey(SDL_Keycode key, SDL_Scancode scancode, bool isDown) {
             }
             break;
 
-        case FrontendProfile::PSP:
+        case FrontendProfile::PspConsole:
         case FrontendProfile::XboxConsole:
             // Keyboard remains useful for desktop controller testing, but follows
             // the console action layout instead of duplicating the Flash shortcuts.
@@ -134,7 +134,7 @@ void SDLInput::mapControllerButton(SDL_GameControllerButton button, bool isDown)
     };
 
     switch (m_profile) {
-        case FrontendProfile::PSP:
+        case FrontendProfile::PspConsole:
             switch (button) {
                 case SDL_CONTROLLER_BUTTON_A: action = InputAction::Confirm; break;      // Cross
                 case SDL_CONTROLLER_BUTTON_B: action = InputAction::Cancel; break;       // Circle
