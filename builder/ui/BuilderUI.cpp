@@ -41,7 +41,7 @@ void BuilderUI::render() {
     ImGui::SetNextWindowSize(viewport->Size);
     ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
                                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                                   ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+                                   ImGuiWindowFlags_NoBringToFrontOnFocus;
     ImGui::Begin("BTD4 Game Builder", nullptr, windowFlags);
     ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "BLOONS TD 4 REPOPPED - GAME BUILDER");
     ImGui::Separator();
@@ -72,13 +72,18 @@ void BuilderUI::renderSourceFilesSection() {
         if (editionIndex == 2) ImGui::TextDisabled("iPad HD release. Mobile-only maps/assets can be imported without replacing Flash content.");
         ImGui::Spacing();
         ImGui::Text("Asset Folder:");
-        if (ImGui::InputText("##SourceDirectory", m_sourceDirectoryBuffer, sizeof(m_sourceDirectoryBuffer))) m_project.config().sourceDirectory = m_sourceDirectoryBuffer;
-        ImGui::SameLine(); if (ImGui::Button("Rescan Assets")) discoverAssets();
-        ImGui::SameLine(); if (ImGui::Button("Browse Files...")) {
+        if (ImGui::InputText("##SourceDirectory", m_sourceDirectoryBuffer, sizeof(m_sourceDirectoryBuffer))) {
+            m_project.config().sourceDirectory = m_sourceDirectoryBuffer;
+        }
+        // Keep file controls on their own row. The old SameLine layout could
+        // push Browse completely outside a narrow two-column builder window.
+        if (ImGui::Button("Browse Files...")) {
             const auto files = builder::browseSourceFiles();
             if (files.empty()) appendLog("[Assets] File picker cancelled or is unavailable. You can drag files onto the builder window.");
             for (const auto& file : files) addSourceFile(file);
         }
+        ImGui::SameLine();
+        if (ImGui::Button("Rescan Assets")) discoverAssets();
         ImGui::Spacing();
         ImGui::Text("SWF File:"); ImGui::InputText("##SWFPath", m_swfPathBuffer, sizeof(m_swfPathBuffer), ImGuiInputTextFlags_ReadOnly);
         ImGui::Text("IPA File (Optional):"); ImGui::InputText("##IPAPath", m_ipaPathBuffer, sizeof(m_ipaPathBuffer), ImGuiInputTextFlags_ReadOnly);
