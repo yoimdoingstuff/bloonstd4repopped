@@ -1,6 +1,7 @@
 #include "LinuxPlatform.hpp"
 #include <cstdlib>
 #include <filesystem>
+#include <string>
 
 namespace btd4 {
 namespace fs = std::filesystem;
@@ -37,13 +38,33 @@ BuildResult runCommand(const std::string& command, const std::string& label) {
 }
 
 fs::path buildRoot() { return findSourceRoot() / "builds" / "Linux"; }
+
+bool executableOnPath(const char* executable) {
+    const char* pathEnv = std::getenv("PATH");
+    if (!pathEnv || !*pathEnv || !executable || !*executable) return false;
+
+    std::string pathList(pathEnv);
+    size_t start = 0;
+    while (start <= pathList.size()) {
+        const size_t end = pathList.find(':', start);
+        const std::string entry = pathList.substr(start, end == std::string::npos ? std::string::npos : end - start);
+        if (!entry.empty()) {
+            std::error_code ec;
+            if (fs::is_regular_file(fs::path(entry) / executable, ec)) return true;
+        }
+        if (end == std::string::npos) break;
+        start = end + 1;
+    }
+    return false;
+}
 }
 
 bool LinuxPlatform::isAvailable() const {
 #if defined(__linux__)
-    return (std::system("command -v g++ > /dev/null 2>&1") == 0 ||
-            std::system("command -v clang++ > /dev/null 2>&1") == 0) &&
-           std::system("command -v cmake > /dev/null 2>&1") == 0;
+    static const bool available = [] {
+        return (executableOnPath("g++") || executableOnPath("clang++")) && executableOnPath("cmake");
+    }();
+    return available;
 #else
     return false;
 #endif
