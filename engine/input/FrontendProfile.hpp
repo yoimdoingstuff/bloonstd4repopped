@@ -4,7 +4,7 @@ namespace btd4 {
 
 enum class FrontendProfile {
     FlashDesktop,
-    PSP,
+    PspConsole,
     XboxConsole
 };
 
