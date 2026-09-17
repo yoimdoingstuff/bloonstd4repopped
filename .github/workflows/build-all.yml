@@ -6,48 +6,17 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  build-matrix:
-    name: Build & Test (${{ matrix.platform.name }})
-    runs-on: ${{ matrix.platform.os }}
-    container: ${{ matrix.platform.container }}
+  build-linux:
+    name: Build Linux
+    uses: ./.github/workflows/build-linux.yml
 
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - name: Linux
-            os: ubuntu-latest
-            container: ""
-            cmake-args: "-DCMAKE_BUILD_TYPE=Release -DBUILD_GAME=ON -DBUILD_BUILDER=ON -DBUILD_TESTS=ON"
-          - name: Windows
-            os: windows-latest
-            container: ""
-            cmake-args: "-DCMAKE_BUILD_TYPE=Release -DBUILD_GAME=ON -DBUILD_BUILDER=ON -DBUILD_TESTS=ON"
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Install Linux Dependencies
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake libsdl2-dev libgl1-mesa-dev ninja-build
-
-    - name: Configure CMake
-      run: |
-        cmake -B build ${{ matrix.platform.cmake-args }}
-
-    - name: Build
-      run: |
-        cmake --build build --config Release --parallel
-
-    - name: Run Tests
-      run: |
-        ctest --test-dir build -C Release --output-on-failure
+  build-windows:
+    name: Build Windows
+    uses: ./.github/workflows/build-windows.yml
 
   build-psp:
-    name: Build and package PSP
+    name: Build PSP
     uses: ./.github/workflows/build-psp.yml
