@@ -29,7 +29,17 @@ BuildResult WindowsPlatform::configure(){BuildResult r;const fs::path root=sourc
     }
     if(!importedData){r.message="No imported Windows game data is available. Import source assets before configuring a playable Windows build.";return r;}
     fs::create_directories(buildRoot(),ec);if(ec){r.message="Could not create Windows build directory: "+ec.message();return r;}const fs::path cmakeDir=buildRoot()/"cmake";return runCommand("cmake -S "+quote(root)+" -B "+quote(cmakeDir)+" -DBUILD_GAME=ON -DBUILD_BUILDER=OFF -DBUILD_TESTS=OFF","CMake configuration");}
-BuildResult WindowsPlatform::build(){const fs::path root=sourceRoot();const fs::path cmakeDir=buildRoot()/"cmake";if(root.empty()||!fs::exists(cmakeDir)){BuildResult r;r.message="Windows build is not configured. Run configuration first.";return r;}return runCommand("cmake --build "+quote(cmakeDir)+" --config Release --parallel","Game compilation");}
+BuildResult WindowsPlatform::build(){const fs::path root=sourceRoot();const fs::path cmakeDir=buildRoot()/"cmake";if(root.empty()||!fs::exists(cmakeDir)){BuildResult r;r.message="Windows build is not configured. Run configuration first.";return r;}
+    std::error_code ec;
+    const fs::path dataRoot = root/"game_data"/"Windows";
+    bool importedData = false;
+    if(fs::exists(dataRoot,ec) && fs::is_directory(dataRoot,ec)){
+        for(fs::directory_iterator it(dataRoot,ec),end;it!=end&&!ec;it.increment(ec)){
+            if(it->is_directory(ec) && fs::exists(it->path()/"manifest.json",ec)){importedData=true;break;}
+        }
+    }
+    if(!importedData){BuildResult r;r.message="No imported Windows game data is available. Import source assets before building.";return r;}
+    return runCommand("cmake --build "+quote(cmakeDir)+" --config Release --parallel","Game compilation");}
 BuildResult WindowsPlatform::package(const std::string& gameEdition){BuildResult r;const fs::path root=sourceRoot();const fs::path cmakeDir=buildRoot()/"cmake";const fs::path executable=cmakeDir/"Release"/"btd4_game.exe";const fs::path packageDir=buildRoot()/"Playable";const fs::path dataRoot=root/"game_data"/"Windows";if(root.empty()||!fs::exists(executable)){r.message="Windows executable was not produced: "+executable.string();return r;}std::error_code ec;fs::remove_all(packageDir,ec);fs::create_directories(packageDir,ec);if(ec){r.message="Could not create Windows package directory: "+ec.message();return r;}fs::copy_file(executable,packageDir/executable.filename(),fs::copy_options::overwrite_existing,ec);if(ec){r.message="Could not copy Windows executable: "+ec.message();return r;}
     const fs::path packageData=packageDir/"game_data";
     fs::create_directories(packageData,ec);
