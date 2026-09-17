@@ -136,11 +136,31 @@ void AssetManager::drawProjectile(IRenderer& renderer,const Projectile& proj) co
 }
 
 void AssetManager::drawMap(IRenderer& renderer,const Map& map) const {
-    // Imported SWF bitmap artwork is used as the map presentation layer when
-    // the importer found a likely map/background image. Gameplay geometry still
-    // comes from the internal Map format, so towers and bloons remain interactive.
-    if(renderer.hasTexture("map_background")) {
-        renderer.drawSprite("map_background",0.0f,0.0f,480.0f,272.0f);
+    // The importer preserves original SWF bitmap names. Prefer a map/background
+    // image from that manifest so the playable scene can use original artwork.
+    // If the source uses an opaque numeric/exported name, the geometry fallback
+    // remains available rather than guessing and displaying a random sprite.
+    std::string backgroundId;
+    if (renderer.hasTexture("map_background")) {
+        backgroundId = "map_background";
+    } else if (m_hasManifest) {
+        for (const auto& [id, path] : m_manifest.textures) {
+            (void)path;
+            std::string lowered = id;
+            std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            if (lowered.find("map") == std::string::npos &&
+                lowered.find("background") == std::string::npos &&
+                lowered.find("track") == std::string::npos &&
+                lowered.find("level") == std::string::npos) continue;
+            if (renderer.hasTexture(id)) {
+                backgroundId = id;
+                break;
+            }
+        }
+    }
+
+    if (!backgroundId.empty()) {
+        renderer.drawSprite(backgroundId,0.0f,0.0f,480.0f,272.0f);
         return;
     }
 
