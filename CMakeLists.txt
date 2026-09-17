@@ -148,9 +148,17 @@ if(NOT TARGET_PSP)
 endif()
 
 if(BUILD_BUILDER AND NOT TARGET_PSP)
-    add_executable(btd4_builder
-        builder/main.cpp builder/project/Project.hpp builder/project/Project.cpp
-        builder/ui/BuilderUI.hpp builder/ui/BuilderUI.cpp builder/platform/FileDialog.hpp builder/platform/FileDialog.cpp)
+    # The builder is a GUI application on Windows. Use the WIN32 subsystem so
+    # double-clicking it does not spawn a persistent console window.
+    if(WIN32)
+        add_executable(btd4_builder WIN32
+            builder/main.cpp builder/project/Project.hpp builder/project/Project.cpp
+            builder/ui/BuilderUI.hpp builder/ui/BuilderUI.cpp builder/platform/FileDialog.hpp builder/platform/FileDialog.cpp)
+    else()
+        add_executable(btd4_builder
+            builder/main.cpp builder/project/Project.hpp builder/project/Project.cpp
+            builder/ui/BuilderUI.hpp builder/ui/BuilderUI.cpp builder/platform/FileDialog.hpp builder/platform/FileDialog.cpp)
+    endif()
     target_include_directories(btd4_builder PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/builder ${CMAKE_CURRENT_SOURCE_DIR}/tools
         ${CMAKE_CURRENT_SOURCE_DIR}/platform/common ${CMAKE_CURRENT_SOURCE_DIR}/engine)
     target_link_libraries(btd4_builder PRIVATE btd4_platform btd4_engine btd4_importer_lib imgui)
