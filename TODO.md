@@ -1,69 +1,686 @@
+TODO.md
+
 Legend:
 
-* [ ] Not started
+* [ ]	Not started
 * [~] In progress
-* [x] Complete
-* [!] Blocked
+* [x]	Complete
+* [!]	Blocked
 
 Every blocked task must include a Blocked by: entry and a Reasoning: entry.
-The reasoning must state the concrete dependency or condition that prevented completion, the checks performed, and what is needed to unblock the task.
+The reasoning must state the concrete dependency or condition that prevented
+completion, the checks performed, and what is needed to unblock the task.
 
 Agents should claim a task before working on it.
 
----
+⸻
 
-MILESTONE 7: UPGRADES
+MILESTONE 1: PROJECT INFRASTRUCTURE
 
-* [x] Upgrade data format
-    Agent: existing placeholder upgrade schema
-    Notes: Versioned JSON upgrade definitions are present at assets/placeholder/upgrades/default_upgrades.json.
-* [x] Upgrade loading
-    Agent: upgrade system
-    Notes: Upgrade parsing, validation, lookup, and filesystem loading are implemented in engine/game/Upgrade.cpp.
-* [ ] Upgrade UI
-* [x] Stat modifications
-    Agent: upgrade system
-    Notes: Tower::applyUpgrade applies range, cooldown, damage, pierce, projectile speed, and explosion-radius effects.
-* [x] Multiple upgrade paths
-    Agent: upgrade system
-    Notes: Towers track two independent upgrade paths and enforce sequential tiers.
-* [x] Upgrade validation
-    Agent: upgrade system
-    Notes: Upgrade identity, tier, duplicate, cost, and numeric effect validation is implemented and covered by tests.
+Build System
 
----
+* [x]	Create root CMake project
+    Agent: project-infrastructure
+* [x]	Create CMake presets
+    Agent: project-infrastructure
+* [x]	Create shared engine target
+    Agent: project-infrastructure
+* [x]	Create desktop executable
+    Agent: project-infrastructure
+* [x]	Create Game Builder executable
+    Agent: project-infrastructure
+* [x]	Create PSP toolchain configuration
+    Agent: project-infrastructure
+* [x]	Create Xbox 360 placeholder backend
+    Agent: project-infrastructure
+
+GitHub Actions
+
+* [x]	Windows CI
+    Agent: project-infrastructure
+* [x]	Linux CI
+    Agent: project-infrastructure
+* [x]	PSP CI
+    Agent: project-infrastructure
+* [x]	Combined build workflow
+    Agent: project-infrastructure
+* [x]	Artifact packaging
+    Agent: project-infrastructure
+* [x]	Release workflow
+    Agent: project-infrastructure
+
+Testing
+
+* [x]	Create test framework
+    Agent: project-infrastructure
+* [x]	Add core engine tests
+    Agent: project-infrastructure
+* [x]	Add CI test execution
+    Agent: project-infrastructure
+
+⸻
+
+MILESTONE 2: PLATFORM ABSTRACTION
+
+Core
+
+* [x]	Platform abstraction
+    Agent: Codex / Antigravity
+* [x]	Filesystem abstraction
+    Agent: Codex / Antigravity
+* [x]	Timing abstraction
+    Agent: platform-abstraction / Antigravity
+* [x]	Logging abstraction
+    Agent: platform-abstraction / Antigravity
+* [x]	Input abstraction
+    Agent: Codex / Antigravity
+* [x]	Audio abstraction
+    Agent: Codex / Antigravity
+* [x]	Renderer abstraction
+    Agent: Codex / Antigravity
+
+Windows
+
+* [x]	Windows renderer
+    Agent: Codex / Antigravity
+* [x]	Windows input
+    Agent: Codex / Antigravity
+* [x]	Windows audio
+    Agent: platform-abstraction / Antigravity
+* [x]	Windows filesystem
+    Agent: Codex / Antigravity
+
+Linux
+
+* [x]	Linux renderer
+    Agent: Codex / Antigravity
+* [x]	Linux input
+    Agent: Codex / Antigravity
+* [x]	Linux audio
+    Agent: platform-abstraction / Antigravity
+* [x]	Linux filesystem
+    Agent: Codex / Antigravity
+
+PSP
+
+* [ ]	PSP renderer
+    Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [ ]	PSP input
+    Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [ ]	PSP audio
+    Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [ ]	PSP filesystem
+    Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [ ]	PSP memory utilities
+    Notes: Local PSP cross-toolchain verified; implementation and runtime validation remain.
+* [x]	PSP packaging
+    Agent: Codex - minimal native PSP bootstrap and verified EBOOT packaging
+    Validation: PSP GCC 15.2.0 cross-build and EBOOT structure test passed on Windows; corrupt/missing package checks passed.
+    Notes: Bootstrap only; PPSSPP/hardware and GitHub CI not run. See docs/psp-build.md.
+
+Xbox 360
+
+* [x]	Backend skeleton only
+    Agent: Codex / Antigravity
+
+⸻
+
+MILESTONE 3: RENDERING
+
+* [x]	Texture system
+	Agent: rendering / Antigravity
+* [x]	Sprite system
+	Agent: rendering / Antigravity
+* [x]	Sprite batching
+	Agent: rendering / Antigravity
+* [x]	Texture atlas support
+	Agent: rendering / Antigravity
+* [x]	Font rendering
+	Agent: rendering / Antigravity
+* [x]	Basic shapes
+	Agent: rendering / Antigravity
+* [x]	Camera
+	Agent: rendering / Antigravity
+
+Display & Resolution
+
+* [x]	Logical resolution system
+	Agent: rendering / Antigravity
+* [x]	Multiple selectable logical resolutions
+	Agent: rendering / Antigravity
+* [x]	Native display resolution detection
+	Agent: rendering / Antigravity
+* [x]	Resolution configuration
+	Agent: rendering / Antigravity
+* [x]	Aspect-ratio handling
+	Agent: rendering / Antigravity
+* [x]	Letterboxing/pillarboxing
+	Agent: rendering / Antigravity
+* [x]	Integer scaling mode
+	Agent: rendering / Antigravity
+* [x]	Fractional scaling mode
+	Agent: rendering / Antigravity
+* [x]	Fullscreen scaling
+	Agent: rendering / Antigravity
+* [x]	Windowed scaling
+	Agent: rendering / Antigravity
+* [x]	Per-platform display profiles
+	Agent: rendering / Antigravity
+* [x]	PSP 480x272 display profile
+	Agent: rendering / Antigravity
+* [x]	Desktop 16:9 profiles
+	Agent: rendering / Antigravity
+* [x]	Desktop 4:3 profiles
+	Agent: rendering / Antigravity
+* [x]	HD resolution profiles
+	Agent: rendering / Antigravity
+* [x]	iPad/HD source resolution profiles
+	Agent: rendering / Antigravity
+* [x]	Custom resolution support
+	Agent: rendering / Antigravity
+* [x]	Resolution-safe UI layout
+	Agent: rendering / Antigravity
+* [x]	Resolution testing/debug overlay
+	Agent: rendering / Antigravity
+* [x]	Debug renderer
+	Agent: rendering / Antigravity
+* [x]	FPS counter
+	Agent: rendering / Antigravity
+
+⸻
 
 MILESTONE 4: INPUT
 
-* [ ] Keyboard input
-* [ ] Mouse input
-* [ ] PSP controls
-* [ ] PSP analog input
-* [ ] Xbox controller abstraction
-* [ ] Input mapping
-* [ ] Rebindable controls
+* [ ]	Keyboard input
+* [ ]	Mouse input
+* [ ]	PSP controls
+* [ ]	PSP analog input
+* [ ]	Xbox controller abstraction
+* [ ]	Input mapping
+* [ ]	Rebindable controls
 
 Controller System
 
-* [ ] Controller enumeration
-* [ ] Controller connection/disconnection detection
-* [ ] Controller assignment
-* [ ] Player-to-controller mapping
-* [ ] Per-player input state
-* [ ] Multiple simultaneous controllers
-* [ ] Controller configuration
-* [ ] Controller hot-plug support
-* [ ] Controller vibration abstraction
-* [ ] Local multiplayer input testing
+* [ ]	Controller enumeration
+* [ ]	Controller connection/disconnection detection
+* [ ]	Controller assignment
+* [ ]	Player-to-controller mapping
+* [ ]	Per-player input state
+* [ ]	Multiple simultaneous controllers
+* [ ]	Controller configuration
+* [ ]	Controller hot-plug support
+* [ ]	Controller vibration abstraction
+* [ ]	Local multiplayer input testing
 
 PSP Controller Support
 
-* [ ] PSP controller backend
-* [ ] PSP multi-controller support
-* [ ] PSP controller adapter support
-* [ ] PSP player assignment
-* [ ] PSP controller compatibility testing
+* [ ]	PSP controller backend
+* [ ]	PSP multi-controller support
+* [ ]	PSP controller adapter support
+* [ ]	PSP player assignment
+* [ ]	PSP controller compatibility testing
 
----
+⸻
 
-NOTE: The full TODO remains in the repository history and other milestones are unchanged. The upgrade section above records the current implemented state; the remaining high-priority work is connecting the upgrade system to the final in-game UI and expanding the source-accurate upgrade data.
+MILESTONE 5: CORE GAME
+
+Game State
+
+* [x]	Game state machine
+    Agent: Antigravity
+* [x]	Main menu state
+    Agent: Antigravity
+* [x]	Gameplay state
+    Agent: Antigravity
+* [x]	Pause state
+    Agent: Antigravity
+* [x]	Game over state
+    Agent: Antigravity
+* [x]	Victory state
+    Agent: Antigravity
+
+Maps
+
+* [x]	Map data structure
+    Agent: Antigravity
+* [x]	Path data structure
+    Agent: Antigravity
+* [x]	Waypoints
+    Agent: Antigravity
+* [x]	Spawn points
+    Agent: Antigravity
+* [x]	Exit points
+    Agent: Antigravity
+* [x]	Buildable regions
+    Agent: Antigravity
+* [x]	Blocked regions
+    Agent: Antigravity
+* [x]	Map loader
+    Agent: Codex - versioned internal map loading
+    Validation: Windows portable Zig C++17 build; 5 new map suites and 7 existing simulation suites passed.
+    Notes: See docs/map-format.md. Full SDL/CMake application build, Linux and PSP not tested in this task.
+* [x]	Map validator
+    Agent: Antigravity
+
+Bloons
+
+* [x]	Base bloon entity
+    Agent: Antigravity
+* [x]	Movement
+    Agent: Antigravity
+* [x]	Path following
+    Agent: Antigravity
+* [x]	Health
+    Agent: Antigravity
+* [x]	Popping
+    Agent: Antigravity
+* [x]	Leaking
+    Agent: Antigravity
+* [x]	Child bloons
+    Agent: Antigravity
+* [x]	Special behaviour
+    Agent: Antigravity
+* [x]	Object pooling
+    Agent: Antigravity
+
+Towers
+
+* [x]	Tower entity
+    Agent: Antigravity
+* [x]	Placement
+    Agent: Antigravity
+* [x]	Range
+    Agent: Antigravity
+* [x]	Targeting
+    Agent: Antigravity
+* [x]	First targeting
+    Agent: Antigravity
+* [x]	Last targeting
+    Agent: Antigravity
+* [x]	Close targeting
+    Agent: Antigravity
+* [x]	Strong targeting
+    Agent: Antigravity
+* [x]	Attack cooldown
+    Agent: Antigravity
+
+Projectiles
+
+* [x]	Projectile entity
+    Agent: Antigravity
+* [x]	Movement
+    Agent: Antigravity
+* [x]	Collision
+    Agent: Antigravity
+* [x]	Damage
+    Agent: Antigravity
+* [x]	Pierce
+    Agent: Antigravity
+* [x]	Area damage
+    Agent: Antigravity
+* [x]	Projectile pooling
+    Agent: Antigravity
+
+⸻
+
+MILESTONE 6: ECONOMY
+
+* [x]	Cash
+    Agent: Antigravity
+* [x]	Lives
+    Agent: Antigravity
+* [x]	Tower costs
+    Agent: Antigravity
+* [ ]	Upgrade costs
+* [x]	Sell values
+    Agent: Antigravity
+* [x]	Round rewards
+    Agent: Antigravity
+* [x]	Economy tests
+    Agent: Antigravity
+
+⸻
+
+MILESTONE 7: UPGRADES
+
+* [ ]	Upgrade data format
+* [ ]	Upgrade loading
+* [ ]	Upgrade UI
+* [ ]	Stat modifications
+* [ ]	Multiple upgrade paths
+* [ ]	Upgrade validation
+
+⸻
+
+MILESTONE 8: ROUNDS
+
+* [x]	Round data format
+    Agent: Codex - data-driven rounds
+* [x]	Round loader
+    Agent: Codex - data-driven rounds
+* [x]	Bloon groups
+    Agent: Codex - data-driven rounds
+* [x]	Spawn timing
+    Agent: Codex - data-driven rounds
+* [x]	Round completion
+    Agent: Codex - data-driven rounds
+* [x]	Round rewards
+    Agent: Codex - data-driven rounds
+* [x]	Freeplay framework
+    Agent: Codex - deterministic freeplay generator
+    Validation: Generator tests cover invalid input, campaign cycling, and progressive spawn-pressure scaling.
+
+Round validation: Windows portable Zig C++17 build; all 19 map, simulation and round suites passed.
+See docs/round-format.md. Full SDL/CMake builds, Linux and PSP were not tested.
+
+⸻
+
+MILESTONE 9: UI
+
+Core & Abstraction
+
+* [ ]	UIAdapter interface
+* [ ]	UILayout configuration
+* [ ]	Graphics Style loading
+* [ ]	Resolution-independent UI coordinates
+* [ ]	UI scaling
+* [ ]	Aspect-ratio-safe UI
+* [ ]	Controller navigation abstraction
+* [ ]	Per-player UI support
+
+Platform Backends
+
+* [ ]	Desktop PlatformUI (Mouse)
+* [ ]	Desktop PlatformUI (Keyboard/Gamepad)
+* [ ]	PSP PlatformUI (D-pad/Buttons)
+* [ ]	Xbox 360 PlatformUI (Gamepad)
+
+Screens & Panels
+
+* [ ]	Main menu
+* [x]	Tower selection (Mobile-port style sidebar)
+	Agent: ui / Antigravity
+* [ ]	Tower information
+* [ ]	Upgrade panel
+* [x]	HUD (Cash, lives, round)
+	Agent: ui / Antigravity
+* [ ]	Pause menu
+* [ ]	Victory screen
+* [ ]	Game over screen
+* [ ]	Options menu
+* [ ]	Resolution selection
+* [ ]	Display settings
+* [ ]	Controller settings
+* [ ]	Multiplayer lobby/player selection
+
+⸻
+
+MILESTONE 10: AUDIO
+
+* [ ]	Audio abstraction
+* [ ]	Sound effect loader
+* [ ]	Music loader
+* [ ]	Sound playback
+* [ ]	Music playback
+* [ ]	Volume settings
+* [ ]	Audio caching
+* [ ]	PSP audio optimization
+
+⸻
+
+MILESTONE 11: ACHIEVEMENTS
+
+* [ ]	Achievement data format
+* [ ]	Achievement manager
+* [ ]	Achievement progress
+* [ ]	Achievement unlocking
+* [ ]	Achievement notifications
+* [ ]	Hidden achievements
+* [ ]	Local achievement storage
+* [ ]	Platform achievement abstraction
+
+⸻
+
+MILESTONE 12: SAVE SYSTEM
+
+* [ ]	Save format
+* [ ]	Save versioning
+* [ ]	Save/load manager
+* [ ]	Settings saves
+* [ ]	Progress saves
+* [ ]	Achievement saves
+* [ ]	Custom map saves
+* [ ]	Migration system
+
+⸻
+
+MILESTONE 13: ASSET IMPORTER
+
+General
+
+* [x]	Input detection
+	Agent: asset-importer / Antigravity
+* [x]	Source version detection
+	Agent: asset-importer / Antigravity
+* [x]	Internal asset format
+	Agent: asset-importer / Antigravity
+* [x]	Asset manifest
+	Agent: asset-importer / Antigravity
+* [x]	Placeholder asset loading (fallback)
+	Agent: asset-importer / Antigravity
+* [x]	Placeholder JSON data authoring (1:1 accuracy)
+	Agent: asset-importer / Antigravity
+* [x]	Validation
+	Agent: asset-importer / Antigravity
+* [x]	Conversion pipeline
+	Agent: asset-importer / Antigravity
+* [x]	Error reporting
+	Agent: asset-importer / Antigravity
+* [x]	Duplicate asset detection
+	Agent: asset-importer / Antigravity
+* [x]	Asset dependency tracking
+	Agent: asset-importer / Antigravity
+* [x]	Asset version tracking
+	Agent: asset-importer / Antigravity
+* [x]	Source compatibility report
+	Agent: asset-importer / Antigravity
+* [x]	Imported content manifest
+	Agent: asset-importer / Antigravity
+
+Flash / SWF
+
+* [x]	SWF parser
+	Agent: asset-importer / Antigravity
+* [x]	Bitmap extraction
+	Agent: asset-importer / Antigravity
+* [x]	Vector extraction
+	Agent: asset-importer / Antigravity
+* [x]	Sprite extraction
+	Agent: asset-importer / Antigravity
+* [x]	Animation extraction
+	Agent: asset-importer / Antigravity
+* [x]	Audio extraction
+	Agent: asset-importer / Antigravity
+* [x]	Data extraction
+	Agent: asset-importer / Antigravity
+* [x]	Font extraction
+	Agent: asset-importer / Antigravity
+* [x]	Metadata extraction
+	Agent: asset-importer / Antigravity
+* [x]	Version detection
+	Agent: asset-importer / Antigravity
+* [x]	Flash game data identification
+	Agent: asset-importer / Antigravity
+
+Bloons TD 4 Flash
+
+* [ ]	BTD4 Flash version detection
+* [ ]	BTD4 Flash asset identification
+* [ ]	BTD4 Flash tower data identification
+* [ ]	BTD4 Flash bloon data identification
+* [ ]	BTD4 Flash map identification
+* [ ]	BTD4 Flash round data identification
+* [ ]	BTD4 Flash upgrade data identification
+* [ ]	BTD4 Flash UI asset identification
+
+Bloons TD 4 Expansion
+
+* [ ]	Expansion source identification
+* [ ]	Expansion asset identification
+* [ ]	Expansion map identification
+* [ ]	Expansion tower/data identification
+* [ ]	Expansion round/data identification
+
+Bloons TD 4 HD / iPad
+
+* [ ]	HD source identification
+* [ ]	HD asset identification
+* [ ]	HD map identification
+* [ ]	HD tower/data identification
+* [ ]	HD round/data identification
+* [ ]	HD UI identification
+
+IPA
+
+* [ ]	IPA archive detection
+* [ ]	IPA extraction
+* [ ]	IPA resource discovery
+* [ ]	IPA metadata extraction
+* [ ]	IPA source manifest
+* [ ]	IPA-to-internal conversion
+
+⸻
+
+MILESTONE 14: GAME BUILDER
+
+* [ ]	Project creation
+* [ ]	Project loading
+* [x]	Project saving
+    Agent: builder
+* [x]	Asset import UI
+    Agent: builder - native file picker, Explorer/file-manager drag-and-drop, SWF/IPA paths
+* [x]	Source edition selector
+    Agent: builder - BTD4 Flash / BTD4 Expansion / BTD4 HD (iPad), isolated output directories
+* [x]	Platform selector
+    Agent: builder
+* [ ]	Build configuration
+* [ ]	Build invocation
+* [ ]	Build output management
+* [ ]	Project validation
+* [ ]	Map editor
+* [ ]	Round editor
+* [ ]	Tower editor
+* [ ]	Upgrade editor
+* [ ]	Preview mode
+
+⸻
+
+MILESTONE 15: MAP EDITOR
+
+* [ ]	Map editor core
+* [ ]	Map canvas
+* [ ]	Waypoint editing
+* [ ]	Path editing
+* [ ]	Spawn editing
+* [ ]	Exit editing
+* [ ]	Buildable region editing
+* [ ]	Blocked region editing
+* [ ]	Map validation UI
+* [ ]	Map preview
+* [ ]	Map save/load
+* [ ]	Custom map packaging
+
+⸻
+
+MILESTONE 16: MULTIPLAYER
+
+* [ ]	Local multiplayer framework
+* [ ]	Player abstraction
+* [ ]	Player state
+* [ ]	Multiple tower ownership
+* [ ]	Shared economy mode
+* [ ]	Split economy mode
+* [ ]	Local multiplayer UI
+* [ ]	Network abstraction
+* [ ]	Online session framework
+* [ ]	Host/join
+* [ ]	Session discovery
+* [ ]	State synchronization
+* [ ]	Prediction/interpolation
+* [ ]	Desync detection
+* [ ]	Reconnect support
+
+⸻
+
+MILESTONE 17: XBOX 360
+
+* [x]	Xbox 360 backend skeleton
+	Agent: Codex / Antigravity
+* [ ]	Xbox 360 renderer
+* [ ]	Xbox 360 input
+* [ ]	Xbox 360 audio
+* [ ]	Xbox 360 filesystem
+* [ ]	Xbox 360 packaging
+* [ ]	Xbox 360 deployment
+
+⸻
+
+MILESTONE 18: PSP
+
+* [ ]	PSP renderer implementation
+* [ ]	PSP input implementation
+* [ ]	PSP audio implementation
+* [ ]	PSP filesystem implementation
+* [ ]	PSP memory utilities
+* [x]	PSP packaging
+	Agent: Codex
+* [ ]	PSP runtime validation
+* [ ]	PPSSPP testing
+* [ ]	Hardware testing
+
+⸻
+
+MILESTONE 19: QUALITY
+
+* [ ]	Performance profiling
+* [ ]	Memory profiling
+* [ ]	Leak detection
+* [ ]	Crash handling
+* [ ]	Error recovery
+* [ ]	Logging improvements
+* [ ]	Debug tools
+* [ ]	Automated regression testing
+* [ ]	Cross-platform testing
+* [ ]	Asset compatibility testing
+
+⸻
+
+MILESTONE 20: POLISH
+
+* [ ]	Animation polish
+* [ ]	Particle effects
+* [ ]	Visual effects
+* [ ]	UI polish
+* [ ]	Sound polish
+* [ ]	Music integration
+* [ ]	Tutorial
+* [ ]	Help system
+* [ ]	Accessibility
+* [ ]	Localization
+* [ ]	Credits
+* [ ]	About screen
+
+⸻
+
+MILESTONE 21: RELEASE
+
+* [ ]	Versioning
+* [ ]	Release builds
+* [ ]	Installer
+* [ ]	Portable package
+* [ ]	PSP package
+* [ ]	Linux package
+* [ ]	Xbox package
+* [ ]	Documentation
+* [ ]	Licensing review
+* [ ]	Final QA
