@@ -114,8 +114,14 @@ if(BUILD_GAME)
         if(TARGET SDL2::SDL2)
             target_link_libraries(btd4_game PRIVATE SDL2::SDL2)
         elseif(SDL2_LIBRARIES)
-            target_link_libraries(btd4_game PRIVATE SDL2_LIBRARIES)
+            target_link_libraries(btd4_game PRIVATE ${SDL2_LIBRARIES})
             target_include_directories(btd4_game PRIVATE ${SDL2_INCLUDE_DIRS})
+        endif()
+        if(WIN32 AND TARGET SDL2::SDL2)
+            add_custom_command(TARGET btd4_game POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:btd4_game>"
+                COMMENT "Deploying SDL2 runtime for btd4_game")
         endif()
     else()
         if(NOT COMMAND create_pbp_file)
@@ -156,6 +162,12 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
     endif()
     if(WIN32)
         target_link_libraries(btd4_builder PRIVATE comdlg32)
+        if(TARGET SDL2::SDL2)
+            add_custom_command(TARGET btd4_builder POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:btd4_builder>"
+                COMMENT "Deploying SDL2 runtime for btd4_builder")
+        endif()
     endif()
 endif()
 
