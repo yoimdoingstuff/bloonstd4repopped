@@ -1,15 +1,16 @@
 #pragma once
 
 #include <iostream>
+#include <stdexcept>
 #include <string>
-#include <vector>
-#include <functional>
 
 namespace btd4::test {
 
+using TestFunction = void (*)();
+
 struct TestCase {
-    std::string name;
-    std::function<void()> func;
+    const char* name;
+    TestFunction func;
 };
 
 class TestRunner {
@@ -19,8 +20,12 @@ public:
         return s_instance;
     }
 
-    void registerTest(const std::string& name, std::function<void()> func) {
-        m_tests.push_back({name, std::move(func)});
+    void registerTest(const char* name, TestFunction func) {
+        if (m_testCount >= kMaxTests) {
+            std::cerr << "Too many tests registered; increase TestRunner::kMaxTests." << std::endl;
+            std::terminate();
+        }
+        m_tests[m_testCount++] = {name, func};
     }
 
     int run() {
@@ -28,21 +33,22 @@ public:
         int failed = 0;
 
         std::cout << "========================================" << std::endl;
-        std::cout << " Running " << m_tests.size() << " test suites..." << std::endl;
+        std::cout << " Running " << m_testCount << " test suites..." << std::endl;
         std::cout << "========================================" << std::endl;
 
-        for (const auto& test : m_tests) {
+        for (size_t index = 0; index < m_testCount; ++index) {
+            const TestCase& test = m_tests[index];
             std::cout << "[ RUN      ] " << test.name << std::endl;
             try {
                 test.func();
                 std::cout << "[       OK ] " << test.name << std::endl;
-                passed++;
+                ++passed;
             } catch (const std::exception& e) {
                 std::cerr << "[  FAILED  ] " << test.name << ": " << e.what() << std::endl;
-                failed++;
+                ++failed;
             } catch (...) {
                 std::cerr << "[  FAILED  ] " << test.name << ": Unknown exception" << std::endl;
-                failed++;
+                ++failed;
             }
         }
 
@@ -54,12 +60,14 @@ public:
     }
 
 private:
-    std::vector<TestCase> m_tests;
+    static constexpr size_t kMaxTests = 256;
+    TestCase m_tests[kMaxTests]{};
+    size_t m_testCount{0};
 };
 
 struct TestRegistrar {
-    TestRegistrar(const std::string& name, std::function<void()> func) {
-        TestRunner::instance().registerTest(name, std::move(func));
+    TestRegistrar(const char* name, TestFunction func) {
+        TestRunner::instance().registerTest(name, func);
     }
 };
 
