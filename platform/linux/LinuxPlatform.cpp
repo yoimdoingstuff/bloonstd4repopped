@@ -62,6 +62,21 @@ BuildResult LinuxPlatform::configure() {
     }
 
     std::error_code ec;
+    const fs::path dataRoot = root / "game_data" / "Linux";
+    bool importedData = false;
+    if (fs::exists(dataRoot, ec) && fs::is_directory(dataRoot, ec)) {
+        for (fs::directory_iterator it(dataRoot, ec), end; it != end && !ec; it.increment(ec)) {
+            if (it->is_directory(ec) && fs::exists(it->path() / "manifest.json", ec)) {
+                importedData = true;
+                break;
+            }
+        }
+    }
+    if (!importedData) {
+        result.message = "No imported Linux game data is available. Import source assets before configuring a playable Linux build.";
+        return result;
+    }
+
     fs::create_directories(buildRoot(), ec);
     if (ec) {
         result.message = "Could not create Linux build directory: " + ec.message();
