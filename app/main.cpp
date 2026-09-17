@@ -7,6 +7,7 @@
 #include <SDL.h>
 #include <filesystem>
 #include <iostream>
+#include <string>
 
 namespace {
 std::string executableDirectory() {
@@ -16,6 +17,22 @@ std::string executableDirectory() {
     SDL_free(base);
     while (!result.empty() && (result.back() == '/' || result.back() == '\\')) result.pop_back();
     return result.empty() ? "." : result;
+}
+
+std::string findImportedDataDirectory() {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const fs::path root("game_data");
+    if (fs::exists(root / "manifest.json", ec)) return root.string();
+    if (!fs::is_directory(root, ec)) return {};
+    std::vector<fs::path> manifests;
+    for (const auto& entry : fs::directory_iterator(root, fs::directory_options::skip_permission_denied, ec)) {
+        if (ec) break;
+        if (!entry.is_directory(ec)) continue;
+        if (fs::is_regular_file(entry.path() / "manifest.json", ec)) manifests.push_back(entry.path());
+    }
+    if (manifests.size() == 1) return manifests.front().string();
+    return {};
 }
 }
 
@@ -29,8 +46,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Packaged builds keep game_data beside the executable. Use the executable
-    // directory as the working directory so double-clicking the game works too.
     const std::string baseDir = executableDirectory();
     std::error_code ec;
     std::filesystem::current_path(baseDir, ec);
@@ -61,6 +76,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Windows/Linux desktop builds use the Flash-style desktop frontend: mouse
+    // positioning and clicks are primary, with keyboard shortcuts as helpers.
+    // PSP input is selected only by the PSP entry point, never by the desktop
+    // executable or by imported source assets.
     btd4::SDLInput input(btd4::FrontendProfile::FlashDesktop);
     btd4::Engine engine(renderer, input, btd4::FrontendProfile::FlashDesktop);
 
@@ -70,6 +89,13 @@ int main(int argc, char* argv[]) {
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
+    }
+
+    const std::string importedData = findImportedDataDirectory();
+    if (!importedData.empty()) {
+        BTD4_LOG_INFO("Imported game data detected at: " + importedData);
+    } else {
+        BTD4_LOG_INFO("No unique imported edition detected; runtime fallback data remains available.");
     }
 
     bool running = true;
