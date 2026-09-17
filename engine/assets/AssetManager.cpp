@@ -32,11 +32,10 @@ void AssetManager::setupFallbackColors() {
 bool AssetManager::initialize(const IFileSystem& fsBridge, const std::string& dataDirectory) {
     m_dataDir = dataDirectory;
     std::string err;
+    m_manifest = AssetManifest{};
+    m_hasManifest = false;
 
-    // A portable build may contain game_data/<platform>/<edition>/manifest.json.
-    // Prefer an explicitly supplied manifest, then deterministically discover a
-    // single edition directory. This keeps the runtime independent of the
-    // builder's source tree and avoids mixing multiple editions.
+    // A portable build may contain game_data/<edition>/manifest.json.
     if (m_manifest.loadFromFile(fsBridge, m_dataDir + "/manifest.json", err)) {
         m_hasManifest = true;
         return true;
@@ -78,7 +77,7 @@ bool AssetManager::initialize(const IFileSystem& fsBridge, const std::string& da
 std::string AssetManager::resolveTexturePath(const std::string& assetId) const {
     if (m_hasManifest) {
         auto it=m_manifest.textures.find(assetId);
-        if (it!=m_manifest.textures.end()) return m_dataDir+"/"+it->second;
+        if(it!=m_manifest.textures.end()) return m_dataDir+"/"+it->second;
     }
     return "";
 }
@@ -86,7 +85,7 @@ std::string AssetManager::resolveTexturePath(const std::string& assetId) const {
 std::string AssetManager::resolveAudioPath(const std::string& assetId) const {
     if (m_hasManifest) {
         auto it=m_manifest.audio.find(assetId);
-        if (it!=m_manifest.audio.end()) return m_dataDir+"/"+it->second;
+        if(it!=m_manifest.audio.end()) return m_dataDir+"/"+it->second;
     }
     return "";
 }
@@ -137,6 +136,14 @@ void AssetManager::drawProjectile(IRenderer& renderer,const Projectile& proj) co
 }
 
 void AssetManager::drawMap(IRenderer& renderer,const Map& map) const {
+    // Imported SWF bitmap artwork is used as the map presentation layer when
+    // the importer found a likely map/background image. Gameplay geometry still
+    // comes from the internal Map format, so towers and bloons remain interactive.
+    if(renderer.hasTexture("map_background")) {
+        renderer.drawSprite("map_background",0.0f,0.0f,480.0f,272.0f);
+        return;
+    }
+
     renderer.drawRect(0,0,480,272,{34,139,34,255},true);
     for(const auto& br:map.blockedRegions()){renderer.drawRect(br.x,br.y,br.w,br.h,{46,117,46,255},true);renderer.drawRect(br.x,br.y,br.w,br.h,{25,80,25,255},false);}
     for(const auto& path:map.paths()){const auto& w=path.waypoints();for(size_t i=0;i+1<w.size();++i){for(float o=-8;o<=8;o+=2)renderer.drawLine(w[i].x+o,w[i].y,w[i+1].x+o,w[i+1].y,{210,180,140,255});renderer.drawLine(w[i].x-9,w[i].y,w[i+1].x-9,w[i+1].y,{160,130,95,255});renderer.drawLine(w[i].x+9,w[i].y,w[i+1].x+9,w[i+1].y,{160,130,95,255});}}
