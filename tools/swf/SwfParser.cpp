@@ -1,11 +1,108 @@
 #include "SwfParser.hpp"
 #include "SwfReader.hpp"
 #include "Inflate.hpp"
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <unordered_set>
 
 namespace btd4::swf {
+namespace {
+
+void skipMatrix(SwfReader& reader) {
+    const uint8_t hasScaleBits = static_cast<uint8_t>(reader.readUB(5));
+    if (hasScaleBits > 0) {
+        reader.readSB(hasScaleBits);
+        reader.readSB(hasScaleBits);
+    }
+
+    const uint8_t hasRotateBits = static_cast<uint8_t>(reader.readUB(5));
+    if (hasRotateBits > 0) {
+        reader.readSB(hasRotateBits);
+        reader.readSB(hasRotateBits);
+    }
+
+    const uint8_t translateBits = static_cast<uint8_t>(reader.readUB(5));
+    if (translateBits > 0) {
+        reader.readSB(translateBits);
+        reader.readSB(translateBits);
+    }
+    reader.alignBit();
+}
+
+void skipColor(SwfReader& reader, bool hasAlpha) {
+    reader.skip(hasAlpha ? 4 : 3);
+}
+
+void skipGradient(SwfReader& reader, bool hasAlpha) {
+    reader.readUI8(); // spread mode, interpolation mode and gradient count
+    const uint8_t gradientHeader = reader.currentPtr()[-1];
+    const uint8_t count = static_cast<uint8_t>(gradientHeader & 0x0F);
+    for (uint8_t i = 0; i < count; ++i) {
+        reader.readUI8(); // ratio
+        skipColor(reader, hasAlpha);
+    }
+}
+
+void skipFillStyle(SwfReader& reader, uint16_t tagCode, std::vector<uint16_t>& bitmapRefs) {
+    const uint8_t type = reader.readUI8();
+    const bool hasAlpha = tagCode >= static_cast<uint16_t>(TagCode::DefineShape3);
+
+    if (type == 0x00) {
+        skipColor(reader, hasAlpha);
+        return;
+    }
+
+    if (type == 0x10 || type == 0x12 || type == 0x13) {
+        skipMatrix(reader);
+        skipGradient(reader, hasAlpha);
+        if (type == 0x13) {
+            reader.skip(2); // focal point, FIXED8
+        }
+        return;
+    }
+
+    if (type >= 0x40 && type <= 0x43) {
+        const uint16_t bitmapId = reader.readUI16();
+        bitmapRefs.push_back(bitmapId);
+        skipMatrix(reader);
+        return;
+    }
+
+    // Unknown fill styles are intentionally left unsupported. Shape parsing
+    // is best-effort because the runtime only needs the bitmap relationships.
+    throw std::runtime_error("Unsupported SWF fill style");
+}
+
+std::vector<uint16_t> extractShapeBitmapRefs(const uint8_t* payload, size_t length, uint16_t tagCode) {
+    SwfReader reader(payload, length);
+    reader.readUI16(); // ShapeId
+    reader.readRect();
+    if (tagCode == static_cast<uint16_t>(TagCode::DefineShape4)) {
+        reader.readRect(); // EdgeBounds
+        reader.readUI8();  // Shape4 flags
+    }
+
+    uint16_t fillStyleCount = reader.readUI8();
+    if (fillStyleCount == 0xFF) {
+        fillStyleCount = reader.readUI16();
+    }
+
+    std::vector<uint16_t> refs;
+    for (uint16_t i = 0; i < fillStyleCount; ++i) {
+        skipFillStyle(reader, tagCode, refs);
+    }
+    return refs;
+}
+
+void appendUnique(std::vector<uint16_t>& target, uint16_t value) {
+    if (std::find(target.begin(), target.end(), value) == target.end()) {
+        target.push_back(value);
+    }
+}
+
+} // namespace
 
 SwfParser::SwfParser() = default;
 
@@ -53,9 +150,11 @@ bool SwfParser::parse(const uint8_t* data, size_t size, std::string& outError, P
     m_sounds.clear();
     m_characterToSymbol.clear();
     m_symbolToCharacter.clear();
+    m_characterBitmapRefs.clear();
+    m_characterChildren.clear();
     m_warnings.clear();
+    m_metadata.symbolNames.clear();
 
-    // 1. Signature Check
     char sig0 = static_cast<char>(data[0]);
     char sig1 = static_cast<char>(data[1]);
     char sig2 = static_cast<char>(data[2]);
@@ -86,7 +185,6 @@ bool SwfParser::parse(const uint8_t* data, size_t size, std::string& outError, P
 
     if (progress) progress(0.05f, "Decompressing SWF header...");
 
-    // 2. Decompression
     std::vector<uint8_t> movieBuffer;
     const uint8_t* movieData = nullptr;
     size_t movieSize = 0;
@@ -110,7 +208,6 @@ bool SwfParser::parse(const uint8_t* data, size_t size, std::string& outError, P
         return false;
     }
 
-    // 3. Read Movie Header
     try {
         SwfReader headerReader(movieData, movieSize);
         m_header.frameSize = headerReader.readRect();
@@ -123,7 +220,6 @@ bool SwfParser::parse(const uint8_t* data, size_t size, std::string& outError, P
         m_metadata.frameRate = m_header.frameRate;
         m_metadata.frameCount = m_header.frameCount;
 
-        // Position where tags start
         size_t tagOffset = headerReader.position();
         if (tagOffset < movieSize) {
             return parseTags(movieData + tagOffset, movieSize - tagOffset, outError, progress);
@@ -141,9 +237,7 @@ bool SwfParser::parseTags(const uint8_t* tagData, size_t tagSize, std::string& o
     size_t tagIndex = 0;
 
     while (!reader.isEof()) {
-        if (reader.remaining() < 2) {
-            break;
-        }
+        if (reader.remaining() < 2) break;
 
         uint16_t tagWord = reader.readUI16();
         uint16_t tagCode = tagWord >> 6;
@@ -166,54 +260,66 @@ bool SwfParser::parseTags(const uint8_t* tagData, size_t tagSize, std::string& o
 
         const uint8_t* payload = reader.currentPtr();
 
-        switch (static_cast<TagCode>(tagCode)) {
-            case TagCode::End:
-                // End of movie
-                reader.skip(tagLength);
-                goto parse_finished;
+        try {
+            switch (static_cast<TagCode>(tagCode)) {
+                case TagCode::End:
+                    reader.skip(tagLength);
+                    goto parse_finished;
 
-            case TagCode::FileAttributes:
-                if (tagLength >= 4) {
-                    uint32_t flags = static_cast<uint32_t>(payload[0]) |
-                                     (static_cast<uint32_t>(payload[1]) << 8) |
-                                     (static_cast<uint32_t>(payload[2]) << 16) |
-                                     (static_cast<uint32_t>(payload[3]) << 24);
-                    m_metadata.isActionScript3 = (flags & (1 << 3)) != 0;
-                }
-                break;
+                case TagCode::FileAttributes:
+                    if (tagLength >= 4) {
+                        uint32_t flags = static_cast<uint32_t>(payload[0]) |
+                                         (static_cast<uint32_t>(payload[1]) << 8) |
+                                         (static_cast<uint32_t>(payload[2]) << 16) |
+                                         (static_cast<uint32_t>(payload[3]) << 24);
+                        m_metadata.isActionScript3 = (flags & (1 << 3)) != 0;
+                    }
+                    break;
 
-            case TagCode::SymbolClass:
-                handleSymbolClass(payload, tagLength);
-                break;
+                case TagCode::SymbolClass:
+                    handleSymbolClass(payload, tagLength);
+                    break;
 
-            case TagCode::DefineBitsJPEG2:
-                handleDefineBitsJPEG2(payload, tagLength);
-                break;
+                case TagCode::DefineBitsJPEG2:
+                    handleDefineBitsJPEG2(payload, tagLength);
+                    break;
 
-            case TagCode::DefineBitsJPEG3:
-            case TagCode::DefineBitsJPEG4:
-                handleDefineBitsJPEG3(payload, tagLength);
-                break;
+                case TagCode::DefineBitsJPEG3:
+                case TagCode::DefineBitsJPEG4:
+                    handleDefineBitsJPEG3(payload, tagLength);
+                    break;
 
-            case TagCode::DefineBitsLossless:
-                handleDefineBitsLossless(payload, tagLength, false);
-                break;
+                case TagCode::DefineBitsLossless:
+                    handleDefineBitsLossless(payload, tagLength, false);
+                    break;
 
-            case TagCode::DefineBitsLossless2:
-                handleDefineBitsLossless(payload, tagLength, true);
-                break;
+                case TagCode::DefineBitsLossless2:
+                    handleDefineBitsLossless(payload, tagLength, true);
+                    break;
 
-            case TagCode::DefineSound:
-                handleDefineSound(payload, tagLength);
-                break;
+                case TagCode::DefineShape:
+                case TagCode::DefineShape2:
+                case TagCode::DefineShape4:
+                    handleDefineShape(payload, tagLength, tagCode);
+                    break;
 
-            case TagCode::DoABC:
-                handleDoABC(payload, tagLength);
-                break;
+                case TagCode::DefineSprite:
+                    handleDefineSprite(payload, tagLength);
+                    break;
 
-            default:
-                // Ignore unsupported tags gracefully
-                break;
+                case TagCode::DefineSound:
+                    handleDefineSound(payload, tagLength);
+                    break;
+
+                case TagCode::DoABC:
+                    handleDoABC(payload, tagLength);
+                    break;
+
+                default:
+                    break;
+            }
+        } catch (const std::exception& e) {
+            m_warnings.push_back("Failed parsing SWF tag " + std::to_string(tagCode) + ": " + e.what());
         }
 
         reader.skip(tagLength);
@@ -227,7 +333,6 @@ bool SwfParser::parseTags(const uint8_t* tagData, size_t tagSize, std::string& o
     }
 
 parse_finished:
-    // Link class names from SymbolClass to extracted images and sounds
     for (auto& img : m_images) {
         img.className = findSymbolName(img.characterId);
     }
@@ -235,10 +340,13 @@ parse_finished:
         snd.className = findSymbolName(snd.characterId);
     }
 
+    resolveSymbolArtwork();
+
     m_metadata.imageCount = static_cast<uint32_t>(m_images.size());
     m_metadata.soundCount = static_cast<uint32_t>(m_sounds.size());
     m_metadata.symbolCount = static_cast<uint32_t>(m_characterToSymbol.size());
     for (const auto& [cid, name] : m_characterToSymbol) {
+        (void)cid;
         m_metadata.symbolNames.push_back(name);
     }
 
@@ -299,7 +407,6 @@ void SwfParser::handleDefineBitsLossless(const uint8_t* payload, size_t length, 
     uint16_t width = static_cast<uint16_t>(payload[3]) | (static_cast<uint16_t>(payload[4]) << 8);
     uint16_t height = static_cast<uint16_t>(payload[5]) | (static_cast<uint16_t>(payload[6]) << 8);
 
-    // payload + 7 onwards is zlib compressed color data
     const uint8_t* zlibData = payload + 7;
     size_t zlibSize = length - 7;
 
@@ -315,6 +422,126 @@ void SwfParser::handleDefineBitsLossless(const uint8_t* payload, size_t length, 
     } else {
         m_warnings.push_back("Failed to decompress DefineBitsLossless" + std::string(isVersion2 ? "2" : "") +
                              " for character " + std::to_string(characterId));
+    }
+}
+
+void SwfParser::handleDefineShape(const uint8_t* payload, size_t length, uint16_t tagCode) {
+    if (length < 4) return;
+    const uint16_t characterId = static_cast<uint16_t>(payload[0]) |
+                                 (static_cast<uint16_t>(payload[1]) << 8);
+    std::vector<uint16_t> refs = extractShapeBitmapRefs(payload, length, tagCode);
+    auto& target = m_characterBitmapRefs[characterId];
+    for (uint16_t ref : refs) appendUnique(target, ref);
+}
+
+void SwfParser::handleDefineSprite(const uint8_t* payload, size_t length) {
+    if (length < 4) return;
+
+    const uint16_t spriteId = static_cast<uint16_t>(payload[0]) |
+                              (static_cast<uint16_t>(payload[1]) << 8);
+    const uint8_t* nestedData = payload + 4;
+    const size_t nestedSize = length - 4;
+    SwfReader reader(nestedData, nestedSize);
+    auto& children = m_characterChildren[spriteId];
+
+    while (!reader.isEof()) {
+        if (reader.remaining() < 2) break;
+        const uint16_t tagWord = reader.readUI16();
+        const uint16_t tagCode = tagWord >> 6;
+        uint32_t tagLength = tagWord & 0x3F;
+        if (tagLength == 0x3F) {
+            if (reader.remaining() < 4) break;
+            tagLength = reader.readUI32();
+        }
+        if (reader.remaining() < tagLength) break;
+
+        const uint8_t* nestedPayload = reader.currentPtr();
+        if (tagCode == 4 && tagLength >= 4) {
+            const uint16_t childId = static_cast<uint16_t>(nestedPayload[0]) |
+                                     (static_cast<uint16_t>(nestedPayload[1]) << 8);
+            appendUnique(children, childId);
+        } else if (tagCode == 26 && tagLength >= 5) {
+            const uint8_t flags = nestedPayload[0];
+            if ((flags & 0x02) != 0) {
+                const size_t idOffset = 3;
+                if (idOffset + 1 < tagLength) {
+                    const uint16_t childId = static_cast<uint16_t>(nestedPayload[idOffset]) |
+                                             (static_cast<uint16_t>(nestedPayload[idOffset + 1]) << 8);
+                    appendUnique(children, childId);
+                }
+            }
+        } else if (tagCode == 70 && tagLength >= 6) {
+            const uint8_t flags1 = nestedPayload[0];
+            size_t offset = 2 + 2; // flags1, flags2, depth
+            if ((flags1 & 0x08) != 0) {
+                while (offset < tagLength && nestedPayload[offset] != 0) ++offset;
+                if (offset < tagLength) ++offset;
+            }
+            if ((flags1 & 0x02) != 0 && offset + 1 < tagLength) {
+                const uint16_t childId = static_cast<uint16_t>(nestedPayload[offset]) |
+                                         (static_cast<uint16_t>(nestedPayload[offset + 1]) << 8);
+                appendUnique(children, childId);
+            }
+        }
+
+        reader.skip(tagLength);
+        if (tagCode == 0) break;
+    }
+}
+
+void SwfParser::resolveSymbolArtwork() {
+    std::unordered_set<uint16_t> bitmapIds;
+    for (const auto& image : m_images) bitmapIds.insert(image.characterId);
+
+    std::unordered_map<uint16_t, uint16_t> resolved;
+    std::unordered_set<uint16_t> visiting;
+
+    const auto resolve = [&](auto&& self, uint16_t characterId) -> uint16_t {
+        auto cached = resolved.find(characterId);
+        if (cached != resolved.end()) return cached->second;
+        if (bitmapIds.count(characterId) != 0) {
+            resolved[characterId] = characterId;
+            return characterId;
+        }
+        if (!visiting.insert(characterId).second) return 0;
+
+        auto direct = m_characterBitmapRefs.find(characterId);
+        if (direct != m_characterBitmapRefs.end()) {
+            for (uint16_t candidate : direct->second) {
+                const uint16_t bitmapId = self(self, candidate);
+                if (bitmapId != 0) {
+                    visiting.erase(characterId);
+                    resolved[characterId] = bitmapId;
+                    return bitmapId;
+                }
+            }
+        }
+
+        auto children = m_characterChildren.find(characterId);
+        if (children != m_characterChildren.end()) {
+            for (uint16_t child : children->second) {
+                const uint16_t bitmapId = self(self, child);
+                if (bitmapId != 0) {
+                    visiting.erase(characterId);
+                    resolved[characterId] = bitmapId;
+                    return bitmapId;
+                }
+            }
+        }
+
+        visiting.erase(characterId);
+        resolved[characterId] = 0;
+        return 0;
+    };
+
+    for (auto& image : m_images) {
+        if (!image.className.empty()) continue;
+        for (const auto& [characterId, className] : m_characterToSymbol) {
+            if (resolve(resolve, characterId) == image.characterId) {
+                image.className = className;
+                break;
+            }
+        }
     }
 }
 
@@ -365,7 +592,6 @@ void SwfParser::handleDefineSound(const uint8_t* payload, size_t length) {
 void SwfParser::handleDoABC(const uint8_t* payload, size_t length) {
     (void)payload;
     (void)length;
-    // DoABC holds ActionScript 3 bytecode and string pools
 }
 
 } // namespace btd4::swf
