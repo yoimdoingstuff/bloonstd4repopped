@@ -6,6 +6,22 @@
 #include <filesystem>
 
 namespace btd4 {
+namespace fs = std::filesystem;
+
+namespace {
+fs::path findProjectRoot() {
+    std::error_code ec;
+    fs::path current = fs::current_path(ec);
+    if (ec) return {};
+    for (int i = 0; i < 10 && !current.empty(); ++i) {
+        if (fs::is_regular_file(current / "CMakeLists.txt", ec)) return current;
+        const fs::path parent = current.parent_path();
+        if (parent == current) break;
+        current = parent;
+    }
+    return {};
+}
+}
 
 BuilderUI::BuilderUI() {
     appendLog("[Builder] Initialized Game Builder UI.");
@@ -75,8 +91,6 @@ void BuilderUI::renderSourceFilesSection() {
         if (ImGui::InputText("##SourceDirectory", m_sourceDirectoryBuffer, sizeof(m_sourceDirectoryBuffer))) {
             m_project.config().sourceDirectory = m_sourceDirectoryBuffer;
         }
-        // Keep file controls on their own row. The old SameLine layout could
-        // push Browse completely outside a narrow two-column builder window.
         if (ImGui::Button("Browse Files...")) {
             const auto files = builder::browseSourceFiles();
             if (files.empty()) appendLog("[Assets] File picker cancelled or is unavailable. You can drag files onto the builder window.");
@@ -124,7 +138,9 @@ void BuilderUI::renderActionButtons(){
     if(ImGui::Button("Import Assets",ImVec2(130,32))) triggerImport(); ImGui::SameLine();
     if(ImGui::Button("Build Game",ImVec2(130,32))) triggerBuild(); ImGui::SameLine();
     if(ImGui::Button("Save Project",ImVec2(110,32))){
-        if(m_project.saveToFile("project.btd4proj")) appendLog("[Project] Saved configuration to project.btd4proj");
+        const fs::path projectRoot = findProjectRoot();
+        const fs::path savePath = projectRoot.empty() ? fs::path("project.btd4proj") : (projectRoot / "project.btd4proj");
+        if(m_project.saveToFile(savePath.string())) appendLog("[Project] Saved configuration to " + savePath.string());
         else appendLog("[Project] Error saving project file.");
     }
 }
@@ -140,7 +156,6 @@ void BuilderUI::discoverAssets(){
 void BuilderUI::triggerBuild(){
     if(!m_project.hasValidSwf()) discoverAssets();
     if(!m_project.hasValidSwf()){appendLog("[Build Error] No SWF source is selected. Import source assets first.");return;}
-    // A build always refreshes the target data first. Never package stale or partial imports.
     if(!triggerImport()){appendLog("[Build Error] Asset import did not complete; build aborted before compilation/package.");return;}
     PlatformBackend* backend=PlatformRegistry::instance().findBackend(m_project.config().targetPlatform);
     if(!backend){appendLog("[Build Error] Unknown target platform: "+m_project.config().targetPlatform);return;}
@@ -160,19 +175,29 @@ bool BuilderUI::triggerImport(){
     appendLog("========================================="); appendLog("[Pipeline] Initiating BTD4 Asset Import Pipeline...");
     if(!m_project.hasValidSwf()) discoverAssets();
     if(!m_project.hasValidSwf()){appendLog("[Error] No SWF file found. Browse or drop the base game SWF into the builder.");return false;}
+
+    const fs::path projectRoot = findProjectRoot();
+    if(projectRoot.empty()){
+        appendLog("[Pipeline Error] Could not locate the project root containing CMakeLists.txt.");
+        appendLog("=========================================");
+        return false;
+    }
+
     tools::ImportOptions options;
     options.sourceSwf=m_project.config().sourceSwf; options.sourceIpa=m_project.config().sourceIpa;
-    options.outputDir=std::string("game_data/")+m_project.config().targetPlatform+"/"+m_project.config().gameEdition;
+    options.outputDir=(projectRoot/"game_data"/m_project.config().targetPlatform/m_project.config().gameEdition).string();
     options.targetPlatform=m_project.config().targetPlatform;
     appendLog("[Pipeline] Game edition: "+m_project.config().gameEdition); appendLog("[Pipeline] Import target: "+options.targetPlatform); appendLog("[Pipeline] Output: "+options.outputDir);
     tools::ImportReport report=tools::AssetImporter::run(options,[this](const std::string& msg){appendLog(msg);});
     if(!report.success){appendLog("[Pipeline Error] Import failed: "+report.errorMessage);appendLog("=========================================");return false;}
     try{
-        namespace fs=std::filesystem;
         const fs::path outputRounds=fs::path(options.outputDir)/"rounds"/"default_rounds.json";
         if(!fs::exists(outputRounds)){
-            fs::copy_file("assets/placeholder/rounds/default_rounds.json",outputRounds,fs::copy_options::overwrite_existing);
-            appendLog("[Pipeline] Added internal fallback round data; imported assets remain source-specific.");
+            const fs::path fallbackRounds=projectRoot/"assets"/"placeholder"/"rounds"/"default_rounds.json";
+            if(fs::exists(fallbackRounds)){
+                fs::copy_file(fallbackRounds,outputRounds,fs::copy_options::overwrite_existing);
+                appendLog("[Pipeline] Added internal fallback round data; imported assets remain source-specific.");
+            } else appendLog("[Pipeline Warning] Placeholder round data was not found; runtime fallback will be used directly.");
         }
     }catch(const std::exception& e){appendLog(std::string("[Pipeline Warning] Could not add fallback round data: ")+e.what());}
     appendLog("[Pipeline Success] Successfully imported assets!"); appendLog("  Source family: "+report.sourceFamily);
