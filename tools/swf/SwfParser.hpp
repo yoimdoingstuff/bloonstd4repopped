@@ -37,6 +37,8 @@ private:
     std::vector<SwfSound> m_sounds;
     std::unordered_map<uint16_t, std::string> m_characterToSymbol;
     std::unordered_map<std::string, uint16_t> m_symbolToCharacter;
+    std::unordered_map<uint16_t, std::vector<uint16_t>> m_characterBitmapRefs;
+    std::unordered_map<uint16_t, std::vector<uint16_t>> m_characterChildren;
     std::vector<std::string> m_warnings;
 
     bool parseTags(const uint8_t* tagData, size_t tagSize, std::string& outError, ProgressCallback progress);
@@ -44,8 +46,11 @@ private:
     void handleDefineBitsJPEG2(const uint8_t* payload, size_t length);
     void handleDefineBitsJPEG3(const uint8_t* payload, size_t length);
     void handleDefineBitsLossless(const uint8_t* payload, size_t length, bool isVersion2);
+    void handleDefineShape(const uint8_t* payload, size_t length, uint16_t tagCode);
+    void handleDefineSprite(const uint8_t* payload, size_t length);
     void handleDefineSound(const uint8_t* payload, size_t length);
     void handleDoABC(const uint8_t* payload, size_t length);
+    void resolveSymbolArtwork();
 };
 
 } // namespace btd4::swf
