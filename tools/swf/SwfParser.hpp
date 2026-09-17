@@ -50,7 +50,7 @@ private:
     void handleDefineSprite(const uint8_t* payload, size_t length);
     void handleDefineSound(const uint8_t* payload, size_t length);
     void handleDoABC(const uint8_t* payload, size_t length);
-    void resolveSymbolArtwork();
+    bool resolveSymbolArtwork();
 };
 
 } // namespace btd4::swf
