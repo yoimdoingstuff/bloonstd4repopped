@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace {
 std::string executableDirectory() {
@@ -76,10 +77,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Windows/Linux desktop builds use the Flash-style desktop frontend: mouse
-    // positioning and clicks are primary, with keyboard shortcuts as helpers.
-    // PSP input is selected only by the PSP entry point, never by the desktop
-    // executable or by imported source assets.
+    // Desktop builds always use the Flash-style mouse-first frontend. PSP input
+    // is selected only by the PSP entry point, so importing a PSP source asset
+    // set cannot accidentally change Windows controls.
     btd4::SDLInput input(btd4::FrontendProfile::FlashDesktop);
     btd4::Engine engine(renderer, input, btd4::FrontendProfile::FlashDesktop);
 
