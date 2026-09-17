@@ -2,6 +2,8 @@
 #include "../rendering/DebugRenderer.hpp"
 #include "../../platform/common/NativeFileSystem.hpp"
 #include <cmath>
+#include <filesystem>
+#include <algorithm>
 
 namespace btd4 {
 
@@ -17,6 +19,23 @@ TowerType towerForAction(InputAction action, bool& matched) {
         case InputAction::SelectTower6: return TowerType::SuperMonkey;
         default: matched = false; return TowerType::DartMonkey;
     }
+}
+
+std::string findRuntimeDataDirectory(const std::string& root) {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const fs::path direct(root);
+    if (fs::is_regular_file(direct / "manifest.json", ec)) return direct.string();
+    if (!fs::is_directory(direct, ec)) return {};
+
+    std::vector<fs::path> candidates;
+    for (const auto& entry : fs::directory_iterator(direct, fs::directory_options::skip_permission_denied, ec)) {
+        if (ec) break;
+        if (!entry.is_directory(ec)) continue;
+        if (fs::is_regular_file(entry.path() / "manifest.json", ec)) candidates.push_back(entry.path());
+    }
+    std::sort(candidates.begin(), candidates.end());
+    return candidates.size() == 1 ? candidates.front().string() : std::string{};
 }
 }
 
@@ -39,7 +58,9 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
     const std::string dataDir = "game_data";
     AssetManager::instance().initialize(fs, dataDir);
     size_t preloaded = AssetManager::instance().preloadTextures(m_renderer);
-    BTD4_LOG_INFO("Asset pipeline initialized. Textures preloaded into renderer: " + std::to_string(preloaded));
+    const std::string runtimeDataDir = AssetManager::instance().dataDirectory();
+    BTD4_LOG_INFO("Asset pipeline initialized. Runtime data directory: " + runtimeDataDir);
+    BTD4_LOG_INFO("Textures preloaded into renderer: " + std::to_string(preloaded));
 
     Map gameMap("Classic Track");
     gameMap.addPath(Path({{-20.0f, 136.0f}, {100.0f, 136.0f}, {100.0f, 60.0f},
@@ -54,14 +75,15 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
 
     std::string roundErr;
     RoundSet roundSet;
-    const std::string importedRounds = dataDir + "/rounds/default_rounds.json";
+    const std::string importedRounds = runtimeDataDir + "/rounds/default_rounds.json";
     const std::string placeholderRounds = "assets/placeholder/rounds/default_rounds.json";
-    if (loadRounds(fs, importedRounds, m_simulation.map(), roundSet, roundErr) ||
-        loadRounds(fs, placeholderRounds, m_simulation.map(), roundSet, roundErr)) {
+    bool loadedImportedRounds = !runtimeDataDir.empty() &&
+        loadRounds(fs, importedRounds, m_simulation.map(), roundSet, roundErr);
+    if (loadedImportedRounds || loadRounds(fs, placeholderRounds, m_simulation.map(), roundSet, roundErr)) {
         if (!m_simulation.setRounds(std::move(roundSet), roundErr)) {
             BTD4_LOG_WARN("Round data loaded but could not be configured: " + roundErr);
         } else {
-            BTD4_LOG_INFO("Loaded round data successfully.");
+            BTD4_LOG_INFO(std::string("Loaded ") + (loadedImportedRounds ? "imported" : "fallback") + " BTD4 round data successfully.");
         }
     } else {
         BTD4_LOG_WARN("Round data unavailable: " + roundErr);
