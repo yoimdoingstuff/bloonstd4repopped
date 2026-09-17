@@ -1,6 +1,7 @@
 #include "Engine.hpp"
 #include "../rendering/DebugRenderer.hpp"
 #include "../../platform/common/NativeFileSystem.hpp"
+#include "../map/MapLoader.hpp"
 #include <cmath>
 #include <filesystem>
 #include <algorithm>
@@ -63,22 +64,46 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
     BTD4_LOG_INFO("Textures preloaded into renderer: " + std::to_string(preloaded));
 
     Map gameMap("Classic Track");
-    gameMap.addPath(Path({{-20.0f, 136.0f}, {100.0f, 136.0f}, {100.0f, 60.0f},
-                          {220.0f, 60.0f}, {220.0f, 210.0f}, {340.0f, 210.0f},
-                          {340.0f, 136.0f}, {500.0f, 136.0f}}));
-    gameMap.addBuildableRegion({0.0f, 0.0f, 400.0f, 272.0f});
-    gameMap.addBlockedRegion({80.0f, 40.0f, 40.0f, 120.0f});
-    gameMap.addBlockedRegion({200.0f, 40.0f, 40.0f, 190.0f});
-    gameMap.addBlockedRegion({320.0f, 116.0f, 40.0f, 114.0f});
+    bool loadedImportedMap = false;
+    std::string mapErr;
+    const auto& manifest = AssetManager::instance().manifest();
+    if (!runtimeDataDir.empty() && !manifest.maps.empty()) {
+        for (const std::string& mapPath : manifest.maps) {
+            Map candidate;
+            if (loadMap(fs, runtimeDataDir + "/" + mapPath, candidate, mapErr)) {
+                gameMap = std::move(candidate);
+                loadedImportedMap = true;
+                BTD4_LOG_INFO("Loaded imported map: " + mapPath);
+                break;
+            }
+        }
+        if (!loadedImportedMap && !mapErr.empty()) {
+            BTD4_LOG_WARN("Imported map data was listed but could not be loaded: " + mapErr);
+        }
+    }
+
+    if (!loadedImportedMap) {
+        gameMap.setName("Classic Track");
+        gameMap.addPath(Path({{-20.0f, 136.0f}, {100.0f, 136.0f}, {100.0f, 60.0f},
+                              {220.0f, 60.0f}, {220.0f, 210.0f}, {340.0f, 210.0f},
+                              {340.0f, 136.0f}, {500.0f, 136.0f}}));
+        gameMap.addBuildableRegion({0.0f, 0.0f, 400.0f, 272.0f});
+        gameMap.addBlockedRegion({80.0f, 40.0f, 40.0f, 120.0f});
+        gameMap.addBlockedRegion({200.0f, 40.0f, 40.0f, 190.0f});
+        gameMap.addBlockedRegion({320.0f, 116.0f, 40.0f, 114.0f});
+        BTD4_LOG_INFO("No usable imported map found; using built-in fallback map geometry.");
+    }
     m_simulation.setMap(std::move(gameMap));
     m_simulation.setState(GameStateType::Playing);
 
     std::string roundErr;
     RoundSet roundSet;
-    const std::string importedRounds = runtimeDataDir + "/rounds/default_rounds.json";
+    const std::string manifestRounds = manifest.roundsFile.empty()
+        ? std::string{}
+        : runtimeDataDir + "/" + manifest.roundsFile;
     const std::string placeholderRounds = "assets/placeholder/rounds/default_rounds.json";
-    bool loadedImportedRounds = !runtimeDataDir.empty() &&
-        loadRounds(fs, importedRounds, m_simulation.map(), roundSet, roundErr);
+    bool loadedImportedRounds = !manifestRounds.empty() &&
+        loadRounds(fs, manifestRounds, m_simulation.map(), roundSet, roundErr);
     if (loadedImportedRounds || loadRounds(fs, placeholderRounds, m_simulation.map(), roundSet, roundErr)) {
         if (!m_simulation.setRounds(std::move(roundSet), roundErr)) {
             BTD4_LOG_WARN("Round data loaded but could not be configured: " + roundErr);
