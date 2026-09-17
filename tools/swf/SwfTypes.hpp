@@ -8,9 +8,9 @@
 namespace btd4::swf {
 
 enum class Compression : uint8_t {
-    None,  // 'FWS'
-    Zlib,  // 'CWS'
-    Lzma   // 'ZWS'
+    None,
+    Zlib,
+    Lzma
 };
 
 struct SwfRect {
@@ -42,6 +42,7 @@ enum class TagCode : uint16_t {
     DefineBitsJPEG2     = 21,
     DefineShape2        = 22,
     DefineBitsJPEG3     = 35,
+    DefineShape3        = 32,
     DefineBitsLossless2 = 36,
     DefineSprite        = 39,
     FileAttributes      = 69,
