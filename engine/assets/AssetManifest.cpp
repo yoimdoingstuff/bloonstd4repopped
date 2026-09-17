@@ -1,5 +1,6 @@
 #include "AssetManifest.hpp"
 #include <sstream>
+#include <cctype>
 
 namespace btd4 {
 
@@ -56,6 +57,28 @@ void parseDictionary(const std::string& json, const std::string& objKey, std::un
     }
 }
 
+void parseStringArray(const std::string& json, const std::string& key, std::vector<std::string>& out) {
+    const std::string needle = "\"" + key + "\"";
+    const size_t keyPos = json.find(needle);
+    if (keyPos == std::string::npos) return;
+
+    const size_t open = json.find('[', keyPos + needle.size());
+    if (open == std::string::npos) return;
+    const size_t close = json.find(']', open + 1);
+    if (close == std::string::npos) return;
+
+    size_t cur = open + 1;
+    while (cur < close) {
+        const size_t q1 = json.find('"', cur);
+        if (q1 == std::string::npos || q1 >= close) break;
+        const size_t q2 = json.find('"', q1 + 1);
+        if (q2 == std::string::npos || q2 > close) break;
+        const std::string value = json.substr(q1 + 1, q2 - q1 - 1);
+        if (!value.empty()) out.push_back(value);
+        cur = q2 + 1;
+    }
+}
+
 } // namespace
 
 bool AssetManifest::loadFromFile(const IFileSystem& fs, const std::string& manifestPath, std::string& outError) {
@@ -78,8 +101,12 @@ bool AssetManifest::parseJson(const std::string& json, std::string& outError) {
     source = extractStringValue(json, "source");
     roundsFile = extractStringValue(json, "rounds");
 
+    textures.clear();
+    audio.clear();
+    maps.clear();
     parseDictionary(json, "textures", textures);
     parseDictionary(json, "audio", audio);
+    parseStringArray(json, "maps", maps);
 
     return true;
 }
