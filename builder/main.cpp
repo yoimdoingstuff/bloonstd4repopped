@@ -8,12 +8,39 @@
 #include <filesystem>
 #include <cstdlib>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 namespace {
 void setBuilderRootEnvironment(const std::filesystem::path& root) {
 #ifdef _WIN32
     _putenv_s("BTD4_BUILDER_ROOT", root.string().c_str());
 #else
     setenv("BTD4_BUILDER_ROOT", root.string().c_str(), 1);
+#endif
+}
+
+std::filesystem::path findExecutableRoot() {
+#ifdef _WIN32
+    std::wstring buffer(512, L'\\0');
+    for (;;) {
+        const DWORD length = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+        if (length == 0) return {};
+        if (length < buffer.size() - 1) {
+            buffer.resize(length);
+            return std::filesystem::path(buffer).parent_path().lexically_normal();
+        }
+        buffer.resize(buffer.size() * 2);
+        if (buffer.size() > 32768) return {};
+    }
+#else
+    if (char* basePath = SDL_GetBasePath()) {
+        std::filesystem::path root = std::filesystem::path(basePath).lexically_normal();
+        SDL_free(basePath);
+        return root;
+    }
+    return {};
 #endif
 }
 }
@@ -27,18 +54,29 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::filesystem::path executableRoot;
-    if (char* basePath = SDL_GetBasePath()) {
-        std::error_code pathError;
-        executableRoot = std::filesystem::path(basePath).lexically_normal();
+    std::filesystem::path executableRoot = findExecutableRoot();
+    std::error_code pathError;
+    if (!executableRoot.empty() && std::filesystem::is_directory(executableRoot, pathError)) {
+#ifdef _WIN32
+        if (!SetCurrentDirectoryW(executableRoot.wstring().c_str())) {
+            pathError = std::error_code(static_cast<int>(GetLastError()), std::system_category());
+        }
+#else
         std::filesystem::current_path(executableRoot, pathError);
-        SDL_free(basePath);
-        if (pathError) {
-            std::cerr << "Warning: Could not set builder working directory: " << pathError.message() << std::endl;
+#endif
+    } else if (pathError) {
+        executableRoot.clear();
+    }
+
+    if (executableRoot.empty()) {
+        std::error_code fallbackError;
+        executableRoot = std::filesystem::current_path(fallbackError);
+        if (fallbackError) {
+            std::cerr << "Warning: Builder could not determine its executable directory." << std::endl;
+            executableRoot.clear();
         }
     }
-    if (executableRoot.empty()) executableRoot = std::filesystem::current_path();
-    setBuilderRootEnvironment(executableRoot);
+    if (!executableRoot.empty()) setBuilderRootEnvironment(executableRoot);
 
     int windowWidth = 1024;
     int windowHeight = 640;
