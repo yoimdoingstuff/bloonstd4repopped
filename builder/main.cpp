@@ -11,7 +11,7 @@
 namespace {
 void setBuilderRootEnvironment(const std::filesystem::path& root) {
 #ifdef _WIN32
-    _putenv_s_s("BTD4_BUILDER_ROOT", root.string().c_str());
+    _putenv_s("BTD4_BUILDER_ROOT=" + root.string());
 #else
     setenv("BTD4_BUILDER_ROOT", root.string().c_str(), 1);
 #endif
