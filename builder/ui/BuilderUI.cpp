@@ -4,6 +4,7 @@
 #include <imgui.h>
 #include <cstring>
 #include <filesystem>
+#include <exception>
 
 namespace btd4 {
 namespace fs = std::filesystem;
@@ -20,6 +21,32 @@ fs::path findProjectRoot() {
         current = parent;
     }
     return {};
+}
+
+std::string fileFingerprint(const fs::path& path) {
+    std::error_code ec;
+    const fs::path absolute = fs::absolute(path, ec).lexically_normal();
+    if (ec || !fs::is_regular_file(absolute, ec)) return absolute.string();
+
+    const auto size = fs::file_size(absolute, ec);
+    if (ec) return absolute.string();
+    ec.clear();
+    const auto timestamp = fs::last_write_time(absolute, ec);
+    if (ec) return absolute.string() + "|" + std::to_string(size);
+
+    return absolute.string() + "|" + std::to_string(size) + "|" +
+           std::to_string(timestamp.time_since_epoch().count());
+}
+
+std::string makeImportKey(const Project& project) {
+    std::string key;
+    key.reserve(project.config().sourceSwf.size() + project.config().sourceIpa.size() + 128);
+    key += fileFingerprint(project.config().sourceSwf);
+    key += "\n";
+    if (!project.config().sourceIpa.empty()) key += fileFingerprint(project.config().sourceIpa);
+    key += "\n" + project.config().gameEdition;
+    key += "\n" + project.config().targetPlatform;
+    return key;
 }
 }
 
@@ -176,6 +203,13 @@ bool BuilderUI::triggerImport(){
     if(!m_project.hasValidSwf()) discoverAssets();
     if(!m_project.hasValidSwf()){appendLog("[Error] No SWF file found. Browse or drop the base game SWF into the builder.");return false;}
 
+    const std::string importKey = makeImportKey(m_project);
+    if(importKey == m_lastSuccessfulImportKey){
+        appendLog("[Pipeline] These source assets are already imported for the selected edition/platform; skipping duplicate import.");
+        appendLog("=========================================");
+        return true;
+    }
+
     const fs::path projectRoot = findProjectRoot();
     if(projectRoot.empty()){
         appendLog("[Pipeline Error] Could not locate the project root containing CMakeLists.txt.");
@@ -188,7 +222,24 @@ bool BuilderUI::triggerImport(){
     options.outputDir=(projectRoot/"game_data"/m_project.config().targetPlatform/m_project.config().gameEdition).string();
     options.targetPlatform=m_project.config().targetPlatform;
     appendLog("[Pipeline] Game edition: "+m_project.config().gameEdition); appendLog("[Pipeline] Import target: "+options.targetPlatform); appendLog("[Pipeline] Output: "+options.outputDir);
-    tools::ImportReport report=tools::AssetImporter::run(options,[this](const std::string& msg){appendLog(msg);});
+
+    tools::ImportReport report;
+    try {
+        report=tools::AssetImporter::run(options,[this](const std::string& msg){appendLog(msg);});
+    } catch(const std::bad_alloc&) {
+        appendLog("[Pipeline Error] Asset import ran out of memory.");
+        appendLog("=========================================");
+        return false;
+    } catch(const std::exception& e) {
+        appendLog(std::string("[Pipeline Error] Asset importer threw an exception: ")+e.what());
+        appendLog("=========================================");
+        return false;
+    } catch(...) {
+        appendLog("[Pipeline Error] Asset importer failed with an unknown exception.");
+        appendLog("=========================================");
+        return false;
+    }
+
     if(!report.success){appendLog("[Pipeline Error] Import failed: "+report.errorMessage);appendLog("=========================================");return false;}
     try{
         const fs::path outputRounds=fs::path(options.outputDir)/"rounds"/"default_rounds.json";
@@ -200,6 +251,7 @@ bool BuilderUI::triggerImport(){
             } else appendLog("[Pipeline Warning] Placeholder round data was not found; runtime fallback will be used directly.");
         }
     }catch(const std::exception& e){appendLog(std::string("[Pipeline Warning] Could not add fallback round data: ")+e.what());}
+    m_lastSuccessfulImportKey = importKey;
     appendLog("[Pipeline Success] Successfully imported assets!"); appendLog("  Source family: "+report.sourceFamily);
     appendLog("  BTD4 detected: "+std::string(report.btd4Detected?"yes":"no")); appendLog("  IPA detected: "+std::string(report.ipaDetected?"yes":"no"));
     appendLog("  Textures extracted: "+std::to_string(report.texturesExtracted)); appendLog("  Audio cues extracted: "+std::to_string(report.soundsExtracted));
@@ -217,5 +269,3 @@ void BuilderUI::renderLogsSection(){
     }
     if(m_autoScrollLogs&&ImGui::GetScrollY()>=ImGui::GetScrollMaxY())ImGui::SetScrollHereY(1.0f); ImGui::EndChild();
 }
-
-} // namespace btd4
