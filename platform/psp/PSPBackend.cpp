@@ -1,16 +1,50 @@
 #include "PSPBackend.hpp"
 #include <cstdlib>
+#include <filesystem>
+#include <string>
 
 namespace btd4 {
+namespace {
+
+bool executableOnPath(const char* executable) {
+    const char* pathEnv = std::getenv("PATH");
+    if (!pathEnv || !*pathEnv || !executable || !*executable) return false;
+
+#ifdef _WIN32
+    constexpr char separator = ';';
+#else
+    constexpr char separator = ':';
+#endif
+
+    std::string pathList(pathEnv);
+    size_t start = 0;
+    while (start <= pathList.size()) {
+        const size_t end = pathList.find(separator, start);
+        const std::string entry = pathList.substr(start, end == std::string::npos ? std::string::npos : end - start);
+        if (!entry.empty()) {
+            std::filesystem::path candidate = std::filesystem::path(entry) / executable;
+            std::error_code ec;
+            if (std::filesystem::is_regular_file(candidate, ec)) return true;
+#ifdef _WIN32
+            candidate += ".exe";
+            if (std::filesystem::is_regular_file(candidate, ec)) return true;
+#endif
+        }
+        if (end == std::string::npos) break;
+        start = end + 1;
+    }
+    return false;
+}
+
+} // namespace
 
 bool PSPBackend::isAvailable() const {
-    const char* pspdev = std::getenv("PSPDEV");
-    if (pspdev != nullptr && pspdev[0] != '\0') {
-        return true;
-    }
-
-    int hasPspGcc = std::system("which psp-gcc > /dev/null 2>&1");
-    return (hasPspGcc == 0);
+    static const bool available = [] {
+        const char* pspdev = std::getenv("PSPDEV");
+        if (pspdev != nullptr && pspdev[0] != '\0') return true;
+        return executableOnPath("psp-gcc");
+    }();
+    return available;
 }
 
 BuildResult PSPBackend::configure() {
