@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <cmath>
 #include <algorithm>
+#include <cctype>
 
 namespace btd4 {
 
@@ -138,8 +139,6 @@ void AssetManager::drawProjectile(IRenderer& renderer,const Projectile& proj) co
 void AssetManager::drawMap(IRenderer& renderer,const Map& map) const {
     // The importer preserves original SWF bitmap names. Prefer a map/background
     // image from that manifest so the playable scene can use original artwork.
-    // If the source uses an opaque numeric/exported name, the geometry fallback
-    // remains available rather than guessing and displaying a random sprite.
     std::string backgroundId;
     if (renderer.hasTexture("map_background")) {
         backgroundId = "map_background";
