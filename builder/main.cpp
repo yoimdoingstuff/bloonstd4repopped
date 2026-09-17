@@ -23,7 +23,7 @@ void setBuilderRootEnvironment(const std::filesystem::path& root) {
 
 std::filesystem::path findExecutableRoot() {
 #ifdef _WIN32
-    std::wstring buffer(512, L'\\0');
+    std::wstring buffer(512, L'\0');
     for (;;) {
         const DWORD length = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
         if (length == 0) return {};
@@ -148,3 +148,9 @@ int main(int argc, char* argv[]) {
     SDL_Quit();
     return 0;
 }
+
+#ifdef _WIN32
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+    return main(__argc, __argv);
+}
+#endif
