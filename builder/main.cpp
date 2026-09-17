@@ -6,6 +6,17 @@
 #include <imgui_impl_sdlrenderer2.h>
 #include <iostream>
 #include <filesystem>
+#include <cstdlib>
+
+namespace {
+void setBuilderRootEnvironment(const std::filesystem::path& root) {
+#ifdef _WIN32
+    _putenv_s_s("BTD4_BUILDER_ROOT", root.string().c_str());
+#else
+    setenv("BTD4_BUILDER_ROOT", root.string().c_str(), 1);
+#endif
+}
+}
 
 int main(int argc, char* argv[]) {
     (void)argc;
@@ -16,14 +27,18 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    std::filesystem::path executableRoot;
     if (char* basePath = SDL_GetBasePath()) {
         std::error_code pathError;
-        std::filesystem::current_path(basePath, pathError);
+        executableRoot = std::filesystem::path(basePath).lexically_normal();
+        std::filesystem::current_path(executableRoot, pathError);
         SDL_free(basePath);
         if (pathError) {
             std::cerr << "Warning: Could not set builder working directory: " << pathError.message() << std::endl;
         }
     }
+    if (executableRoot.empty()) executableRoot = std::filesystem::current_path();
+    setBuilderRootEnvironment(executableRoot);
 
     int windowWidth = 1024;
     int windowHeight = 640;
@@ -46,9 +61,6 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    // SDL sends OS file drops as SDL_DROPFILE events. Enable them explicitly so
-    // Windows Explorer, Linux file managers, and other SDL-supported desktops
-    // can hand source files straight to the builder.
     SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 
     IMGUI_CHECKVERSION();
