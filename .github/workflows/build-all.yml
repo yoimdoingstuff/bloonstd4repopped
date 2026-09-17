@@ -20,7 +20,3 @@ jobs:
   build-windows:
     name: Build Windows
     uses: ./.github/workflows/build-windows.yml
-
-  build-psp:
-    name: Build PSP
-    uses: ./.github/workflows/build-psp.yml
