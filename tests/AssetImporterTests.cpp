@@ -36,6 +36,12 @@ void appendStoredZipEntry(std::ofstream& out, const std::string& name,
     out.write(name.data(), static_cast<std::streamsize>(name.size()));
     out.write(data.data(), static_cast<std::streamsize>(data.size()));
 }
+void appendSwfTag(std::vector<uint8_t>& swf, uint16_t code, const std::vector<uint8_t>& payload) {
+    const uint16_t header = static_cast<uint16_t>((code << 6) | payload.size());
+    swf.push_back(static_cast<uint8_t>(header & 0xFF));
+    swf.push_back(static_cast<uint8_t>((header >> 8) & 0xFF));
+    swf.insert(swf.end(), payload.begin(), payload.end());
+}
 }
 
 TEST_CASE(SwfReaderBitstreamParsing) {
@@ -79,6 +85,28 @@ TEST_CASE(SwfParserSyntheticFWS) {
     TEST_ASSERT(parser.metadata().isActionScript3);
     TEST_ASSERT_EQ(parser.findSymbolName(10), "MonkeyDart");
     TEST_ASSERT_EQ(parser.findCharacterId("MonkeyDart"), 10);
+}
+
+TEST_CASE(SwfParserResolvesBitmapBackedSymbols) {
+    std::vector<uint8_t> swf = {'F','W','S',10,0,0,0,0,
+                                0x28,0x05,0x00,0x50,0x00,0x3C,0x01,0x00};
+
+    appendSwfTag(swf, 21, {20, 0, 0xFF, 0xD8});
+    appendSwfTag(swf, 2, {10, 0, 0x00, 0x01, 0x40, 20, 0, 0x00, 0x00});
+    appendSwfTag(swf, 76, {1, 0, 10, 0, 'M','o','n','k','e','y','D','a','r','t',0});
+    appendSwfTag(swf, 0, {});
+
+    const uint32_t fileLength = static_cast<uint32_t>(swf.size());
+    swf[4] = static_cast<uint8_t>(fileLength & 0xFF);
+    swf[5] = static_cast<uint8_t>((fileLength >> 8) & 0xFF);
+    swf[6] = static_cast<uint8_t>((fileLength >> 16) & 0xFF);
+    swf[7] = static_cast<uint8_t>((fileLength >> 24) & 0xFF);
+
+    btd4::swf::SwfParser parser; std::string err;
+    TEST_ASSERT(parser.parse(swf.data(), swf.size(), err));
+    TEST_ASSERT_EQ(parser.images().size(), static_cast<size_t>(1));
+    TEST_ASSERT_EQ(parser.images()[0].characterId, static_cast<uint16_t>(20));
+    TEST_ASSERT_EQ(parser.images()[0].className, "MonkeyDart");
 }
 
 TEST_CASE(AssetConverterNormalization) {
