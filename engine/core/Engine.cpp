@@ -69,7 +69,7 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
 
     switch (m_frontendProfile) {
         case FrontendProfile::FlashDesktop: BTD4_LOG_INFO("Frontend: Flash desktop mouse-first controls."); break;
-        case FrontendProfile::PSP: BTD4_LOG_INFO("Frontend: PSP controls with D-pad/analog virtual cursor."); break;
+        case FrontendProfile::PspConsole: BTD4_LOG_INFO("Frontend: PSP controls with D-pad/analog virtual cursor."); break;
         case FrontendProfile::XboxConsole: BTD4_LOG_INFO("Frontend: Xbox console controls with gamepad virtual cursor."); break;
     }
     BTD4_LOG_INFO("BTD4 Engine initialized successfully.");
@@ -174,14 +174,14 @@ void Engine::frame(int windowWidth, int windowHeight) {
             m_renderer.drawRect(108.0f, 228.0f, 184.0f, 30.0f, {0, 0, 0, 185}, true);
             m_renderer.drawRect(108.0f, 228.0f, 184.0f, 30.0f, Color::cyan(), false);
             if (m_frontendProfile == FrontendProfile::FlashDesktop) m_renderer.drawText("R: START ROUND", 122.0f, 238.0f, 1.0f, Color::white());
-            else if (m_frontendProfile == FrontendProfile::PSP) m_renderer.drawText("START: NEXT ROUND", 116.0f, 238.0f, 1.0f, Color::white());
+            else if (m_frontendProfile == FrontendProfile::PspConsole) m_renderer.drawText("START: NEXT ROUND", 116.0f, 238.0f, 1.0f, Color::white());
             else m_renderer.drawText("RB: NEXT ROUND", 126.0f, 238.0f, 1.0f, Color::white());
         }
         if (m_simulation.state() == GameStateType::Paused) {
             m_renderer.drawRect(90.0f, 100.0f, 220.0f, 72.0f, {0, 0, 0, 210}, true);
             m_renderer.drawText("PAUSED", 170.0f, 118.0f, 2.0f, Color::white());
             if (m_frontendProfile == FrontendProfile::FlashDesktop) m_renderer.drawText("Press P to resume", 135.0f, 145.0f, 1.0f, Color::cyan());
-            else if (m_frontendProfile == FrontendProfile::PSP) m_renderer.drawText("SELECT to resume", 143.0f, 145.0f, 1.0f, Color::cyan());
+            else if (m_frontendProfile == FrontendProfile::PspConsole) m_renderer.drawText("SELECT to resume", 143.0f, 145.0f, 1.0f, Color::cyan());
             else m_renderer.drawText("START to resume", 145.0f, 145.0f, 1.0f, Color::cyan());
         } else if (m_simulation.state() == GameStateType::GameOver) {
             m_renderer.drawRect(70.0f, 92.0f, 260.0f, 88.0f, {0, 0, 0, 220}, true);
