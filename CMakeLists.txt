@@ -173,7 +173,7 @@ endif()
 
 if(BUILD_TESTS AND NOT TARGET_PSP)
     enable_testing()
-    add_executable(btd4_tests tests/main.cpp tests/MapLoaderTests.cpp tests/RoundTests.cpp tests/AssetImporterTests.cpp tests/SwfSpriteTests.cpp
+    add_executable(btd4_tests tests/main.cpp tests/MapLoaderTests.cpp tests/RoundTests.cpp tests/AssetImporterTests.cpp tests/SwfSpriteTests.cpp tests/SwfLosslessTests.cpp
         tests/RenderingTests.cpp tests/FreeplayTests.cpp tests/UpgradeTests.cpp tests/TestRunner.hpp
         builder/project/Project.hpp builder/project/Project.cpp)
     target_include_directories(btd4_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests ${CMAKE_CURRENT_SOURCE_DIR}/builder
