@@ -148,12 +148,16 @@ bool Project::addSourceFile(const std::string& filepath) {
     return false;
 }
 
+// A project file stores source locations independently of whether the original
+// files are currently mounted. This lets a project deserialize and display its
+// configured sources without silently rewriting those paths. The actual import
+// path validates file existence before parsing.
 bool Project::hasValidSwf() const {
-    return !m_config.sourceSwf.empty() && hasExtension(fs::path(m_config.sourceSwf), ".swf") && fs::exists(m_config.sourceSwf);
+    return !m_config.sourceSwf.empty() && hasExtension(fs::path(m_config.sourceSwf), ".swf");
 }
 
 bool Project::hasValidIpa() const {
-    return !m_config.sourceIpa.empty() && hasExtension(fs::path(m_config.sourceIpa), ".ipa") && fs::exists(m_config.sourceIpa);
+    return !m_config.sourceIpa.empty() && hasExtension(fs::path(m_config.sourceIpa), ".ipa");
 }
 
 } // namespace btd4
