@@ -14,6 +14,25 @@ std::string lowerId(std::string value) {
     return value;
 }
 
+bool conflictsWithFamily(const std::string& candidate, const std::string& logicalId) {
+    const std::string id = lowerId(candidate);
+    if (logicalId.rfind("projectile_", 0) == 0) {
+        return id.find("tower") != std::string::npos || id.find("monkey") != std::string::npos ||
+               id.find("bloon") != std::string::npos || id.find("background") != std::string::npos ||
+               id.find("map") != std::string::npos;
+    }
+    if (logicalId.rfind("bloon_", 0) == 0) {
+        return id.find("tower") != std::string::npos || id.find("projectile") != std::string::npos ||
+               id.find("monkey") != std::string::npos || id.find("background") != std::string::npos ||
+               id.find("map") != std::string::npos;
+    }
+    if (logicalId.rfind("tower_", 0) == 0) {
+        return id.find("projectile") != std::string::npos || id.find("bloon") != std::string::npos ||
+               id.find("background") != std::string::npos || id.find("map") != std::string::npos;
+    }
+    return false;
+}
+
 std::string findImportedTextureId(const AssetManifest& manifest, const IRenderer& renderer, const std::string& logicalId) {
     if (renderer.hasTexture(logicalId)) return logicalId;
     const std::string wanted = lowerId(logicalId);
@@ -22,11 +41,30 @@ std::string findImportedTextureId(const AssetManifest& manifest, const IRenderer
     else if (wanted.rfind("bloon_", 0) == 0) token = wanted.substr(6);
     else if (wanted.rfind("projectile_", 0) == 0) token = wanted.substr(11);
     if (token.empty()) return {};
+
+    std::string bestId;
+    int bestScore = -1;
     for (const auto& [id, path] : manifest.textures) {
         (void)path;
-        if (lowerId(id).find(token) != std::string::npos && renderer.hasTexture(id)) return id;
+        if (!renderer.hasTexture(id) || conflictsWithFamily(id, logicalId)) continue;
+        const std::string lowered = lowerId(id);
+        const size_t tokenPos = lowered.find(token);
+        if (tokenPos == std::string::npos) continue;
+        int score = 10;
+        if (lowered == token) score += 50;
+        if (tokenPos == 0) score += 15;
+        if (lowered.find(wanted) != std::string::npos) score += 30;
+        if (logicalId.rfind("projectile_", 0) == 0 &&
+            (lowered.find("projectile") != std::string::npos || lowered.find("shot") != std::string::npos || lowered.find("bullet") != std::string::npos)) score += 20;
+        if (logicalId.rfind("bloon_", 0) == 0 && lowered.find("bloon") != std::string::npos) score += 20;
+        if (logicalId.rfind("tower_", 0) == 0 &&
+            (lowered.find("tower") != std::string::npos || lowered.find("monkey") != std::string::npos)) score += 20;
+        if (score > bestScore) {
+            bestScore = score;
+            bestId = id;
+        }
     }
-    return {};
+    return bestId;
 }
 }
 
