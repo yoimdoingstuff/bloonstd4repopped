@@ -119,7 +119,7 @@ bool GameSimulation::setRounds(RoundSet rounds, std::string& error) {
 }
 
 bool GameSimulation::startNextRound() {
-    if (m_state != GameStateType::Playing || m_economy.isDefeated()) return false;
+    if (m_state != GameStateType::Playing || economy().isDefeated()) return false;
     if (!m_rounds.start(m_bloonPool, m_map)) return false;
     m_currentRound = static_cast<int>(m_rounds.completedRounds() + 1);
     m_projectilePool.clear();
@@ -139,11 +139,11 @@ void GameSimulation::update(float deltaTime) {
     for (uint32_t id : leakedBloons) {
         (void)id;
         // 1 life penalty per leaked red bloon or equivalent
-        m_economy.loseLives(1);
+        economy().loseLives(1);
         m_totalBloonsLeaked++;
     }
 
-    if (m_economy.isDefeated()) {
+    if (economy().isDefeated()) {
         m_state = GameStateType::GameOver;
         return;
     }
@@ -157,14 +157,14 @@ void GameSimulation::update(float deltaTime) {
     // 3. Update projectiles and resolve collisions
     int cashEarned = m_projectilePool.update(deltaTime, m_bloonPool, m_map);
     if (cashEarned > 0) {
-        m_economy.addCash(cashEarned);
+        economy().addCash(cashEarned);
         m_totalBloonsPopped += cashEarned;
     }
 
     // Spawn at the end of this tick: a new bloon must not move for time before
     // it existed. Deadlines are quantized to the caller's fixed tick boundary.
     if (m_rounds.advance(deltaTime, m_bloonPool, m_map)) {
-        m_economy.addCash(Economy::calculateRoundReward(
+        economy().addCash(Economy::calculateRoundReward(
             static_cast<int>(m_rounds.completedRounds())));
         m_projectilePool.clear();
         if (m_rounds.finished()) m_state = GameStateType::Victory;
