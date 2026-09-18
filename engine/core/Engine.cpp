@@ -182,14 +182,17 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
         ? std::string{}
         : runtimeDataDir + "/upgrades/custom_upgrades.json";
     const std::string placeholderUpgrades = "assets/placeholder/upgrades/default_upgrades.json";
-    const std::string upgradePath = !customUpgrades.empty() && fs.fileExists(customUpgrades)
-        ? customUpgrades : importedUpgrades;
-    if (!upgradePath.empty() && loadUpgrades(fs, upgradePath, m_upgrades, upgradeErr)) {
-        BTD4_LOG_INFO("Loaded project upgrade definitions (" +
-            std::to_string(m_upgrades.upgrades.size()) + ").");
-    } else if (loadUpgrades(fs, placeholderUpgrades, m_upgrades, upgradeErr)) {
-        BTD4_LOG_INFO("Loaded fallback upgrade definitions (" +
-            std::to_string(m_upgrades.upgrades.size()) + ").");
+    bool loadedCustomUpgrades = !customUpgrades.empty() &&
+        fs.fileExists(customUpgrades) &&
+        loadUpgrades(fs, customUpgrades, m_upgrades, upgradeErr);
+    bool loadedImportedUpgrades = !loadedCustomUpgrades && !importedUpgrades.empty() &&
+        loadUpgrades(fs, importedUpgrades, m_upgrades, upgradeErr);
+    if (loadedCustomUpgrades || loadedImportedUpgrades ||
+        loadUpgrades(fs, placeholderUpgrades, m_upgrades, upgradeErr)) {
+        BTD4_LOG_INFO("Loaded " +
+            std::string(loadedCustomUpgrades ? "custom" :
+                (loadedImportedUpgrades ? "imported" : "fallback")) +
+            " upgrade definitions (" + std::to_string(m_upgrades.upgrades.size()) + ").");
     } else {
         m_upgrades.upgrades.clear();
         BTD4_LOG_WARN("Upgrade data unavailable: " + upgradeErr);
