@@ -252,3 +252,14 @@ TEST_CASE(SharedEconomyModeUsesPlayerZeroPool) {
     TEST_ASSERT_EQ(simulation.player(0).economy().cash(), before - 200);
     TEST_ASSERT_EQ(simulation.player(1).economy().cash(), before - 200);
 }
+
+
+TEST_CASE(ActivePlayerSelection) {
+    btd4::GameSimulation simulation;
+    simulation.player(1).setActive(true);
+    TEST_ASSERT_EQ(simulation.activePlayerId(), static_cast<uint8_t>(0));
+    TEST_ASSERT(simulation.setActivePlayer(1));
+    TEST_ASSERT_EQ(simulation.activePlayerId(), static_cast<uint8_t>(1));
+    TEST_ASSERT(!simulation.setActivePlayer(3));
+    TEST_ASSERT_EQ(simulation.activePlayerId(), static_cast<uint8_t>(1));
+}
