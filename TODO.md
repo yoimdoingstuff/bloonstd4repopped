@@ -570,7 +570,9 @@ IPA
 MILESTONE 14: GAME BUILDER
 
 * [ ]	Project creation
-* [ ]	Project loading
+* [x]	Project loading
+    Agent: builder
+    Notes: Builder automatically loads project.btd4proj on startup and exposes a Load Project action.
 * [x]	Project saving
     Agent: builder
 * [x]	Asset import UI
