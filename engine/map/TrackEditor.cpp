@@ -5,7 +5,9 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <iterator>
 #include <string>
+#include <utility>
 
 namespace btd4 {
 namespace fs = std::filesystem;
