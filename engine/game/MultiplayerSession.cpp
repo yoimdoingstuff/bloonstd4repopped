@@ -1,4 +1,5 @@
 #include "MultiplayerSession.hpp"
+#include <string>
 
 namespace btd4 {
 
