@@ -110,3 +110,23 @@ TEST_CASE(MapSerializationRoundTripsEditorGeometry) {
     TEST_ASSERT_EQ(loaded.buildableRegions().size(), size_t(1));
     TEST_ASSERT_EQ(loaded.blockedRegions().size(), size_t(1));
 }
+
+TEST_CASE(MapSerializationPreservesTrackEditorMetadata) {
+    btd4::Map source("Track Metadata");
+    source.setTrackSet(3);
+    source.setBloonDensity(btd4::BloonDensity::High);
+    source.addPath(btd4::Path({{0.0f, 136.0f}, {120.0f, 136.0f}}));
+
+    const std::string json = btd4::serializeMap(source);
+    btd4::Map loaded;
+    std::string error;
+    TEST_ASSERT(btd4::parseMap(json, loaded, error));
+    TEST_ASSERT_EQ(loaded.trackSet(), static_cast<uint8_t>(3));
+    TEST_ASSERT_EQ(loaded.bloonDensity(), btd4::BloonDensity::High);
+
+    TEST_ASSERT(btd4::parseMap(
+        R"({"version":1,"name":"Legacy","paths":[[[0,0],[1,0]]]})",
+        loaded, error));
+    TEST_ASSERT_EQ(loaded.trackSet(), static_cast<uint8_t>(0));
+    TEST_ASSERT_EQ(loaded.bloonDensity(), btd4::BloonDensity::Normal);
+}
