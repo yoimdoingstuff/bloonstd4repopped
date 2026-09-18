@@ -34,7 +34,6 @@ bool conflictsWithFamily(const std::string& candidate, const std::string& logica
 }
 
 std::string findImportedTextureId(const AssetManifest& manifest, const IRenderer& renderer, const std::string& logicalId) {
-    if (renderer.hasTexture(logicalId)) return logicalId;
     const std::string wanted = lowerId(logicalId);
     std::string token = wanted;
     if (wanted.rfind("tower_", 0) == 0) token = wanted.substr(6);
@@ -44,6 +43,10 @@ std::string findImportedTextureId(const AssetManifest& manifest, const IRenderer
 
     std::string bestId;
     int bestScore = -1;
+    if (renderer.hasTexture(logicalId)) {
+        bestId = logicalId;
+        bestScore = 50;
+    }
     for (const auto& [id, path] : manifest.textures) {
         (void)path;
         if (!renderer.hasTexture(id) || conflictsWithFamily(id, logicalId)) continue;
