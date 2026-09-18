@@ -498,6 +498,8 @@ void BuilderUI::renderActionButtons() {
 
     if (ImGui::Button("Validate Project", ImVec2(120, 32))) validateProject();
     ImGui::SameLine();
+    if (ImGui::Button("Preview Build", ImVec2(120, 32))) previewBuild();
+    ImGui::SameLine();
     if (ImGui::Button("Load Project", ImVec2(110, 32))) {
         const fs::path projectRoot = findProjectRoot();
         const fs::path loadPath = projectRoot.empty() ? fs::path("project.btd4proj") : (projectRoot / "project.btd4proj");
@@ -604,6 +606,54 @@ bool BuilderUI::validateProject() {
     appendLog(valid ? "[Validation] Project configuration is valid."
                     : "[Validation] Project configuration has errors.");
     return valid;
+}
+
+void BuilderUI::previewBuild() {
+    const fs::path projectRoot = findProjectRoot();
+    if (projectRoot.empty()) {
+        appendLog("[Preview Error] Could not locate the project root.");
+        return;
+    }
+
+    fs::path packageDir;
+    if (m_project.config().targetPlatform == "Windows") {
+        packageDir = projectRoot / "builds" / "Windows" / "Playable";
+        if (!fs::exists(packageDir / "btd4_game.exe")) {
+            packageDir = projectRoot / "Playable";
+        }
+    } else if (m_project.config().targetPlatform == "Linux") {
+        packageDir = projectRoot / "builds" / "Linux" / "Playable";
+    } else {
+        appendLog("[Preview Error] Preview is currently available for Windows and Linux desktop builds only.");
+        return;
+    }
+
+#ifdef _WIN32
+    const fs::path executable = packageDir / "btd4_game.exe";
+    if (!fs::is_regular_file(executable)) {
+        appendLog("[Preview Error] No packaged Windows game was found. Build the game first.");
+        return;
+    }
+    const std::string command =
+        "start \"BTD4 Repopped Preview\" /D \"" + packageDir.string() +
+        "\" \"" + executable.filename().string() + "\"";
+#else
+    const fs::path executable = packageDir / "btd4_game";
+    if (!fs::is_regular_file(executable)) {
+        appendLog("[Preview Error] No packaged Linux game was found. Build the game first.");
+        return;
+    }
+    const std::string command =
+        "cd \"" + packageDir.string() + "\" && \"" + executable.string() +
+        "\" >/dev/null 2>&1 &";
+#endif
+
+    const int status = std::system(command.c_str());
+    if (status != 0) {
+        appendLog("[Preview Error] Could not launch packaged game. Exit code " + std::to_string(status) + ".");
+        return;
+    }
+    appendLog("[Preview] Launched " + executable.string());
 }
 
 void BuilderUI::triggerBuild() {
