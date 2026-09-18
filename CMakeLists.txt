@@ -159,7 +159,9 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
     else()
         add_executable(btd4_builder
             builder/main.cpp builder/project/Project.hpp builder/project/Project.cpp
-            builder/ui/BuilderUI.hpp builder/ui/BuilderUI.cpp builder/platform/FileDialog.hpp builder/platform/FileDialog.cpp)
+            builder/ui/BuilderUI.hpp builder/ui/BuilderUI.cpp
+            builder/map/MapEditor.hpp builder/map/MapEditor.cpp
+            builder/platform/FileDialog.hpp builder/platform/FileDialog.cpp)
     endif()
     target_include_directories(btd4_builder PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/builder ${CMAKE_CURRENT_SOURCE_DIR}/tools
         ${CMAKE_CURRENT_SOURCE_DIR}/platform/common ${CMAKE_CURRENT_SOURCE_DIR}/engine)
