@@ -218,7 +218,7 @@ void Engine::shutdown() {
 }
 
 void Engine::onResize(int windowWidth, int windowHeight) {
-    m_viewport = LogicalResolution::calculateViewport(windowWidth, windowHeight);
+    m_viewport = LogicalResolution::calculateViewport(windowWidth, windowHeight, m_frontendProfile == FrontendProfile::PspConsole);
     m_renderer.onResize(windowWidth, windowHeight);
 }
 
