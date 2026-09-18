@@ -11,8 +11,8 @@ namespace btd4 {
 namespace fs = std::filesystem;
 
 namespace {
-constexpr float kGridWidth = TrackEditor::kColumns * TrackEditor::kCellSize;
-constexpr float kGridHeight = TrackEditor::kRows * TrackEditor::kCellSize;
+constexpr float kGridWidth = 24.0f * 16.0f;
+constexpr float kGridHeight = 14.0f * 16.0f;
 
 Color styleGround(int style) {
     switch (style) {
@@ -109,19 +109,18 @@ int TrackEditor::findCell(int x, int y) const {
 }
 
 void TrackEditor::rebuildMapFromCells() {
-    m_map.setName("Track Editor Map");
-    m_map.paths().clear();
-    m_map.paths().push_back(Path{});
+    Map rebuilt("Track Editor Map");
+    rebuilt.paths().push_back(Path{});
 
-    auto& points = m_map.paths().front().waypoints();
+    auto& points = rebuilt.paths().front().waypoints();
     for (const int cell : m_pathCells) {
         points.push_back({cellCenterX(cell), cellCenterY(cell)});
     }
-    m_map.paths().front().recalculate();
+    rebuilt.paths().front().recalculate();
 
-    // BTD4-style track editor maps are otherwise open terrain. The road itself
-    // is the placement-blocked area at runtime.
-    m_map.addBuildableRegion({0.0f, 0.0f, 480.0f, 272.0f});
+    // BTD4-style track editor maps are otherwise open terrain.
+    rebuilt.addBuildableRegion({0.0f, 0.0f, 480.0f, 272.0f});
+    m_map = std::move(rebuilt);
 }
 
 void TrackEditor::rebuildCellsFromMap() {
