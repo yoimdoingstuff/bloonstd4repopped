@@ -419,6 +419,7 @@ void BuilderUI::renderSourceFilesSection() {
 
     ImGui::Spacing();
     ImGui::Text("Source Asset Folder:");
+    ImGui::TextDisabled("This controls source-file discovery only. Imported playable data is written to game_data.");
     if (ImGui::InputText("##SourceDirectory", m_sourceDirectoryBuffer, sizeof(m_sourceDirectoryBuffer))) {
         m_project.config().sourceDirectory = m_sourceDirectoryBuffer;
     }
