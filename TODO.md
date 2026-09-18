@@ -581,10 +581,18 @@ MILESTONE 14: GAME BUILDER
     Agent: builder - BTD4 Flash / BTD4 Expansion / BTD4 HD (iPad), isolated output directories
 * [x]	Platform selector
     Agent: builder
-* [ ]	Build configuration
-* [ ]	Build invocation
-* [ ]	Build output management
-* [ ]	Project validation
+* [x]	Build configuration
+    Agent: builder
+    Notes: Platform backends configure isolated CMake build directories from imported source data.
+* [x]	Build invocation
+    Agent: builder
+    Notes: Builder runs configure, compile, then package through the selected platform backend.
+* [x]	Build output management
+    Agent: builder
+    Notes: Windows and Linux backends create self-contained Playable directories.
+* [x]	Project validation
+    Agent: builder
+    Notes: Builder validates source files, edition, target platform, and build configuration before compilation.
 * [ ]	Map editor
 * [ ]	Round editor
 * [ ]	Tower editor
