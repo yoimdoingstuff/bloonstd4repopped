@@ -360,6 +360,10 @@ void Engine::frame(int windowWidth, int windowHeight) {
             m_renderer.drawRect(4.0f, 26.0f, 392.0f, 48.0f, {0, 0, 0, 215}, true);
             m_renderer.drawRect(4.0f, 26.0f, 392.0f, 48.0f, Color::cyan(), false);
             m_renderer.drawText(towerLabel(selectedTower->type()), 10.0f, 30.0f, 1.0f, Color::white());
+            const char* targetingLabel = selectedTower->targetingMode() == TargetingMode::First ? "FIRST"
+                : (selectedTower->targetingMode() == TargetingMode::Last ? "LAST"
+                : (selectedTower->targetingMode() == TargetingMode::Close ? "CLOSE" : "STRONG"));
+            m_renderer.drawText("TARGET: " + std::string(targetingLabel), 260.0f, 30.0f, 1.0f, Color::cyan());
             for (uint8_t path = 0; path < 2; ++path) {
                 const uint8_t nextTier = static_cast<uint8_t>(selectedTower->upgradeTier(path) + 1);
                 const UpgradeDefinition* upgrade = findUpgrade(m_upgrades, selectedTower->type(), path, nextTier);
