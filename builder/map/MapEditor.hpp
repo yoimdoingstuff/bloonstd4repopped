@@ -27,6 +27,7 @@ private:
     int m_selectedWaypoint{-1};
     int m_selectedMapFile{-1};
     bool m_draggingRegion{false};
+    bool m_draggingWaypoint{false};
     Point2D m_dragStart{};
     Point2D m_dragCurrent{};
     std::vector<std::string> m_mapFiles;
