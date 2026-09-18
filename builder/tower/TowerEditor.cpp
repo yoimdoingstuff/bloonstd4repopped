@@ -2,6 +2,7 @@
 
 #include "../../platform/common/NativeFileSystem.hpp"
 #include <algorithm>
+#include <cstdio>
 #include <filesystem>
 #include <utility>
 
