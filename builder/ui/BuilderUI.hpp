@@ -47,7 +47,7 @@ private:
     void renderActionButtons();
     void renderLogsSection();
 
-    void discoverAssets();
+    void discoverAssets(bool forceRescan = false);
     bool validateProject();
     void triggerBuild();
     void previewBuild();
