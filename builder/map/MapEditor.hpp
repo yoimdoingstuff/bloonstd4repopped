@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../engine/map/Map.hpp"
+#include <imgui.h>
 #include <string>
 #include <vector>
 
@@ -41,10 +42,10 @@ private:
     bool validate(std::string& error) const;
     std::string safeFileName() const;
 
-    Point2D canvasToMap(const struct ImVec2& screen, const struct ImVec2& origin,
-                        const struct ImVec2& size) const;
-    struct ImVec2 mapToCanvas(const Point2D& point, const struct ImVec2& origin,
-                              const struct ImVec2& size) const;
+    Point2D canvasToMap(const ImVec2& screen, const ImVec2& origin,
+                        const ImVec2& size) const;
+    ImVec2 mapToCanvas(const Point2D& point, const ImVec2& origin,
+                       const ImVec2& size) const;
     bool pointNear(const Point2D& a, const Point2D& b, float radius) const;
 };
 
