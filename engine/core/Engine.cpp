@@ -296,20 +296,39 @@ void Engine::frame(int windowWidth, int windowHeight) {
     if (m_input.isActionJustPressed(InputAction::StartRound)) startNextRound();
 
     if (m_input.isActionJustPressed(InputAction::Confirm)) {
-        if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY < 22.0f) {
+        if (ptr.logicalX >= 108.0f && ptr.logicalX <= 292.0f &&
+            ptr.logicalY >= 228.0f && ptr.logicalY <= 258.0f &&
+            !m_simulation.roundActive()) {
+            startNextRound();
+        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY < 22.0f) {
             if (!m_simulation.roundActive()) {
                 m_trackEditor.open(m_simulation.map());
             } else {
                 BTD4_LOG_INFO("Track Editor can only be opened between rounds.");
             }
-        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f) {
+        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY >= 22.0f && ptr.logicalY < 202.0f) {
             const int idx = static_cast<int>((ptr.logicalY - 22.0f) / 36.0f);
             if (idx >= 0 && idx < 5) {
                 static const TowerType tts[] = {TowerType::DartMonkey, TowerType::TackShooter, TowerType::BombTower,
                     TowerType::BoomerangThrower, TowerType::SuperMonkey};
                 selectTowerType(tts[idx]);
             }
-        } else if (m_selectedTowerId != 0 && ptr.logicalX < 400.0f && ptr.logicalY >= 28.0f && ptr.logicalY < 76.0f) {
+        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY >= 202.0f && ptr.logicalY < 222.0f) {
+            if (m_selectedTowerId != 0) {
+                if (Tower* tower = m_simulation.findTower(m_selectedTowerId)) {
+                    tower->cycleTargetingMode();
+                }
+            }
+        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY >= 222.0f && ptr.logicalY < 242.0f) {
+            if (m_selectedTowerId != 0 && m_simulation.sellTower(m_selectedTowerId)) {
+                m_selectedTowerId = 0;
+                m_hasPlacement = false;
+            }
+        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY >= 242.0f) {
+            if (m_simulation.state() == GameStateType::Paused) m_simulation.resume();
+            else if (m_simulation.state() == GameStateType::Playing) m_simulation.pause();
+        } else if (m_selectedTowerId != 0 && ptr.logicalX < 400.0f &&
+                   ptr.logicalY >= 48.0f && ptr.logicalY < 76.0f) {
             applySelectedUpgrade(ptr.logicalX < 200.0f ? 0 : 1);
         } else if (ptr.logicalX < 400.0f) {
             if (m_hasPlacement) {
@@ -319,7 +338,10 @@ void Engine::frame(int windowWidth, int windowHeight) {
                 for (const auto& tower : m_simulation.towers()) {
                     const float dx = tower.x() - ptr.logicalX;
                     const float dy = tower.y() - ptr.logicalY;
-                    if (dx * dx + dy * dy <= 16.0f * 16.0f) { m_selectedTowerId = tower.id(); break; }
+                    if (dx * dx + dy * dy <= 16.0f * 16.0f) {
+                        m_selectedTowerId = tower.id();
+                        break;
+                    }
                 }
             }
         }
@@ -416,14 +438,14 @@ void Engine::frame(int windowWidth, int windowHeight) {
         if (!m_simulation.roundActive() && m_simulation.state() == GameStateType::Playing) {
             m_renderer.drawRect(108.0f, 228.0f, 184.0f, 30.0f, {0, 0, 0, 185}, true);
             m_renderer.drawRect(108.0f, 228.0f, 184.0f, 30.0f, Color::cyan(), false);
-            if (m_frontendProfile == FrontendProfile::FlashDesktop) m_renderer.drawText("R: START ROUND", 122.0f, 238.0f, 1.0f, Color::white());
+            if (m_frontendProfile == FrontendProfile::FlashDesktop) m_renderer.drawText("CLICK: START ROUND", 118.0f, 238.0f, 1.0f, Color::white());
             else if (m_frontendProfile == FrontendProfile::PspConsole) m_renderer.drawText("START: NEXT ROUND", 116.0f, 238.0f, 1.0f, Color::white());
             else m_renderer.drawText("RB: NEXT ROUND", 126.0f, 238.0f, 1.0f, Color::white());
         }
         if (m_simulation.state() == GameStateType::Paused) {
             m_renderer.drawRect(90.0f, 100.0f, 220.0f, 72.0f, {0, 0, 0, 210}, true);
             m_renderer.drawText("PAUSED", 170.0f, 118.0f, 2.0f, Color::white());
-            if (m_frontendProfile == FrontendProfile::FlashDesktop) m_renderer.drawText("Press P to resume", 135.0f, 145.0f, 1.0f, Color::cyan());
+            if (m_frontendProfile == FrontendProfile::FlashDesktop) m_renderer.drawText("Click PAUSE or press P", 120.0f, 145.0f, 1.0f, Color::cyan());
             else if (m_frontendProfile == FrontendProfile::PspConsole) m_renderer.drawText("SELECT to resume", 143.0f, 145.0f, 1.0f, Color::cyan());
             else m_renderer.drawText("START to resume", 145.0f, 145.0f, 1.0f, Color::cyan());
         } else if (m_simulation.state() == GameStateType::GameOver) {
