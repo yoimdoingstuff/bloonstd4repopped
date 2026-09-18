@@ -47,7 +47,9 @@ Engine::Engine(IRenderer& renderer, IInput& input, FrontendProfile frontendProfi
 Engine::~Engine() { shutdown(); }
 
 bool Engine::initialize(int windowWidth, int windowHeight) {
-    BTD4_LOG_INFO("Initializing BTD4 Engine (Logical Resolution: 480x272)...");
+    BTD4_LOG_INFO(m_frontendProfile == FrontendProfile::PspConsole
+        ? "Initializing BTD4 Engine (PSP 480x272 frontend)..."
+        : "Initializing BTD4 Engine (resizable desktop frontend)...");
     if (!m_renderer.initialize(windowWidth, windowHeight)) {
         BTD4_LOG_ERROR("Failed to initialize renderer!");
         return false;
