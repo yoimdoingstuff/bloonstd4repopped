@@ -468,6 +468,8 @@ void BuilderUI::renderPlatformSection() {
 void BuilderUI::renderActionButtons() {
     ImGui::Separator();
 
+    if (ImGui::Button("Validate Project", ImVec2(120, 32))) validateProject();
+    ImGui::SameLine();
     if (ImGui::Button("Load Project", ImVec2(110, 32))) {
         const fs::path projectRoot = findProjectRoot();
         const fs::path loadPath = projectRoot.empty() ? fs::path("project.btd4proj") : (projectRoot / "project.btd4proj");
@@ -522,8 +524,66 @@ void BuilderUI::discoverAssets() {
     }
 }
 
+bool BuilderUI::validateProject() {
+    bool valid = true;
+    const auto& config = m_project.config();
+
+    if (config.projectName.empty()) {
+        appendLog("[Validation Error] Project name is empty.");
+        valid = false;
+    }
+    if (!m_project.hasValidSwf()) {
+        appendLog("[Validation Error] No valid SWF source file is configured.");
+        valid = false;
+    } else {
+        std::error_code ec;
+        if (!fs::is_regular_file(fs::path(config.sourceSwf), ec)) {
+            appendLog("[Validation Error] Configured SWF does not exist: " + config.sourceSwf);
+            valid = false;
+        }
+    }
+    if (!config.sourceIpa.empty()) {
+        std::error_code ec;
+        if (!fs::is_regular_file(fs::path(config.sourceIpa), ec)) {
+            appendLog("[Validation Error] Configured IPA does not exist: " + config.sourceIpa);
+            valid = false;
+        }
+    }
+
+    static const char* editions[] = {"BTD4 Flash", "BTD4 Expansion", "BTD4 HD (iPad)"};
+    bool knownEdition = false;
+    for (const char* edition : editions) {
+        if (config.gameEdition == edition) {
+            knownEdition = true;
+            break;
+        }
+    }
+    if (!knownEdition) {
+        appendLog("[Validation Error] Unknown game edition: " + config.gameEdition);
+        valid = false;
+    }
+
+    if (PlatformRegistry::instance().findBackend(config.targetPlatform) == nullptr) {
+        appendLog("[Validation Error] Unknown target platform: " + config.targetPlatform);
+        valid = false;
+    }
+
+    if (config.buildConfiguration.empty()) {
+        appendLog("[Validation Error] Build configuration is empty.");
+        valid = false;
+    }
+
+    appendLog(valid ? "[Validation] Project configuration is valid."
+                    : "[Validation] Project configuration has errors.");
+    return valid;
+}
+
 void BuilderUI::triggerBuild() {
     if (!m_project.hasValidSwf()) discoverAssets();
+    if (!validateProject()) {
+        appendLog("[Build Error] Project validation failed; build aborted.");
+        return;
+    }
     if (!m_project.hasValidSwf()) {
         appendLog("[Build Error] No SWF source is selected. Import source assets first.");
         return;
