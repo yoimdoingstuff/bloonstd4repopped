@@ -246,7 +246,7 @@ void BuilderUI::appendLog(const std::string& line) {
     constexpr std::size_t kMaxLogEntries = 5000;
     constexpr std::size_t kTrimLogEntries = 1000;
     if (m_logs.size() >= kMaxLogEntries) {
-        const auto trimCount = std::min(kTrimLogEntries, m_logs.size());
+        const auto trimCount = (std::min)(kTrimLogEntries, m_logs.size());
         m_logs.erase(m_logs.begin(), m_logs.begin() + static_cast<std::ptrdiff_t>(trimCount));
     }
     m_logs.push_back(line);
@@ -554,7 +554,7 @@ bool BuilderUI::triggerImport() {
         std::istringstream importerLines(importerOutput);
         std::string line;
         while (std::getline(importerLines, line)) {
-            if (!line.empty() && line.back() == '\\r') line.pop_back();
+            if (!line.empty() && line.back() == '\r') line.pop_back();
             if (!line.empty()) appendLog(line);
         }
     }
@@ -592,13 +592,8 @@ bool BuilderUI::triggerImport() {
 
     m_lastSuccessfulImportKey = importKey;
     appendLog("[Pipeline Success] Successfully imported assets!");
-    appendLog("  Source family: " + report.sourceFamily);
-    appendLog("  BTD4 detected: " + std::string(report.btd4Detected ? "yes" : "no"));
-    appendLog("  IPA detected: " + std::string(report.ipaDetected ? "yes" : "no"));
-    appendLog("  Textures extracted: " + std::to_string(report.texturesExtracted));
-    appendLog("  Audio cues extracted: " + std::to_string(report.soundsExtracted));
-    appendLog("  Symbols mapped: " + std::to_string(report.symbolsMapped));
-    appendLog("  Manifest generated: " + report.manifestPath);
+    appendLog("  Manifest generated: " + manifestPath.string());
+    appendLog("  The isolated importer completed successfully; its detailed summary is included above.");
     appendLog("=========================================");
     return true;
 }
