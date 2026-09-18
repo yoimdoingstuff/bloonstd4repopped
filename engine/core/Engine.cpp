@@ -2,6 +2,7 @@
 #include "../rendering/DebugRenderer.hpp"
 #include "../../platform/common/NativeFileSystem.hpp"
 #include "../map/MapLoader.hpp"
+#include "../game/TowerData.hpp"
 #include <cmath>
 #include <filesystem>
 #include <algorithm>
@@ -122,6 +123,29 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
     m_simulation.setMap(std::move(gameMap));
     m_simulation.setState(GameStateType::Playing);
 
+    std::string towerErr;
+    const std::string customTowers = runtimeDataDir.empty()
+        ? std::string{}
+        : runtimeDataDir + "/towers/custom_towers.json";
+    const std::string importedTowers = runtimeDataDir.empty()
+        ? std::string{}
+        : runtimeDataDir + "/towers/default_towers.json";
+    const std::string placeholderTowers = "assets/placeholder/towers/default_towers.json";
+    TowerSet towerSet;
+    bool loadedCustomTowers = !customTowers.empty() &&
+        loadTowers(fs, customTowers, towerSet, towerErr);
+    bool loadedImportedTowers = !loadedCustomTowers && !importedTowers.empty() &&
+        fs.fileExists(importedTowers) && loadTowers(fs, importedTowers, towerSet, towerErr);
+    if (loadedCustomTowers || loadedImportedTowers ||
+        loadTowers(fs, placeholderTowers, towerSet, towerErr)) {
+        configureTowerDefinitions(towerSet);
+        BTD4_LOG_INFO(std::string("Loaded ") +
+            (loadedCustomTowers ? "custom" : (loadedImportedTowers ? "imported" : "fallback")) +
+            " tower definitions (" + std::to_string(towerSet.towers.size()) + ").");
+    } else {
+        BTD4_LOG_WARN("Tower data unavailable: " + towerErr + "; built-in stats remain active.");
+    }
+
     std::string roundErr;
     RoundSet roundSet;
     const std::string customRounds = runtimeDataDir.empty()
@@ -144,10 +168,31 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
             const char* source = loadedCustomRounds ? "custom"
                 : (loadedImportedRounds ? "imported" : "fallback");
             BTD4_LOG_INFO(std::string("Loaded ") + source +
-                          " BTD4 round data successfully.");
+                " BTD4 round data successfully.");
         }
     } else {
         BTD4_LOG_WARN("Round data unavailable: " + roundErr);
+    }
+
+    std::string upgradeErr;
+    const std::string importedUpgrades = runtimeDataDir.empty()
+        ? std::string{}
+        : runtimeDataDir + "/upgrades/default_upgrades.json";
+    const std::string customUpgrades = runtimeDataDir.empty()
+        ? std::string{}
+        : runtimeDataDir + "/upgrades/custom_upgrades.json";
+    const std::string placeholderUpgrades = "assets/placeholder/upgrades/default_upgrades.json";
+    const std::string upgradePath = !customUpgrades.empty() && fs.fileExists(customUpgrades)
+        ? customUpgrades : importedUpgrades;
+    if (!upgradePath.empty() && loadUpgrades(fs, upgradePath, m_upgrades, upgradeErr)) {
+        BTD4_LOG_INFO("Loaded project upgrade definitions (" +
+            std::to_string(m_upgrades.upgrades.size()) + ").");
+    } else if (loadUpgrades(fs, placeholderUpgrades, m_upgrades, upgradeErr)) {
+        BTD4_LOG_INFO("Loaded fallback upgrade definitions (" +
+            std::to_string(m_upgrades.upgrades.size()) + ").");
+    } else {
+        m_upgrades.upgrades.clear();
+        BTD4_LOG_WARN("Upgrade data unavailable: " + upgradeErr);
     }
 
     switch (m_frontendProfile) {
