@@ -47,6 +47,7 @@ private:
     void discoverAssets();
     bool validateProject();
     void triggerBuild();
+    void previewBuild();
     bool triggerImport();
 };
 
