@@ -353,8 +353,8 @@ void SDLRenderer::drawText(const std::string& text, float x, float y, float scal
     SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
     const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
     const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
-    int curX = m_currentViewport.x + static_cast<int>(std::round(x * sx));
-    int curY = m_currentViewport.y + static_cast<int>(std::round(y * sy));
+    int curX = static_cast<int>(std::round(x * sx));
+    int curY = static_cast<int>(std::round(y * sy));
     int s = std::max(1, static_cast<int>(std::round(scale * ((sx + sy) * 0.5f))));
 
     for (char c : text) {
@@ -421,8 +421,8 @@ void SDLRenderer::drawSprite(const std::string& textureKey, float x, float y, fl
     const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
     const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
     SDL_Rect dstRect{
-        m_currentViewport.x + static_cast<int>(std::round(x * sx)),
-        m_currentViewport.y + static_cast<int>(std::round(y * sy)),
+        static_cast<int>(std::round(x * sx)),
+        static_cast<int>(std::round(y * sy)),
         static_cast<int>(std::round(w * sx)),
         static_cast<int>(std::round(h * sy))
     };
