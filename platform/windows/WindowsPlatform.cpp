@@ -152,6 +152,23 @@ BuildResult WindowsPlatform::package(const std::string& gameEdition){
         r.outputLogs.push_back("[Windows Error] "+r.message);return r;
     }
 
+    const fs::path customTowers = root / "towers";
+    if (fs::is_directory(customTowers, ec)) {
+        const fs::path packageTowers = packageData / "towers";
+        fs::create_directories(packageTowers, ec);
+        if (ec) {
+            r.message = "Could not create packaged custom tower directory: " + ec.message();
+            return r;
+        }
+        fs::copy(customTowers, packageTowers,
+                 fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+        if (ec) {
+            r.message = "Could not package custom towers: " + ec.message();
+            return r;
+        }
+        r.outputLogs.push_back("[Windows] Packaged custom towers from " + customTowers.string());
+    }
+
     const fs::path customRounds = root / "rounds";
     if (fs::is_directory(customRounds, ec)) {
         const fs::path packageRounds = packageData / "rounds";
