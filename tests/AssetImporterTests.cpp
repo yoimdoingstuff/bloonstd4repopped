@@ -145,3 +145,26 @@ TEST_CASE(ProjectDiscoversDroppedAssets) {
     std::ofstream swf(root / "nested" / "BTD4.swf", std::ios::binary); swf << "synthetic test asset"; swf.close(); std::ofstream ipa(root / "MobileContent.IPA", std::ios::binary); ipa << "synthetic test package"; ipa.close();
     btd4::Project project; TEST_ASSERT(project.discoverSourceAssets(root.string())); TEST_ASSERT(project.hasValidSwf()); TEST_ASSERT(project.hasValidIpa()); TEST_ASSERT(project.config().sourceSwf.find("BTD4.swf") != std::string::npos); TEST_ASSERT(project.config().sourceIpa.find("MobileContent.IPA") != std::string::npos); std::filesystem::remove_all(root, ec);
 }
+
+TEST_CASE(InflateDynamicHuffmanStream) {
+    const std::vector<uint8_t> zlibData = {
+        0x78,0xDA,0xCB,0x48,0xCD,0xC9,0xC9,0x57,0xC8,0x40,0x27,0x01,0x68,0x03,0x08,0xB1
+    };
+    std::vector<uint8_t> output;
+    TEST_ASSERT(btd4::swf::Inflate::decompressZlib(zlibData.data(), zlibData.size(), output, 22));
+    TEST_ASSERT_EQ(std::string(output.begin(), output.end()), "hello hello hello hello");
+}
+
+TEST_CASE(SwfParserParsesCompressedHeader) {
+    const std::vector<uint8_t> swf = {
+        'C','W','S',10,0x1A,0x00,0x00,0x00,
+        0x78,0xDA,0xD3,0x60,0x65,0x08,0x60,0xB0,0x61,0x64,0x60,0x60,0x00,0x00,0x05,0x27,0x00,0xBB
+    };
+    btd4::swf::SwfParser parser;
+    std::string error;
+    TEST_ASSERT(parser.parse(swf.data(), swf.size(), error));
+    TEST_ASSERT_EQ(parser.header().version, static_cast<uint8_t>(10));
+    TEST_ASSERT_EQ(parser.header().frameCount, static_cast<uint16_t>(1));
+    TEST_ASSERT_EQ(parser.header().frameSize.widthPixels(), 4.0f);
+    TEST_ASSERT_EQ(parser.header().frameSize.heightPixels(), 4.0f);
+}
