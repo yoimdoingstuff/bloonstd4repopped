@@ -123,29 +123,28 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
     m_simulation.setState(GameStateType::Playing);
 
     std::string roundErr;
-    std::string upgradeErr;
-    const std::string importedUpgrades = runtimeDataDir.empty() ? std::string{} : runtimeDataDir + "/upgrades/default_upgrades.json";
-    const std::string placeholderUpgrades = "assets/placeholder/upgrades/default_upgrades.json";
-    bool loadedImportedUpgrades = !importedUpgrades.empty() && loadUpgrades(fs, importedUpgrades, m_upgrades, upgradeErr);
-    if (loadedImportedUpgrades || loadUpgrades(fs, placeholderUpgrades, m_upgrades, upgradeErr)) {
-        BTD4_LOG_INFO(std::string("Loaded ") + (loadedImportedUpgrades ? "imported" : "fallback") + " upgrade definitions (" + std::to_string(m_upgrades.upgrades.size()) + ").");
-    } else {
-        m_upgrades.upgrades.clear();
-        BTD4_LOG_WARN("Upgrade data unavailable: " + upgradeErr);
-    }
-
     RoundSet roundSet;
+    const std::string customRounds = runtimeDataDir.empty()
+        ? std::string{}
+        : runtimeDataDir + "/rounds/custom_rounds.json";
     const std::string manifestRounds = manifest.roundsFile.empty()
         ? std::string{}
         : runtimeDataDir + "/" + manifest.roundsFile;
     const std::string placeholderRounds = "assets/placeholder/rounds/default_rounds.json";
-    bool loadedImportedRounds = !manifestRounds.empty() &&
+    bool loadedCustomRounds = !customRounds.empty() &&
+        loadRounds(fs, customRounds, m_simulation.map(), roundSet, roundErr);
+    bool loadedImportedRounds = !loadedCustomRounds && !manifestRounds.empty() &&
         loadRounds(fs, manifestRounds, m_simulation.map(), roundSet, roundErr);
-    if (loadedImportedRounds || loadRounds(fs, placeholderRounds, m_simulation.map(), roundSet, roundErr)) {
+
+    if (loadedCustomRounds || loadedImportedRounds ||
+        loadRounds(fs, placeholderRounds, m_simulation.map(), roundSet, roundErr)) {
         if (!m_simulation.setRounds(std::move(roundSet), roundErr)) {
             BTD4_LOG_WARN("Round data loaded but could not be configured: " + roundErr);
         } else {
-            BTD4_LOG_INFO(std::string("Loaded ") + (loadedImportedRounds ? "imported" : "fallback") + " BTD4 round data successfully.");
+            const char* source = loadedCustomRounds ? "custom"
+                : (loadedImportedRounds ? "imported" : "fallback");
+            BTD4_LOG_INFO(std::string("Loaded ") + source +
+                          " BTD4 round data successfully.");
         }
     } else {
         BTD4_LOG_WARN("Round data unavailable: " + roundErr);
