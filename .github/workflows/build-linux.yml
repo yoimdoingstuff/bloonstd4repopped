@@ -34,6 +34,7 @@ jobs:
         mkdir -p package/bin
         cp build/btd4_game package/bin/
         cp build/btd4_builder package/bin/
+        cp build/btd4_importer package/bin/
         tar -czf btd4-linux-x86_64.tar.gz -C package bin
 
     - name: Upload Linux Artifact
