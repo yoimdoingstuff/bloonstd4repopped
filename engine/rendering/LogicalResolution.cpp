@@ -3,9 +3,16 @@
 
 namespace btd4 {
 
-Viewport LogicalResolution::calculateViewport(int windowWidth, int windowHeight) {
+Viewport LogicalResolution::calculateViewport(int windowWidth, int windowHeight, bool preserveLogicalAspect) {
     if (windowWidth <= 0 || windowHeight <= 0) {
         return {0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT};
+    }
+
+    if (!preserveLogicalAspect) {
+        // Desktop uses every drawable pixel. This is deliberately not a 480x272
+        // letterbox/pillarbox, which would make a 1080p window behave like a
+        // giant PSP screenshot.
+        return {0, 0, windowWidth, windowHeight};
     }
 
     float windowAspect = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
