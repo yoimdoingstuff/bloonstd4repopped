@@ -32,6 +32,7 @@ jobs:
         mkdir -p package/bin/assets/placeholder/rounds
         cp build/Release/btd4_game.exe package/bin/ || cp build/btd4_game.exe package/bin/
         cp build/Release/btd4_builder.exe package/bin/ || cp build/btd4_builder.exe package/bin/
+        cp build/Release/btd4_importer.exe package/bin/ || cp build/btd4_importer.exe package/bin/
         find build -type f -iname 'SDL2.dll' -exec cp -f {} package/bin/ \; 2>/dev/null || true
         cp build/Release/*.dll package/bin/ 2>/dev/null || true
         cp CMakeLists.txt package/bin/CMakeLists.txt
