@@ -43,10 +43,12 @@ struct UpgradeEffect;
 
 class Tower {
 public:
-    Tower(uint32_t id, TowerType type, float x, float y);
+    Tower(uint32_t id, TowerType type, float x, float y, uint8_t ownerId = 0);
 
     uint32_t id() const { return m_id; }
     TowerType type() const { return m_type; }
+    uint8_t ownerId() const { return m_ownerId; }
+    void setOwnerId(uint8_t ownerId) { m_ownerId = ownerId; }
 
     float x() const { return m_x; }
     float y() const { return m_y; }
@@ -85,6 +87,7 @@ public:
 
 private:
     uint32_t m_id{0};
+    uint8_t m_ownerId{0};
     TowerType m_type{TowerType::DartMonkey};
     float m_x{0.0f};
     float m_y{0.0f};
