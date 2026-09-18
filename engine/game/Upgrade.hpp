@@ -36,6 +36,10 @@ bool parseUpgrades(const std::string& json, UpgradeSet& output, std::string& err
 bool loadUpgrades(const IFileSystem& files, const std::string& path,
                   UpgradeSet& output, std::string& error);
 
+std::string serializeUpgrades(const UpgradeSet& upgrades);
+bool saveUpgrades(const std::string& path, const UpgradeSet& upgrades,
+                  std::string& error);
+
 const UpgradeDefinition* findUpgrade(const UpgradeSet& upgrades,
                                       TowerType tower, uint8_t path,
                                       uint8_t tier);
