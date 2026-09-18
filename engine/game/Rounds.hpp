@@ -20,6 +20,10 @@ bool parseRounds(std::string_view json, const Map& map, RoundSet& output, std::s
 bool loadRounds(const IFileSystem& files, const std::string& path, const Map& map,
                 RoundSet& output, std::string& error);
 
+std::string serializeRounds(const RoundSet& rounds);
+bool saveRounds(const std::string& path, const RoundSet& rounds,
+                const Map& map, std::string& error);
+
 // Allocation-free scheduling after configuration. The map must remain unchanged
 // during an active round. Spawns occur at the first simulation boundary due.
 class RoundScheduler {
