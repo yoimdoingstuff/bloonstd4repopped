@@ -423,14 +423,16 @@ void Engine::frame(int windowWidth, int windowHeight) {
                 const uint8_t nextTier = static_cast<uint8_t>(selectedTower->upgradeTier(path) + 1);
                 const UpgradeDefinition* upgrade = findUpgrade(m_upgrades, selectedTower->type(), path, nextTier);
                 const float x = path == 0 ? 10.0f : 204.0f;
-                const std::string key = path == 0 ? "Q " : "E ";
+                const float buttonX = path == 0 ? 4.0f : 200.0f;
+                m_renderer.drawRect(buttonX, 48.0f, 192.0f, 24.0f, {35, 45, 55, 255}, true);
+                m_renderer.drawRect(buttonX, 48.0f, 192.0f, 24.0f, {80, 80, 80, 255}, false);
                 if (!upgrade) {
-                    m_renderer.drawText(key + "MAX", x, 50.0f, 1.0f, {130,130,130,255});
+                    m_renderer.drawText("UPGRADE " + std::to_string(path + 1) + ": MAX", x, 53.0f, 1.0f, {130,130,130,255});
                 } else {
                     const bool affordable = m_simulation.economy().canAfford(upgrade->effect.cost);
                     const Color color = affordable ? Color::yellow() : Color::red();
-                    m_renderer.drawText(key + upgrade->displayName, x, 50.0f, 1.0f, color);
-                    m_renderer.drawText("$" + std::to_string(upgrade->effect.cost), x + 150.0f, 50.0f, 1.0f, color);
+                    m_renderer.drawText("UPGRADE " + std::to_string(path + 1), x, 53.0f, 1.0f, color);
+                    m_renderer.drawText("$" + std::to_string(upgrade->effect.cost), x + 130.0f, 53.0f, 1.0f, color);
                 }
             }
         }
