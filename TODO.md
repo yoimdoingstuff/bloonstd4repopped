@@ -569,6 +569,27 @@ IPA
 
 ⸻
 
+MILESTONE 13A: DEFINITIVE EDITION ASSET FUSION
+
+* [x] Multi-source project configuration for Flash, Expansion, phone/mobile and HD/iPad inputs
+* [x] Automatic phone/mobile and HD IPA source-layer extraction
+* [x] Definitive Edition builder mode
+* [x] Target-aware HD/mobile duplicate asset selection
+* [x] Expansion SWF layer import
+* [x] Runtime manifest target-platform metadata
+* [ ] Automatic source-version identification from actual package contents
+    Notes: Current source slots are explicit; deeper package fingerprinting remains.
+* [ ] Resolution-aware map selection
+    Notes: Maps need explicit source identity and quality metadata rather than filename-only discovery.
+* [ ] Mobile asset upscaling pipeline
+    Notes: Needs a real image decoder/upscaler and quality validation. Native HD assets should always take precedence.
+* [ ] Full four-source data merge for towers, rounds, upgrades and maps
+    Notes: Texture/resource fusion is implemented first; structured game-data merging still needs source-specific parsers and conflict rules.
+
+⸻
+
+⸻
+
 MILESTONE 14: GAME BUILDER
 
 * [x]	Project creation
