@@ -18,10 +18,10 @@ constexpr float kGridHeight = 14.0f * 16.0f;
 
 Color styleGround(int style) {
     switch (style) {
-        case 1: return {222, 195, 130, 255}; // desert
-        case 2: return {150, 180, 205, 255}; // stone/grey
-        case 3: return {205, 230, 245, 255}; // snow
-        default: return {75, 150, 75, 255};  // grass
+        case 1: return {222, 195, 130, 255};
+        case 2: return {150, 180, 205, 255};
+        case 3: return {205, 230, 245, 255};
+        default: return {75, 150, 75, 255};
     }
 }
 
@@ -46,6 +46,14 @@ Color styleRoadEdge(int style) {
 Color styleGrid(int style) {
     return style == 3 ? Color{120, 145, 160, 90} : Color{255, 255, 255, 45};
 }
+
+const char* densityLabel(BloonDensity density) {
+    switch (density) {
+        case BloonDensity::Low: return "LOW";
+        case BloonDensity::High: return "HIGH";
+        default: return "NORMAL";
+    }
+}
 }
 
 void TrackEditor::open(const Map& sourceMap) {
@@ -53,8 +61,10 @@ void TrackEditor::open(const Map& sourceMap) {
     m_applyRequested = false;
     m_map = sourceMap;
     m_tool = Tool::Road;
-    m_trackStyle = 0;
-    m_status = "Track Editor: build a straight-line track on the grid.";
+    m_activePath = 0;
+    m_trackSet = sourceMap.trackSet() % 4;
+    m_bloonDensity = sourceMap.bloonDensity();
+    m_status = "Track Editor: connect edge entrances and exits with track pieces.";
     m_statusGood = true;
     rebuildCellsFromMap();
 }
@@ -112,41 +122,48 @@ int TrackEditor::findCell(int x, int y) const {
 
 void TrackEditor::rebuildMapFromCells() {
     Map rebuilt("Track Editor Map");
-    rebuilt.paths().push_back(Path{});
+    rebuilt.setTrackSet(m_trackSet);
+    rebuilt.setBloonDensity(m_bloonDensity);
 
-    auto& points = rebuilt.paths().front().waypoints();
-    for (const int cell : m_pathCells) {
-        points.push_back({cellCenterX(cell), cellCenterY(cell)});
+    for (int pathIndex = 0; pathIndex < MaxPaths; ++pathIndex) {
+        if (m_pathCells[pathIndex].size() < 2) continue;
+
+        Path path;
+        auto& points = path.waypoints();
+        for (const int cell : m_pathCells[pathIndex]) {
+            points.push_back({cellCenterX(cell), cellCenterY(cell)});
+        }
+        path.recalculate();
+        rebuilt.addPath(path);
     }
-    rebuilt.paths().front().recalculate();
 
-    // BTD4-style track editor maps are otherwise open terrain.
     rebuilt.addBuildableRegion({0.0f, 0.0f, 480.0f, 272.0f});
     m_map = std::move(rebuilt);
 }
 
 void TrackEditor::rebuildCellsFromMap() {
-    m_pathCells.clear();
-    m_hasStart = false;
-    m_hasFinish = false;
+    for (auto& cells : m_pathCells) cells.clear();
+    m_hasStart.fill(false);
+    m_hasFinish.fill(false);
 
-    if (m_map.paths().empty()) {
-        return;
-    }
+    const int count = std::min<int>(MaxPaths, static_cast<int>(m_map.paths().size()));
+    for (int pathIndex = 0; pathIndex < count; ++pathIndex) {
+        const auto& source = m_map.paths()[pathIndex].waypoints();
+        auto& cells = m_pathCells[pathIndex];
 
-    const auto& points = m_map.paths().front().waypoints();
-    for (const auto& point : points) {
-        const int x = static_cast<int>(std::lround((point.x - kGridOriginX - kCellSize * 0.5f) / kCellSize));
-        const int y = static_cast<int>(std::lround((point.y - kGridOriginY - kCellSize * 0.5f) / kCellSize));
-        const int cell = findCell(x, y);
-        if (cell >= 0 && (m_pathCells.empty() || m_pathCells.back() != cell)) {
-            m_pathCells.push_back(cell);
+        for (const auto& point : source) {
+            int gx = static_cast<int>(std::lround((point.x - kGridOriginX - kCellSize * 0.5f) / kCellSize));
+            int gy = static_cast<int>(std::lround((point.y - kGridOriginY - kCellSize * 0.5f) / kCellSize));
+            gx = std::clamp(gx, 0, kColumns - 1);
+            gy = std::clamp(gy, 0, kRows - 1);
+            const int cell = findCell(gx, gy);
+            if (cell >= 0 && (cells.empty() || cells.back() != cell)) cells.push_back(cell);
         }
-    }
 
-    if (!m_pathCells.empty()) {
-        m_hasStart = true;
-        m_hasFinish = m_pathCells.size() > 1;
+        if (cells.size() >= 2) {
+            m_hasStart[pathIndex] = isBoundaryCell(cells.front());
+            m_hasFinish[pathIndex] = isBoundaryCell(cells.back());
+        }
     }
 }
 
@@ -157,129 +174,147 @@ void TrackEditor::setStatus(const std::string& text, bool good) {
 
 bool TrackEditor::setStartCell(int cell) {
     if (cell < 0 || !isBoundaryCell(cell)) {
-        setStatus("Start must touch the edge of the map.", false);
+        setStatus("Entrance must be placed on the edge of the track editor.", false);
         return false;
     }
 
-    if (!m_pathCells.empty()) {
-        const int oldStart = m_pathCells.front();
-        if (cell == oldStart) {
-            m_hasStart = true;
+    auto& cells = m_pathCells[m_activePath];
+    if (!cells.empty()) {
+        if (cells.front() == cell) {
+            m_hasStart[m_activePath] = true;
             return true;
         }
-        if (m_pathCells.size() > 1 && !isAdjacent(cell, m_pathCells[1])) {
-            setStatus("Start must connect to the first road cell.", false);
+        if (cells.size() > 1 && !isAdjacent(cell, cells[1])) {
+            setStatus("Entrance must connect to the first track piece.", false);
             return false;
         }
-        m_pathCells.front() = cell;
+        cells.front() = cell;
     } else {
-        m_pathCells.push_back(cell);
+        cells.push_back(cell);
     }
 
-    m_hasStart = true;
+    m_hasStart[m_activePath] = true;
+    if (cells.size() < 2) m_hasFinish[m_activePath] = false;
     rebuildMapFromCells();
-    setStatus("Start placed. Select Road and extend the track.", true);
+    setStatus("Entrance placed. Select Road and extend the path.", true);
     return true;
 }
 
 bool TrackEditor::setFinishCell(int cell) {
     if (cell < 0 || !isBoundaryCell(cell)) {
-        setStatus("Finish must touch the edge of the map.", false);
-        return false;
-    }
-    if (m_pathCells.empty()) {
-        setStatus("Place a Start first.", false);
+        setStatus("Exit must be placed on the edge of the track editor.", false);
         return false;
     }
 
-    if (m_pathCells.size() > 1) {
-        const int previous = m_pathCells[m_pathCells.size() - 2];
-        if (cell != m_pathCells.back() && !isAdjacent(cell, previous)) {
-            setStatus("Finish must connect to the current end of the track.", false);
-            return false;
-        }
+    auto& cells = m_pathCells[m_activePath];
+    if (cells.empty()) {
+        setStatus("Place an entrance first.", false);
+        return false;
     }
-    if (m_pathCells.back() != cell) {
-        m_pathCells.push_back(cell);
+
+    if (cells.size() > 1 && cells.back() != cell && !isAdjacent(cell, cells[cells.size() - 2])) {
+        setStatus("Exit must connect to the last track piece.", false);
+        return false;
     }
-    m_hasFinish = true;
+    if (cells.back() != cell) cells.push_back(cell);
+
+    m_hasFinish[m_activePath] = true;
     rebuildMapFromCells();
-    setStatus("Finish placed. The track is ready to test when valid.", true);
+    setStatus("Exit placed. This path is complete.", true);
     return true;
 }
 
 bool TrackEditor::appendRoadCell(int cell) {
     if (cell < 0) return false;
-    if (m_pathCells.empty()) {
+
+    auto& cells = m_pathCells[m_activePath];
+    if (cells.empty()) {
         if (!setStartCell(cell)) return false;
         m_tool = Tool::Road;
         return true;
     }
 
-    if (cell == m_pathCells.back()) return true;
-    if (!isAdjacent(cell, m_pathCells.back())) {
-        setStatus("Track pieces must connect to the last cell.", false);
+    if (cell == cells.back()) return true;
+    if (!isAdjacent(cell, cells.back())) {
+        setStatus("Track pieces must connect to the current path end.", false);
+        return false;
+    }
+    if (std::find(cells.begin(), cells.end(), cell) != cells.end()) {
+        setStatus("A path cannot cross back over one of its own track pieces.", false);
         return false;
     }
 
-    // A track editor is intentionally linear. Removing the last tile is the
-    // way to back up, matching the simple straight-segment workflow.
-    if (std::find(m_pathCells.begin(), m_pathCells.end(), cell) != m_pathCells.end()) {
-        setStatus("The track cannot loop back over an existing tile.", false);
-        return false;
-    }
-
-    m_pathCells.push_back(cell);
-    m_hasFinish = false;
+    cells.push_back(cell);
+    m_hasFinish[m_activePath] = false;
     rebuildMapFromCells();
-    setStatus("Road tile added.", true);
+    setStatus("Track piece added.", true);
     return true;
 }
 
 bool TrackEditor::eraseCell(int cell) {
-    if (m_pathCells.empty()) {
-        setStatus("Nothing to erase.", false);
+    auto& cells = m_pathCells[m_activePath];
+    if (cells.empty()) {
+        setStatus("Nothing to erase on this path.", false);
         return false;
     }
 
-    const auto it = std::find(m_pathCells.begin(), m_pathCells.end(), cell);
-    if (it == m_pathCells.end()) {
-        setStatus("Select a road tile or endpoint to erase.", false);
+    const auto it = std::find(cells.begin(), cells.end(), cell);
+    if (it == cells.end()) {
+        setStatus("Select a path end or edge marker to erase it.", false);
         return false;
     }
 
-    const size_t index = static_cast<size_t>(std::distance(m_pathCells.begin(), it));
-    if (index + 1 != m_pathCells.size() && index != 0) {
-        setStatus("Erase from the ends of the track to preserve a valid straight path.", false);
+    const size_t index = static_cast<size_t>(std::distance(cells.begin(), it));
+    if (index != 0 && index + 1 != cells.size()) {
+        setStatus("Erase path pieces from the ends to keep the track connected.", false);
         return false;
     }
 
-    if (index == 0 && m_pathCells.size() > 1) {
-        m_pathCells.erase(m_pathCells.begin());
-        m_hasStart = false;
+    if (index == 0) {
+        cells.erase(cells.begin());
+        m_hasStart[m_activePath] = false;
     } else {
-        m_pathCells.pop_back();
-        m_hasFinish = false;
+        cells.pop_back();
+        m_hasFinish[m_activePath] = false;
     }
 
+    if (cells.empty()) {
+        m_hasStart[m_activePath] = false;
+        m_hasFinish[m_activePath] = false;
+    }
     rebuildMapFromCells();
-    setStatus("Road tile erased.", true);
+    setStatus("Track piece erased.", true);
     return true;
 }
 
-bool TrackEditor::save() {
-    if (m_pathCells.size() < 2 || !m_hasStart || !m_hasFinish) {
-        setStatus("Save requires a complete track with Start and Finish.", false);
-        return false;
-    }
+bool TrackEditor::validateCurrent() const {
+    bool anyPath = false;
+    for (int pathIndex = 0; pathIndex < MaxPaths; ++pathIndex) {
+        const auto& cells = m_pathCells[pathIndex];
+        if (cells.empty()) continue;
 
-    if (!isBoundaryCell(m_pathCells.front()) || !isBoundaryCell(m_pathCells.back())) {
-        setStatus("Start and Finish must touch the edge of the map.", false);
+        anyPath = true;
+        if (cells.size() < 2 || !m_hasStart[pathIndex] || !m_hasFinish[pathIndex]) return false;
+        if (!isBoundaryCell(cells.front()) || !isBoundaryCell(cells.back())) return false;
+
+        for (size_t i = 1; i < cells.size(); ++i) {
+            if (!isAdjacent(cells[i - 1], cells[i])) return false;
+        }
+    }
+    return anyPath;
+}
+
+bool TrackEditor::save() {
+    if (!validateCurrent()) {
+        setStatus("Save requires at least one complete entrance-to-exit path.", false);
         return false;
     }
 
     rebuildMapFromCells();
     m_map.setName("Track Editor Map");
+    m_map.setTrackSet(m_trackSet);
+    m_map.setBloonDensity(m_bloonDensity);
+
     std::string error;
     const fs::path dir = fs::path("maps");
     std::error_code ec;
@@ -288,6 +323,7 @@ bool TrackEditor::save() {
         setStatus("Could not create maps directory: " + ec.message(), false);
         return false;
     }
+
     if (!btd4::saveMap((dir / "track_editor.json").string(), m_map, error)) {
         setStatus("Save failed: " + error, false);
         return false;
@@ -305,7 +341,11 @@ bool TrackEditor::load() {
         setStatus("Load failed: " + error, false);
         return false;
     }
+
     m_map = std::move(loaded);
+    m_trackSet = m_map.trackSet() % 4;
+    m_bloonDensity = m_map.bloonDensity();
+    m_activePath = 0;
     rebuildCellsFromMap();
     setStatus("Loaded maps/track_editor.json.", true);
     return true;
@@ -319,74 +359,94 @@ void TrackEditor::update(const IInput& input, const PointerState& pointer) {
         return;
     }
 
+    if (input.isActionJustPressed(InputAction::NextTarget)) {
+        m_activePath = (m_activePath + 1) % MaxPaths;
+        setStatus("Editing path " + std::to_string(m_activePath + 1) + ".", true);
+    }
+    if (input.isActionJustPressed(InputAction::PrevTarget)) {
+        m_activePath = (m_activePath + MaxPaths - 1) % MaxPaths;
+        setStatus("Editing path " + std::to_string(m_activePath + 1) + ".", true);
+    }
+
     int toolSelection = -1;
     if (input.isActionJustPressed(InputAction::SelectTower1)) toolSelection = 0;
     else if (input.isActionJustPressed(InputAction::SelectTower2)) toolSelection = 1;
     else if (input.isActionJustPressed(InputAction::SelectTower3)) toolSelection = 2;
     else if (input.isActionJustPressed(InputAction::SelectTower4)) toolSelection = 3;
 
-    if (toolSelection == 0) {
-        m_tool = Tool::Road;
-        setStatus("Tool: Road", true);
-    } else if (toolSelection == 1) {
-        m_tool = Tool::Start;
-        setStatus("Tool: Start", true);
-    } else if (toolSelection == 2) {
-        m_tool = Tool::Finish;
-        setStatus("Tool: Finish", true);
-    } else if (toolSelection == 3) {
-        m_tool = Tool::Erase;
-        setStatus("Tool: Erase", true);
-    }
-
-    if (input.isActionJustPressed(InputAction::NextTarget)) {
-        m_trackStyle = (m_trackStyle + 1) % 4;
-        setStatus("Track style changed.", true);
-    }
-    if (input.isActionJustPressed(InputAction::PrevTarget)) {
-        m_trackStyle = (m_trackStyle + 3) % 4;
-        setStatus("Track style changed.", true);
+    if (toolSelection >= 0) {
+        m_tool = static_cast<Tool>(toolSelection);
+        setStatus(std::string("Tool: ") +
+                  (m_tool == Tool::Road ? "Road" :
+                   m_tool == Tool::Start ? "Entrance" :
+                   m_tool == Tool::Finish ? "Exit" : "Erase"), true);
     }
 
     if (!input.isActionJustPressed(InputAction::Confirm)) return;
 
-    // Toolbar buttons live on the right of the grid.
-    if (pointer.logicalX >= 356.0f && pointer.logicalX <= 474.0f) {
+    if (pointer.logicalX >= 350.0f && pointer.logicalX <= 476.0f) {
         if (pointer.logicalY >= 24.0f && pointer.logicalY < 48.0f) {
             m_tool = Tool::Road; setStatus("Tool: Road", true); return;
         }
         if (pointer.logicalY >= 48.0f && pointer.logicalY < 72.0f) {
-            m_tool = Tool::Start; setStatus("Tool: Start", true); return;
+            m_tool = Tool::Start; setStatus("Tool: Entrance", true); return;
         }
         if (pointer.logicalY >= 72.0f && pointer.logicalY < 96.0f) {
-            m_tool = Tool::Finish; setStatus("Tool: Finish", true); return;
+            m_tool = Tool::Finish; setStatus("Tool: Exit", true); return;
         }
         if (pointer.logicalY >= 96.0f && pointer.logicalY < 120.0f) {
             m_tool = Tool::Erase; setStatus("Tool: Erase", true); return;
         }
-        if (pointer.logicalY >= 126.0f && pointer.logicalY < 150.0f) {
+        if (pointer.logicalY >= 122.0f && pointer.logicalY < 146.0f &&
+            pointer.logicalX >= 386.0f) {
+            const int slot = static_cast<int>((pointer.logicalX - 386.0f) / 21.0f);
+            if (slot >= 0 && slot < MaxPaths) {
+                m_activePath = slot;
+                setStatus("Editing path " + std::to_string(slot + 1) + ".", true);
+            }
+            return;
+        }
+        if (pointer.logicalY >= 148.0f && pointer.logicalY < 172.0f) {
             save(); return;
         }
-        if (pointer.logicalY >= 150.0f && pointer.logicalY < 174.0f) {
+        if (pointer.logicalY >= 172.0f && pointer.logicalY < 196.0f) {
             load(); return;
         }
-        if (pointer.logicalY >= 174.0f && pointer.logicalY < 198.0f) {
-            rebuildMapFromCells();
-            m_applyRequested = true;
-            setStatus("Play test requested.", true);
+        if (pointer.logicalY >= 196.0f && pointer.logicalY < 220.0f) {
+            if (validateCurrent()) {
+                rebuildMapFromCells();
+                m_map.setTrackSet(m_trackSet);
+                m_map.setBloonDensity(m_bloonDensity);
+                m_applyRequested = true;
+                setStatus("Play test requested.", true);
+            } else {
+                setStatus("Play Test requires at least one complete path.", false);
+            }
             return;
         }
-        if (pointer.logicalY >= 198.0f && pointer.logicalY < 222.0f) {
+        if (pointer.logicalY >= 220.0f && pointer.logicalY < 242.0f) {
             close(); return;
         }
-        if (pointer.logicalY >= 226.0f && pointer.logicalY < 250.0f) {
-            if (pointer.logicalX < 386.0f) m_trackStyle = 0;
-            else if (pointer.logicalX < 416.0f) m_trackStyle = 1;
-            else if (pointer.logicalX < 446.0f) m_trackStyle = 2;
-            else m_trackStyle = 3;
-            setStatus("Track style changed.", true);
+        if (pointer.logicalY >= 242.0f && pointer.logicalY < 266.0f) {
+            if (pointer.logicalX >= 386.0f && pointer.logicalX < 407.0f) m_trackSet = 0;
+            else if (pointer.logicalX < 428.0f) m_trackSet = 1;
+            else if (pointer.logicalX < 449.0f) m_trackSet = 2;
+            else if (pointer.logicalX < 470.0f) m_trackSet = 3;
+            else return;
+
+            m_map.setTrackSet(m_trackSet);
+            setStatus("Track set changed.", true);
             return;
         }
+    }
+
+    if (pointer.logicalX >= 250.0f && pointer.logicalX < 350.0f &&
+        pointer.logicalY >= 244.0f && pointer.logicalY < 266.0f) {
+        const float third = 100.0f / 3.0f;
+        const int choice = std::clamp(static_cast<int>((pointer.logicalX - 250.0f) / third), 0, 2);
+        m_bloonDensity = static_cast<BloonDensity>(choice);
+        setStatus("Bloon density: " + std::string(densityLabel(m_bloonDensity)) + ".", true);
+        return;
     }
 
     const int cell = cellFromPointer(pointer.logicalX, pointer.logicalY);
@@ -403,53 +463,64 @@ void TrackEditor::update(const IInput& input, const PointerState& pointer) {
 void TrackEditor::render(IRenderer& renderer) const {
     if (!m_open) return;
 
-    renderer.clear(styleGround(m_trackStyle));
-
-    // Frame and title.
+    renderer.clear(styleGround(m_trackSet));
     renderer.drawRect(0.0f, 0.0f, 480.0f, 272.0f, Color{25, 35, 30, 255}, false);
     renderer.drawRect(4.0f, 4.0f, 472.0f, 18.0f, {20, 20, 20, 235}, true);
     renderer.drawText("BTD4 TRACK EDITOR", 10.0f, 9.0f, 1.0f, Color::white());
 
-    // Grid.
-    renderer.drawRect(kGridOriginX, kGridOriginY, kGridWidth, kGridHeight, styleGround(m_trackStyle), true);
+    renderer.drawRect(kGridOriginX, kGridOriginY, kGridWidth, kGridHeight, styleGround(m_trackSet), true);
     for (int x = 0; x <= kColumns; ++x) {
         const float px = kGridOriginX + x * kCellSize;
-        renderer.drawLine(px, kGridOriginY, px, kGridOriginY + kGridHeight, styleGrid(m_trackStyle));
+        renderer.drawLine(px, kGridOriginY, px, kGridOriginY + kGridHeight, styleGrid(m_trackSet));
     }
     for (int y = 0; y <= kRows; ++y) {
         const float py = kGridOriginY + y * kCellSize;
-        renderer.drawLine(kGridOriginX, py, kGridOriginX + kGridWidth, py, styleGrid(m_trackStyle));
+        renderer.drawLine(kGridOriginX, py, kGridOriginX + kGridWidth, py, styleGrid(m_trackSet));
     }
 
-    for (size_t i = 0; i < m_pathCells.size(); ++i) {
-        const int cell = m_pathCells[i];
-        const float x = kGridOriginX + cellX(cell) * kCellSize;
-        const float y = kGridOriginY + cellY(cell) * kCellSize;
-        renderer.drawRect(x + 1.0f, y + 1.0f, kCellSize - 2.0f, kCellSize - 2.0f, styleRoad(m_trackStyle), true);
-        renderer.drawRect(x + 1.0f, y + 1.0f, kCellSize - 2.0f, kCellSize - 2.0f, styleRoadEdge(m_trackStyle), false);
+    for (int pathIndex = 0; pathIndex < MaxPaths; ++pathIndex) {
+        const auto& cells = m_pathCells[pathIndex];
+        if (cells.empty()) continue;
+
+        const bool selectedPath = pathIndex == m_activePath;
+        for (size_t i = 0; i < cells.size(); ++i) {
+            const int cell = cells[i];
+            const float x = kGridOriginX + cellX(cell) * kCellSize;
+            const float y = kGridOriginY + cellY(cell) * kCellSize;
+
+            Color road = styleRoad(m_trackSet);
+            if (!selectedPath) road = {road.r / 2, road.g / 2, road.b / 2, 255};
+            renderer.drawRect(x + 1.0f, y + 1.0f, kCellSize - 2.0f, kCellSize - 2.0f, road, true);
+            renderer.drawRect(x + 1.0f, y + 1.0f, kCellSize - 2.0f, kCellSize - 2.0f,
+                              selectedPath ? styleRoadEdge(m_trackSet) : Color{70,70,70,255}, false);
+            if (selectedPath && i + 1 < cells.size()) {
+                renderer.drawLine(cellCenterX(cells[i]), cellCenterY(cells[i]),
+                                  cellCenterX(cells[i + 1]), cellCenterY(cells[i + 1]),
+                                  Color::white());
+            }
+        }
+
+        const int start = cells.front();
+        if (m_hasStart[pathIndex]) {
+            renderer.drawRect(kGridOriginX + cellX(start) * kCellSize + 3.0f,
+                              kGridOriginY + cellY(start) * kCellSize + 3.0f,
+                              kCellSize - 6.0f, kCellSize - 6.0f,
+                              {50, 210, 90, 255}, true);
+            renderer.drawText("S", cellCenterX(start) - 3.0f, cellCenterY(start) - 5.0f, 1.0f, Color::black());
+        }
+
+        if (m_hasFinish[pathIndex]) {
+            const int finish = cells.back();
+            renderer.drawRect(kGridOriginX + cellX(finish) * kCellSize + 3.0f,
+                              kGridOriginY + cellY(finish) * kCellSize + 3.0f,
+                              kCellSize - 6.0f, kCellSize - 6.0f,
+                              {230, 80, 70, 255}, true);
+            renderer.drawText("E", cellCenterX(finish) - 3.0f, cellCenterY(finish) - 5.0f, 1.0f, Color::white());
+        }
     }
 
-    if (m_hasStart && !m_pathCells.empty()) {
-        const int cell = m_pathCells.front();
-        renderer.drawRect(kGridOriginX + cellX(cell) * kCellSize + 3.0f,
-                          kGridOriginY + cellY(cell) * kCellSize + 3.0f,
-                          kCellSize - 6.0f, kCellSize - 6.0f,
-                          {50, 210, 90, 255}, true);
-        renderer.drawText("S", cellCenterX(cell) - 3.0f, cellCenterY(cell) - 5.0f, 1.0f, Color::black());
-    }
-    if (m_hasFinish && !m_pathCells.empty()) {
-        const int cell = m_pathCells.back();
-        renderer.drawRect(kGridOriginX + cellX(cell) * kCellSize + 3.0f,
-                          kGridOriginY + cellY(cell) * kCellSize + 3.0f,
-                          kCellSize - 6.0f, kCellSize - 6.0f,
-                          {230, 80, 70, 255}, true);
-        renderer.drawText("E", cellCenterX(cell) - 3.0f, cellCenterY(cell) - 5.0f, 1.0f, Color::white());
-    }
-
-    // Minimal right-hand toolbar, deliberately compact and Flash-era rather
-    // than a modern tabbed editor.
-    renderer.drawRect(350.0f, 24.0f, 126.0f, 226.0f, {15, 20, 18, 235}, true);
-    renderer.drawRect(350.0f, 24.0f, 126.0f, 226.0f, Color::white(), false);
+    renderer.drawRect(350.0f, 24.0f, 126.0f, 242.0f, {15, 20, 18, 235}, true);
+    renderer.drawRect(350.0f, 24.0f, 126.0f, 242.0f, Color::white(), false);
 
     auto button = [&renderer](float y, const char* text, bool selected) {
         renderer.drawRect(356.0f, y, 114.0f, 22.0f,
@@ -460,26 +531,42 @@ void TrackEditor::render(IRenderer& renderer) const {
     };
 
     button(26.0f, "1 ROAD", m_tool == Tool::Road);
-    button(50.0f, "2 START", m_tool == Tool::Start);
-    button(74.0f, "3 FINISH", m_tool == Tool::Finish);
+    button(50.0f, "2 ENTRANCE", m_tool == Tool::Start);
+    button(74.0f, "3 EXIT", m_tool == Tool::Finish);
     button(98.0f, "4 ERASE", m_tool == Tool::Erase);
 
-    button(126.0f, "SAVE TRACK", false);
-    button(150.0f, "LOAD TRACK", false);
-    button(174.0f, "PLAY TEST", false);
-    button(198.0f, "DONE", false);
+    renderer.drawText("PATH", 356.0f, 128.0f, 1.0f, Color::cyan());
+    for (int i = 0; i < MaxPaths; ++i) {
+        const float x = 386.0f + i * 21.0f;
+        renderer.drawRect(x, 122.0f, 18.0f, 20.0f,
+                          i == m_activePath ? Color{55, 95, 145, 255} : Color{35, 40, 38, 255}, true);
+        renderer.drawText(std::to_string(i + 1), x + 6.0f, 128.0f, 1.0f, Color::white());
+    }
 
-    renderer.drawText("STYLE", 356.0f, 230.0f, 1.0f, Color::cyan());
-    const char* styles[] = {"G", "D", "S", "W"};
+    button(148.0f, "SAVE TRACK", false);
+    button(172.0f, "LOAD TRACK", false);
+    button(196.0f, "PLAY TEST", false);
+    button(220.0f, "DONE", false);
+
+    renderer.drawText("SET", 356.0f, 232.0f, 1.0f, Color::cyan());
     for (int i = 0; i < 4; ++i) {
-        const float x = 386.0f + i * 30.0f;
-        renderer.drawRect(x, 226.0f, 26.0f, 20.0f,
-                          i == m_trackStyle ? Color{55, 95, 145, 255} : Color{35, 40, 38, 255}, true);
-        renderer.drawText(styles[i], x + 9.0f, 232.0f, 1.0f, Color::white());
+        const float x = 386.0f + i * 21.0f;
+        renderer.drawRect(x, 226.0f, 18.0f, 20.0f,
+                          i == m_trackSet ? Color{55, 95, 145, 255} : Color{35, 40, 38, 255}, true);
+        renderer.drawText(std::to_string(i + 1), x + 6.0f, 232.0f, 1.0f, Color::white());
+    }
+
+    renderer.drawText("DENSITY", 250.0f, 246.0f, 1.0f, Color::cyan());
+    const char* densities[] = {"L", "N", "H"};
+    for (int i = 0; i < 3; ++i) {
+        const float x = 302.0f + i * 15.0f;
+        renderer.drawRect(x, 242.0f, 14.0f, 20.0f,
+                          i == static_cast<int>(m_bloonDensity) ? Color{55, 95, 145, 255} : Color{35, 40, 38, 255}, true);
+        renderer.drawText(densities[i], x + 4.0f, 248.0f, 1.0f, Color::white());
     }
 
     if (!m_status.empty()) {
-        renderer.drawRect(8.0f, 252.0f, 338.0f, 14.0f, {0, 0, 0, 190}, true);
+        renderer.drawRect(8.0f, 252.0f, 238.0f, 14.0f, {0, 0, 0, 190}, true);
         renderer.drawText(m_status, 12.0f, 256.0f, 1.0f,
                           m_statusGood ? Color::green() : Color::red());
     }
