@@ -203,3 +203,24 @@ TEST_CASE(MultiplayerSessionConfiguresLocalPlayers) {
     session.stop();
     TEST_ASSERT(!session.active());
 }
+
+
+TEST_CASE(TowerOwnershipUsesPlayerEconomies) {
+    btd4::GameSimulation simulation(btd4::Map("Ownership Test"));
+    simulation.map().addPath(btd4::Path({{10.0f, 10.0f}, {100.0f, 10.0f}}));
+    simulation.player(1).setActive(true);
+
+    const int before0 = simulation.player(0).economy().cash();
+    const int before1 = simulation.player(1).economy().cash();
+
+    TEST_ASSERT(simulation.placeTower(static_cast<uint8_t>(1),
+                                      btd4::TowerType::DartMonkey, 200.0f, 120.0f));
+    TEST_ASSERT_EQ(simulation.towers().size(), size_t(1));
+    TEST_ASSERT_EQ(simulation.towers()[0].ownerId(), static_cast<uint8_t>(1));
+    TEST_ASSERT_EQ(simulation.player(0).economy().cash(), before0);
+    TEST_ASSERT_EQ(simulation.player(1).economy().cash(), before1 - 200);
+
+    TEST_ASSERT(!simulation.sellTower(static_cast<uint8_t>(0), simulation.towers()[0].id()));
+    TEST_ASSERT(simulation.sellTower(static_cast<uint8_t>(1), simulation.towers()[0].id()));
+    TEST_ASSERT_EQ(simulation.player(1).economy().cash(), before1 - 50);
+}
