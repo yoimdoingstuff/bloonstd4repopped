@@ -57,6 +57,15 @@ bool executableOnPath(const char* executable) {
     }
     return false;
 }
+
+bool containsImportedTexture(const fs::path& textureRoot) {
+    std::error_code ec;
+    if (!fs::is_directory(textureRoot, ec)) return false;
+    for (fs::recursive_directory_iterator it(textureRoot, fs::directory_options::skip_permission_denied, ec), end;
+         it != end && !ec; it.increment(ec)) {
+        if (it->is_regular_file(ec)) return true;
+    }
+    return false;
 }
 
 bool LinuxPlatform::isAvailable() const {
@@ -182,6 +191,17 @@ BuildResult LinuxPlatform::package(const std::string& gameEdition) {
         return result;
     } else {
         result.outputLogs.push_back("[Linux Warning] No imported game_data/Linux directory was found; packaged game will use runtime fallbacks.");
+    }
+
+    if (!fs::is_regular_file(packageData / "manifest.json", ec)) {
+        result.message = "Playable package is missing game_data/manifest.json after packaging.";
+        result.outputLogs.push_back("[Linux Error] " + result.message);
+        return result;
+    }
+    if (!containsImportedTexture(packageData / "textures")) {
+        result.message = "Playable package contains no imported texture files under game_data/textures.";
+        result.outputLogs.push_back("[Linux Error] " + result.message);
+        return result;
     }
 
     const fs::path customUpgrades = root / "upgrades";
