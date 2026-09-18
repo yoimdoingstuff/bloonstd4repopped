@@ -203,7 +203,7 @@ BuildResult WindowsPlatform::package(const std::string& gameEdition){
         r.outputLogs.push_back("[Windows] Packaged custom rounds from " + customRounds.string());
     }
 
-    const customMaps = root / "maps";
+    const fs::path customMaps = root / "maps";
     if (fs::is_directory(customMaps, ec)) {
         const fs::path packageMaps = packageData / "maps";
         fs::create_directories(packageMaps, ec);
