@@ -79,3 +79,47 @@ TEST_CASE(TowerSupportsIndependentUpgradePaths) {
     TEST_ASSERT_EQ(tower.upgradeTier(1), static_cast<uint8_t>(1));
     TEST_ASSERT_EQ(tower.totalInvestedCost(), 550 + 100 + 200);
 }
+
+
+TEST_CASE(TowerDataSerializationRoundTripsBaseStats) {
+    btd4::TowerSet source;
+    btd4::TowerDefinition dart;
+    dart.id = "dart_custom";
+    dart.displayName = "Custom Dart";
+    dart.type = btd4::TowerType::DartMonkey;
+    dart.stats.cost = 321;
+    dart.stats.range = 123.0f;
+    dart.stats.attackCooldown = 0.75f;
+    dart.stats.footprintRadius = 13.0f;
+    dart.stats.projectileType = btd4::ProjectileType::Dart;
+    dart.stats.damageType = btd4::DamageType::Sharp;
+    dart.stats.projectileDamage = 2;
+    dart.stats.projectilePierce = 4;
+    dart.stats.projectileSpeed = 300.0f;
+    source.towers.push_back(dart);
+
+    const std::string json = btd4::serializeTowers(source);
+    btd4::TowerSet loaded;
+    std::string error;
+    TEST_ASSERT(btd4::parseTowers(json, loaded, error));
+    TEST_ASSERT(error.empty());
+    TEST_ASSERT_EQ(loaded.towers.size(), size_t(1));
+    TEST_ASSERT_EQ(loaded.towers[0].id, "dart_custom");
+    TEST_ASSERT_EQ(loaded.towers[0].stats.cost, 321);
+    TEST_ASSERT_EQ(loaded.towers[0].stats.projectilePierce, 4);
+    TEST_ASSERT_EQ(loaded.towers[0].stats.projectileSpeed, 300.0f);
+}
+
+TEST_CASE(TowerDefinitionsOverrideBuiltinStats) {
+    btd4::TowerSet definitions;
+    btd4::TowerDefinition dart;
+    dart.id = "dart_override";
+    dart.displayName = "Override";
+    dart.type = btd4::TowerType::DartMonkey;
+    dart.stats = btd4::getTowerBaseStats(btd4::TowerType::DartMonkey);
+    dart.stats.cost = 999;
+    definitions.towers.push_back(dart);
+
+    btd4::configureTowerDefinitions(definitions);
+    TEST_ASSERT_EQ(btd4::getTowerBaseStats(btd4::TowerType::DartMonkey).cost, 999);
+}
