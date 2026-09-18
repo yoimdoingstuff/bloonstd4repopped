@@ -169,7 +169,7 @@ std::string AssetManifest::serialize() const {
     ss << "  \"audio\": {\n";
     i = 0;
     for (const auto& [k, v] : audio) {
-        ss << "    \"" << k << "\": \"" << v << "\"";
+        ss << "    \"" << escapeJsonString(k) << "\": \"" << escapeJsonString(v) << "\"";
         if (++i < audio.size()) ss << ",";
         ss << "\n";
     }
