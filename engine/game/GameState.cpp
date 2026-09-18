@@ -37,6 +37,28 @@ void GameSimulation::reset() {
     m_totalBloonsLeaked = 0;
 }
 
+Economy& GameSimulation::economyForPlayer(uint8_t playerId) {
+    return m_economyMode == MultiplayerEconomyMode::Shared
+        ? m_players[0].economy()
+        : m_players[playerId].economy();
+}
+
+const Economy& GameSimulation::economyForPlayer(uint8_t playerId) const {
+    return m_economyMode == MultiplayerEconomyMode::Shared
+        ? m_players[0].economy()
+        : m_players[playerId].economy();
+}
+
+void GameSimulation::syncSharedEconomy() {
+    if (m_economyMode != MultiplayerEconomyMode::Shared) return;
+    const int cash = m_players[0].economy().cash();
+    const int lives = m_players[0].economy().lives();
+    for (size_t i = 1; i < m_players.size(); ++i) {
+        if (m_players[i].active())
+            m_players[i].economy().reset(cash, lives);
+    }
+}
+
 void GameSimulation::pause() {
     if (m_state == GameStateType::Playing) {
         m_state = GameStateType::Paused;
@@ -57,7 +79,7 @@ bool GameSimulation::placeTower(uint8_t playerId, TowerType type, float x, float
     if (playerId >= MAX_PLAYERS || !m_players[playerId].active()) return false;
 
     TowerBaseStats stats = getTowerBaseStats(type);
-    Economy& playerEconomy = m_players[playerId].economy();
+    Economy& playerEconomy = economyForPlayer(playerId);
     if (!playerEconomy.canAfford(stats.cost)) {
         return false;
     }
@@ -77,6 +99,7 @@ bool GameSimulation::placeTower(uint8_t playerId, TowerType type, float x, float
     }
 
     playerEconomy.spendCash(stats.cost);
+    syncSharedEconomy();
     m_towers.emplace_back(m_nextTowerId++, type, x, y, playerId);
     return true;
 }
@@ -90,7 +113,8 @@ bool GameSimulation::sellTower(uint8_t playerId, uint32_t towerId) {
     for (auto it = m_towers.begin(); it != m_towers.end(); ++it) {
         if (it->id() == towerId && it->ownerId() == playerId) {
             int refund = it->sellValue();
-            m_players[playerId].economy().addCash(refund);
+            economyForPlayer(playerId).addCash(refund);
+            syncSharedEconomy();
             m_towers.erase(it);
             return true;
         }
@@ -139,7 +163,8 @@ void GameSimulation::update(float deltaTime) {
     for (uint32_t id : leakedBloons) {
         (void)id;
         // 1 life penalty per leaked red bloon or equivalent
-        economy().loseLives(1);
+        economyForPlayer(m_activePlayerId).loseLives(1);
+        syncSharedEconomy();
         m_totalBloonsLeaked++;
     }
 
@@ -157,15 +182,17 @@ void GameSimulation::update(float deltaTime) {
     // 3. Update projectiles and resolve collisions
     int cashEarned = m_projectilePool.update(deltaTime, m_bloonPool, m_map);
     if (cashEarned > 0) {
-        economy().addCash(cashEarned);
+        economyForPlayer(m_activePlayerId).addCash(cashEarned);
+        syncSharedEconomy();
         m_totalBloonsPopped += cashEarned;
     }
 
     // Spawn at the end of this tick: a new bloon must not move for time before
     // it existed. Deadlines are quantized to the caller's fixed tick boundary.
     if (m_rounds.advance(deltaTime, m_bloonPool, m_map)) {
-        economy().addCash(Economy::calculateRoundReward(
+        economyForPlayer(m_activePlayerId).addCash(Economy::calculateRoundReward(
             static_cast<int>(m_rounds.completedRounds())));
+        syncSharedEconomy();
         m_projectilePool.clear();
         if (m_rounds.finished()) m_state = GameStateType::Victory;
     }
