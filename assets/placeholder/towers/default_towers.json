@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "towers": [
+    {"id":"dart_monkey","displayName":"Dart Monkey","type":"DartMonkey","cost":200,"range":100,"attackCooldown":0.95,"footprintRadius":12,"projectileType":"Dart","damageType":"Sharp","projectileDamage":1,"projectilePierce":1,"projectileSpeed":260,"explosionRadius":0},
+    {"id":"tack_shooter","displayName":"Tack Shooter","type":"TackShooter","cost":250,"range":70,"attackCooldown":1.25,"footprintRadius":12,"projectileType":"Tack","damageType":"Sharp","projectileDamage":1,"projectilePierce":1,"projectileSpeed":220,"explosionRadius":0},
+    {"id":"sniper_monkey","displayName":"Sniper Monkey","type":"SniperMonkey","cost":350,"range":9999,"attackCooldown":1.6,"footprintRadius":12,"projectileType":"SniperShot","damageType":"Sharp","projectileDamage":2,"projectilePierce":1,"projectileSpeed":2000,"explosionRadius":0},
+    {"id":"boomerang_thrower","displayName":"Boomerang Thrower","type":"BoomerangThrower","cost":350,"range":110,"attackCooldown":1.1,"footprintRadius":12,"projectileType":"Boomerang","damageType":"Sharp","projectileDamage":1,"projectilePierce":3,"projectileSpeed":200,"explosionRadius":0},
+    {"id":"bomb_tower","displayName":"Bomb Tower","type":"BombTower","cost":550,"range":110,"attackCooldown":1.35,"footprintRadius":12,"projectileType":"Bomb","damageType":"Explosive","projectileDamage":1,"projectilePierce":1,"projectileSpeed":200,"explosionRadius":35},
+    {"id":"super_monkey","displayName":"Super Monkey","type":"SuperMonkey","cost":3000,"range":135,"attackCooldown":0.055,"footprintRadius":12,"projectileType":"Dart","damageType":"Sharp","projectileDamage":1,"projectilePierce":1,"projectileSpeed":350,"explosionRadius":0}
+  ]
+}
