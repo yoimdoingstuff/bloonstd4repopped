@@ -603,7 +603,10 @@ MILESTONE 14: GAME BUILDER
     Agent: builder
     Notes: Builder edits base tower cost, range, cooldown, projectile, damage, pierce, speed, and explosion values and saves custom_towers.json.
 
-* [ ]	Upgrade editor
+* [x]	Upgrade editor
+    Agent: builder
+    Notes: Builder edits upgrade identity, path/tier, cost, and stat modifiers and saves custom_upgrades.json.
+
 * [ ]	Preview mode
 
 ⸻
