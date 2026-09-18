@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
 #include <utility>
 
 namespace btd4 {
@@ -41,13 +42,13 @@ public:
 
 private:
     static float finiteFloat(double value, const char* label) {
-        if (!std::isfinite(value) || value < 0.0 || value > 1000000.0) fail(std::string("Invalid ") + label);
+        if (!std::isfinite(value) || value < 0.0 || value > 1000000.0) throw std::runtime_error(std::string("Invalid ") + label);
         return static_cast<float>(value);
     }
 
     static int nonNegativeInt(double value, const char* label) {
         if (!std::isfinite(value) || value < 0.0 || value > 1000000.0 || std::floor(value) != value)
-            fail(std::string("Invalid ") + label);
+            throw std::runtime_error(std::string("Invalid ") + label);
         return static_cast<int>(value);
     }
 
