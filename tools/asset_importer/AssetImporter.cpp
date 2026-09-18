@@ -108,7 +108,7 @@ void inspectIpa(const std::string& path,
                 const std::function<void(const std::string&)>& emitLog){
     if(path.empty()||!fs::exists(path))return;
     report.ipaDetected=true;
-    report.ipaArchiveDetected=looksLikeIpaArchive(path);
+    report.ipaArchiveDetected = report.ipaArchiveDetected || looksLikeIpaArchive(path);
     if(!report.ipaArchiveDetected){
         report.warnings.push_back("IPA path exists but does not have a standard ZIP/IPA signature.");
         emitLog("[Importer] IPA supplied, but archive signature was not recognized.");
