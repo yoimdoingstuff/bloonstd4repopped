@@ -120,52 +120,60 @@ void AssetManager::drawTower(IRenderer& renderer,const Tower& tower,bool isSelec
 void AssetManager::drawProjectile(IRenderer& renderer,const Projectile& proj) const{if(!proj.active)return;const std::string logical=getProjectileAssetId(proj.type);const std::string id=findImportedTextureId(m_manifest,renderer,logical);if(!id.empty())renderer.drawSprite(id,proj.x-4.0f,proj.y-4.0f,8.0f,8.0f);else if(proj.type==ProjectileType::Bomb){renderer.drawCircle(proj.x,proj.y,4.0f,Color::black(),true);renderer.drawCircle(proj.x,proj.y,4.0f,Color::red(),false);}else if(proj.type==ProjectileType::Plasma)renderer.drawCircle(proj.x,proj.y,5.0f,Color::cyan(),true);else{float len=6.0f,speed=std::sqrt(proj.vx*proj.vx+proj.vy*proj.vy);float dx=speed>.001f?proj.vx/speed:1.0f,dy=speed>.001f?proj.vy/speed:0.0f;renderer.drawLine(proj.x,proj.y,proj.x-dx*len,proj.y-dy*len,Color::yellow());}}
 void AssetManager::drawMap(IRenderer& renderer,const Map& map) const{std::string backgroundId;if(renderer.hasTexture("map_background"))backgroundId="map_background";else if(m_hasManifest){for(const auto& [id,path]:m_manifest.textures){(void)path;const std::string lowered=lowerId(id);if(lowered.find("map")==std::string::npos&&lowered.find("background")==std::string::npos&&lowered.find("track")==std::string::npos&&lowered.find("level")==std::string::npos)continue;if(renderer.hasTexture(id)){backgroundId=id;break;}}}if(!backgroundId.empty()){renderer.drawSprite(backgroundId,0,0,480,272);return;}renderer.drawRect(0,0,480,272,{34,139,34,255},true);for(const auto& br:map.blockedRegions()){renderer.drawRect(br.x,br.y,br.w,br.h,{46,117,46,255},true);renderer.drawRect(br.x,br.y,br.w,br.h,{25,80,25,255},false);}for(const auto& path:map.paths()){const auto& w=path.waypoints();for(size_t i=0;i+1<w.size();++i){for(float o=-8;o<=8;o+=2)renderer.drawLine(w[i].x+o,w[i].y,w[i+1].x+o,w[i+1].y,{210,180,140,255});renderer.drawLine(w[i].x-9,w[i].y,w[i+1].x-9,w[i+1].y,{160,130,95,255});renderer.drawLine(w[i].x+9,w[i].y,w[i+1].x+9,w[i+1].y,{160,130,95,255});}}}
 void AssetManager::drawHUD(IRenderer& renderer,const Economy& economy,int currentRound,size_t totalRounds,double fps,TowerType selectedPlacementType,bool hasPlacement) const{
-    renderer.drawRect(0,0,400,22,{0,0,0,180},true);
-    renderer.drawText("LIVES: "+std::to_string(economy.lives()),8,6,1,Color::red());
-    renderer.drawText("CASH: $"+std::to_string(economy.cash()),100,6,1,Color::yellow());
-    renderer.drawText("ROUND: "+std::to_string(currentRound)+"/"+std::to_string(totalRounds),210,6,1,Color::white());
-    renderer.drawText("FPS: "+std::to_string((int)std::round(fps)),340,6,1,Color::green());
-    renderer.drawRect(400,0,80,272,{20,20,20,230},true);
-    renderer.drawLine(400,0,400,272,{60,60,60,255});
-    renderer.drawRect(404,1,72,18,{35,45,55,255},true);
-    renderer.drawRect(404,1,72,18,Color::cyan(),false);
-    renderer.drawText("EDIT",431,6,1,Color::white());
+    // Desktop/HD-style HUD laid out in the existing 480x272 world space. The
+    // renderer now scales this layout to the actual desktop viewport, so it is
+    // no longer rasterized at PSP resolution.
+    renderer.drawRect(0,0,480,30,{18,24,30,245},true);
+    renderer.drawRect(0,29,480,1,{70,85,95,255},true);
+    renderer.drawText("LIVES",10,7,1.0f,{180,220,235,255});
+    renderer.drawText(std::to_string(economy.lives()),50,7,1.2f,Color::red());
+    renderer.drawText("CASH",92,7,1.0f,{180,220,235,255});
+    renderer.drawText("$"+std::to_string(economy.cash()),130,7,1.2f,Color::yellow());
+    renderer.drawText("ROUND",220,7,1.0f,{180,220,235,255});
+    renderer.drawText(std::to_string(currentRound)+"/"+std::to_string(totalRounds),265,7,1.2f,Color::white());
+    renderer.drawText("FPS "+std::to_string((int)std::round(fps)),385,7,1.0f,{150,170,180,255});
+
+    constexpr float panelX=368.0f;
+    renderer.drawRect(panelX,30,112,242,{24,30,36,250},true);
+    renderer.drawRect(panelX,30,1,242,{75,90,100,255},true);
+    renderer.drawText("TOWERS",378,36,1.0f,Color::white());
+
     static const TowerType towers[]={TowerType::DartMonkey,TowerType::TackShooter,TowerType::BombTower,TowerType::BoomerangThrower,TowerType::SuperMonkey};
-    float y=22;
+    float y=50.0f;
     for(TowerType tt:towers){
         auto stats=getTowerBaseStats(tt);
         bool sel=hasPlacement&&selectedPlacementType==tt;
         bool afford=economy.canAfford(stats.cost);
-        Color bg=sel?Color{60,100,160,255}:(afford?Color{45,45,45,255}:Color{30,30,30,255});
-        renderer.drawRect(404,y,72,36,bg,true);
-        renderer.drawRect(404,y,72,36,sel?Color::cyan():Color{80,80,80,255},false);
+        Color bg=sel?Color{55,95,135,255}:(afford?Color{39,47,53,255}:Color{28,32,36,255});
+        renderer.drawRect(panelX+6,y,100,32,bg,true);
+        renderer.drawRect(panelX+6,y,100,32,sel?Color::cyan():Color{70,78,84,255},false);
         const std::string logical=getTowerAssetId(tt);
         const std::string id=findImportedTextureId(m_manifest,renderer,logical);
-        if(!id.empty())renderer.drawSprite(id,406,y+2,28,28);
+        if(!id.empty()) renderer.drawSprite(id,panelX+10,y+2,28,28);
         std::string n;
         switch(tt){
-            case TowerType::DartMonkey:n="DART";break;
-            case TowerType::TackShooter:n="TACK";break;
-            case TowerType::BombTower:n="BOMB";break;
-            case TowerType::BoomerangThrower:n="RANG";break;
-            case TowerType::SuperMonkey:n="SPER";break;
-            default:n="";break;
+            case TowerType::DartMonkey:n="DART MONKEY";break;
+            case TowerType::TackShooter:n="TACK SHOOTER";break;
+            case TowerType::BombTower:n="BOMB TOWER";break;
+            case TowerType::BoomerangThrower:n="BOOMERANG";break;
+            case TowerType::SuperMonkey:n="SUPER MONKEY";break;
+            default:n="TOWER";break;
         }
-        renderer.drawText(n,436,y+4,1,sel?Color::white():(afford?Color::white():Color{120,120,120,255}));
-        renderer.drawText("$"+std::to_string(stats.cost),436,y+18,1,afford?Color::yellow():Color::red());
-        y+=36;
+        renderer.drawText(n,panelX+41,y+5,0.8f,afford?Color::white():Color{115,120,125,255});
+        renderer.drawText("$"+std::to_string(stats.cost),panelX+41,y+18,0.9f,afford?Color::yellow():Color::red());
+        y+=35.0f;
     }
-    renderer.drawRect(404,202,72,20,{45,45,45,255},true);
-    renderer.drawRect(404,202,72,20,Color::cyan(),false);
-    renderer.drawText("TARGET",413,208,1,Color::white());
 
-    renderer.drawRect(404,222,72,20,{65,45,45,255},true);
-    renderer.drawRect(404,222,72,20,Color::red(),false);
-    renderer.drawText("SELL",430,228,1,Color::white());
+    renderer.drawRect(panelX+6,224,100,20,{42,50,56,255},true);
+    renderer.drawRect(panelX+6,224,100,20,Color::cyan(),false);
+    renderer.drawText("TARGET",panelX+29,230,0.9f,Color::white());
+    renderer.drawRect(panelX+6,247,100,20,{65,42,42,255},true);
+    renderer.drawRect(panelX+6,247,100,20,Color::red(),false);
+    renderer.drawText("SELL",panelX+42,253,0.9f,Color::white());
 
-    renderer.drawRect(404,242,72,28,{45,45,45,255},true);
-    renderer.drawRect(404,242,72,28,Color::green(),false);
-    renderer.drawText("PAUSE",424,249,1,Color::white());
+    renderer.drawRect(8,236,150,30,{36,82,45,255},true);
+    renderer.drawRect(8,236,150,30,Color::green(),false);
+    renderer.drawText("START ROUND",24,245,1.0f,Color::white());
 }
 
 } // namespace btd4
