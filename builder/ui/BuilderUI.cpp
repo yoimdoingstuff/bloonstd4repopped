@@ -213,6 +213,7 @@ int runStandaloneImporter(const fs::path& importer,
                            const fs::path& outputDir,
                            const fs::path& projectRoot,
                            const std::string& targetPlatform,
+                           const std::string& gameEdition,
                            std::string& outputLog) {
     const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
     std::error_code tempEc;
@@ -246,6 +247,7 @@ int runStandaloneImporter(const fs::path& importer,
     commandLine += L" " + quoteWindowsArg(utf8ToWide(sourceSwf.string()));
     commandLine += L" --out " + quoteWindowsArg(utf8ToWide(outputDir.string()));
     commandLine += L" --platform " + quoteWindowsArg(utf8ToWide(targetPlatform));
+    commandLine += L" --edition " + quoteWindowsArg(utf8ToWide(gameEdition));
     if (!sourceIpa.empty()) commandLine += L" --ipa " + quoteWindowsArg(utf8ToWide(sourceIpa.string()));
     if (!sourceExpansionSwf.empty()) commandLine += L" --expansion-swf " + quoteWindowsArg(utf8ToWide(sourceExpansionSwf.string()));
     if (!sourceHdIpa.empty()) commandLine += L" --hd-ipa " + quoteWindowsArg(utf8ToWide(sourceHdIpa.string()));
@@ -294,6 +296,7 @@ int runStandaloneImporter(const fs::path& importer,
         (sourceExpansionSwf.empty() ? std::string{} : " --expansion-swf " + shellQuote(sourceExpansionSwf.string())) +
         (sourceHdIpa.empty() ? std::string{} : " --hd-ipa " + shellQuote(sourceHdIpa.string())) +
         (sourceMobileIpa.empty() ? std::string{} : " --mobile-ipa " + shellQuote(sourceMobileIpa.string())) +
+        " --edition " + shellQuote(gameEdition) +
         " > " + shellQuote(logPath.string()) + " 2>&1";
 
     const int status = std::system(command.c_str());
@@ -837,6 +840,7 @@ bool BuilderUI::triggerImport() {
         fs::path(options.sourceHdIpa),
         fs::path(options.sourceMobileIpa),
         fs::path(options.outputDir),
+        options.gameEdition,
         projectRoot,
         options.targetPlatform,
         importerOutput);
