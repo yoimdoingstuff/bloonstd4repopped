@@ -206,3 +206,46 @@ const UpgradeDefinition* findUpgrade(const UpgradeSet& upgrades,
 }
 
 } // namespace btd4
+
+
+std::string serializeUpgrades(const UpgradeSet& upgrades) {
+    std::ostringstream out;
+    out << "{\n  \"version\": 1,\n  \"upgrades\": [\n";
+    for (size_t i = 0; i < upgrades.upgrades.size(); ++i) {
+        const auto& u = upgrades.upgrades[i];
+        const auto& e = u.effect;
+        out << "    {\"id\": \"" << u.id
+            << "\", \"tower\": \"" << towerTypeName(u.tower)
+            << "\", \"path\": " << static_cast<int>(u.path)
+            << ", \"tier\": " << static_cast<int>(u.tier)
+            << ", \"displayName\": \"" << u.displayName
+            << "\", \"cost\": " << e.cost
+            << ", \"rangeAdd\": " << e.rangeAdd
+            << ", \"cooldownMultiplier\": " << e.cooldownMultiplier
+            << ", \"damageAdd\": " << e.damageAdd
+            << ", \"pierceAdd\": " << e.pierceAdd
+            << ", \"projectileSpeedMultiplier\": " << e.projectileSpeedMultiplier
+            << ", \"explosionRadiusAdd\": " << e.explosionRadiusAdd << "}";
+        if (i + 1 < upgrades.upgrades.size()) out << ",";
+        out << "\n";
+    }
+    out << "  ]\n}\n";
+    return out.str();
+}
+
+bool saveUpgrades(const std::string& path, const UpgradeSet& upgrades, std::string& error) {
+    error.clear();
+    if (!validateUpgrades(upgrades, error)) return false;
+    std::ofstream out(path, std::ios::binary);
+    if (!out.is_open()) {
+        error = "Cannot write upgrades: " + path;
+        return false;
+    }
+    const std::string json = serializeUpgrades(upgrades);
+    out.write(json.data(), static_cast<std::streamsize>(json.size()));
+    if (!out.good()) {
+        error = "Failed while writing upgrades: " + path;
+        return false;
+    }
+    return true;
+}
