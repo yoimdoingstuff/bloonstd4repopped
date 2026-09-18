@@ -23,7 +23,9 @@ enum class InputAction : uint32_t {
     SelectTower3 = 1 << 14,
     SelectTower4 = 1 << 15,
     SelectTower5 = 1 << 16,
-    SelectTower6 = 1 << 17
+    SelectTower6 = 1 << 17,
+    UpgradePath1 = 1 << 18,
+    UpgradePath2 = 1 << 19
 };
 
 inline InputAction operator|(InputAction a, InputAction b) {
