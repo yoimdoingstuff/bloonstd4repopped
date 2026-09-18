@@ -37,6 +37,7 @@ private:
     void renderLogsSection();
 
     void discoverAssets();
+    bool validateProject();
     void triggerBuild();
     bool triggerImport();
 };
