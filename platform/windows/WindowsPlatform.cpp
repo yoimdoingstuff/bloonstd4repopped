@@ -152,6 +152,23 @@ BuildResult WindowsPlatform::package(const std::string& gameEdition){
         r.outputLogs.push_back("[Windows Error] "+r.message);return r;
     }
 
+    const fs::path customUpgrades = root / "upgrades";
+    if (fs::is_directory(customUpgrades, ec)) {
+        const fs::path packageUpgrades = packageData / "upgrades";
+        fs::create_directories(packageUpgrades, ec);
+        if (ec) {
+            r.message = "Could not create packaged custom upgrade directory: " + ec.message();
+            return r;
+        }
+        fs::copy(customUpgrades, packageUpgrades,
+                 fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+        if (ec) {
+            r.message = "Could not package custom upgrades: " + ec.message();
+            return r;
+        }
+        r.outputLogs.push_back("[Windows] Packaged custom upgrades from " + customUpgrades.string());
+    }
+
     const fs::path customTowers = root / "towers";
     if (fs::is_directory(customTowers, ec)) {
         const fs::path packageTowers = packageData / "towers";
