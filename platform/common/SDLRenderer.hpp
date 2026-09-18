@@ -40,6 +40,7 @@ private:
     SDL_Renderer* m_renderer{nullptr};
     bool m_ownsWindow{false};
     bool m_ownsVideoSubsystem{false};
+    bool m_imageSubsystemInitialized{false};
     Viewport m_currentViewport{0, 0, 480, 272};
     std::unordered_map<std::string, SDL_Texture*> m_textures;
 };
