@@ -1,6 +1,7 @@
 #include "AssetImporter.hpp"
 #include <iostream>
 #include <string>
+#include <exception>
 
 void printUsage(const char* progName) {
     std::cout << "Bloons TD 4 Repopped - Native Asset Importer CLI\n"
@@ -75,7 +76,19 @@ int main(int argc, char* argv[]) {
         std::cout << "] " << static_cast<int>(p * 100.0f) << "% " << status << std::flush;
     };
 
-    btd4::tools::ImportReport report = btd4::tools::AssetImporter::run(options, logCallback, progressCallback);
+    btd4::tools::ImportReport report;
+    try {
+        report = btd4::tools::AssetImporter::run(options, logCallback, progressCallback);
+    } catch (const std::bad_alloc&) {
+        std::cerr << "\nImport failed: importer ran out of memory." << std::endl;
+        return 2;
+    } catch (const std::exception& e) {
+        std::cerr << "\nImport failed with exception: " << e.what() << std::endl;
+        return 2;
+    } catch (...) {
+        std::cerr << "\nImport failed with an unknown exception." << std::endl;
+        return 2;
+    }
     std::cout << "\n";
 
     if (!report.success) {
