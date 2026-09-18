@@ -18,17 +18,65 @@ static std::string trim(const std::string& str) {
     return str.substr(start, end - start + 1);
 }
 
+static std::string parseQuotedJsonString(const std::string& json, size_t quote) {
+    if (quote >= json.size() || json[quote] != '"') return {};
+    std::string value;
+    for (size_t i = quote + 1; i < json.size(); ++i) {
+        const char c = json[i];
+        if (c == '"') return value;
+        if (c != '\\') {
+            value += c;
+            continue;
+        }
+        if (++i >= json.size()) return {};
+        switch (json[i]) {
+            case '"': value += '"'; break;
+            case '\\': value += '\\'; break;
+            case '/': value += '/'; break;
+            case 'b': value += '\b'; break;
+            case 'f': value += '\f'; break;
+            case 'n': value += '\n'; break;
+            case 'r': value += '\r'; break;
+            case 't': value += '\t'; break;
+            default: return {};
+        }
+    }
+    return {};
+}
+
 static std::string extractJsonString(const std::string& json, const std::string& key) {
-    std::string searchKey = "\"" + key + "\"";
-    size_t keyPos = json.find(searchKey);
-    if (keyPos == std::string::npos) return "";
-    size_t colonPos = json.find(':', keyPos + searchKey.length());
-    if (colonPos == std::string::npos) return "";
-    size_t quoteStart = json.find('"', colonPos + 1);
-    if (quoteStart == std::string::npos) return "";
-    size_t quoteEnd = json.find('"', quoteStart + 1);
-    if (quoteEnd == std::string::npos) return "";
-    return json.substr(quoteStart + 1, quoteEnd - quoteStart - 1);
+    const std::string searchKey = "\"" + key + "\"";
+    const size_t keyPos = json.find(searchKey);
+    if (keyPos == std::string::npos) return {};
+    const size_t colonPos = json.find(':', keyPos + searchKey.length());
+    if (colonPos == std::string::npos) return {};
+    const size_t quoteStart = json.find('"', colonPos + 1);
+    if (quoteStart == std::string::npos) return {};
+    return parseQuotedJsonString(json, quoteStart);
+}
+
+static std::string escapeJsonString(const std::string& value) {
+    std::string out;
+    out.reserve(value.size() + 8);
+    for (unsigned char c : value) {
+        switch (c) {
+            case '\\': out += "\\\\"; break;
+            case '"': out += "\\""; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default:
+                if (c < 0x20) {
+                    const char* hex = "0123456789abcdef";
+                    out += "\\u00";
+                    out += hex[(c >> 4) & 0xF];
+                    out += hex[c & 0xF];
+                } else {
+                    out += static_cast<char>(c);
+                }
+        }
+    }
+    return out;
 }
 
 static int extractJsonInt(const std::string& json, const std::string& key, int defaultVal = 0) {
@@ -66,17 +114,17 @@ std::string Project::serialize() const {
     std::ostringstream ss;
     ss << "{\n";
     ss << "  \"version\": " << m_config.version << ",\n";
-    ss << "  \"project_name\": \"" << m_config.projectName << "\",\n";
-    ss << "  \"source_directory\": \"" << m_config.sourceDirectory << "\",\n";
-    ss << "  \"source_swf\": \"" << m_config.sourceSwf << "\",\n";
-    ss << "  \"source_ipa\": \"" << m_config.sourceIpa << "\",\n";
-    ss << "  \"source_expansion_swf\": \"" << m_config.sourceExpansionSwf << "\",\n";
-    ss << "  \"source_hd_ipa\": \"" << m_config.sourceHdIpa << "\",\n";
-    ss << "  \"source_mobile_ipa\": \"" << m_config.sourceMobileIpa << "\",\n";
-    ss << "  \"game_edition\": \"" << m_config.gameEdition << "\",\n";
+    ss << "  \"project_name\": \"" << escapeJsonString(m_config.projectName) << "\",\n";
+    ss << "  \"source_directory\": \"" << escapeJsonString(m_config.sourceDirectory) << "\",\n";
+    ss << "  \"source_swf\": \"" << escapeJsonString(m_config.sourceSwf) << "\",\n";
+    ss << "  \"source_ipa\": \"" << escapeJsonString(m_config.sourceIpa) << "\",\n";
+    ss << "  \"source_expansion_swf\": \"" << escapeJsonString(m_config.sourceExpansionSwf) << "\",\n";
+    ss << "  \"source_hd_ipa\": \"" << escapeJsonString(m_config.sourceHdIpa) << "\",\n";
+    ss << "  \"source_mobile_ipa\": \"" << escapeJsonString(m_config.sourceMobileIpa) << "\",\n";
+    ss << "  \"game_edition\": \"" << escapeJsonString(m_config.gameEdition) << "\",\n";
     ss << "  \"enable_mobile_content\": " << (m_config.enableMobileContent ? "true" : "false") << ",\n";
-    ss << "  \"target_platform\": \"" << m_config.targetPlatform << "\",\n";
-    ss << "  \"build_configuration\": \"" << m_config.buildConfiguration << "\"\n";
+    ss << "  \"target_platform\": \"" << escapeJsonString(m_config.targetPlatform) << "\",\n";
+    ss << "  \"build_configuration\": \"" << escapeJsonString(m_config.buildConfiguration) << "\"\n";
     ss << "}\n";
     return ss.str();
 }
