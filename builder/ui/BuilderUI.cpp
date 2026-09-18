@@ -756,12 +756,22 @@ bool BuilderUI::triggerImport() {
     if (!isProjectRoot(projectRoot)) {
         appendLog("[Pipeline] No CMake project root was found; using the portable builder workspace for imported game_data.");
     }
+    appendLog("[Pipeline] Workspace: " + projectRoot.string());
 
     tools::ImportOptions options;
     options.sourceSwf = m_project.config().sourceSwf;
     options.sourceIpa = m_project.config().sourceIpa;
     options.outputDir = (projectRoot / "game_data" / m_project.config().targetPlatform / m_project.config().gameEdition).string();
     options.targetPlatform = m_project.config().targetPlatform;
+
+    std::error_code outputEc;
+    fs::create_directories(fs::path(options.outputDir), outputEc);
+    if (outputEc) {
+        appendLog("[Pipeline Error] Could not create import output directory: " + outputEc.message());
+        appendLog("  Output: " + options.outputDir);
+        appendLog("=========================================");
+        return false;
+    }
 
     appendLog("[Pipeline] Game edition: " + m_project.config().gameEdition);
     appendLog("[Pipeline] Import target: " + options.targetPlatform);
