@@ -37,6 +37,9 @@ private:
     char m_sourceDirectoryBuffer[512]{"assets"};
     char m_swfPathBuffer[512]{""};
     char m_ipaPathBuffer[512]{""};
+    char m_expansionSwfPathBuffer[512]{""};
+    char m_hdIpaPathBuffer[512]{""};
+    char m_mobileIpaPathBuffer[512]{""};
 
     void renderSourceFilesSection();
     void renderFeaturesSection();
