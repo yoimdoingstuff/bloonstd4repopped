@@ -646,8 +646,12 @@ MILESTONE 15: MAP EDITOR
 MILESTONE 16: MULTIPLAYER
 
 * [ ]	Local multiplayer framework
-* [ ]	Player abstraction
-* [ ]	Player state
+* [x]	Player abstraction
+    Agent: multiplayer
+    Notes: Four player slots with stable IDs and display names are available.
+* [x]	Player state
+    Agent: multiplayer
+    Notes: Each player has an active flag and independent Economy state; player 0 remains the single-player compatibility slot.
 * [ ]	Multiple tower ownership
 * [ ]	Shared economy mode
 * [ ]	Split economy mode
