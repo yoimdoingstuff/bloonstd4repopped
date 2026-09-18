@@ -238,3 +238,17 @@ TEST_CASE(MultiplayerControllerAssignments) {
     session.unassignController(7);
     TEST_ASSERT_EQ(session.playerForController(7), -1);
 }
+
+
+TEST_CASE(SharedEconomyModeUsesPlayerZeroPool) {
+    btd4::GameSimulation simulation(btd4::Map("Shared Economy"));
+    simulation.map().addPath(btd4::Path({{10.0f, 10.0f}, {100.0f, 10.0f}}));
+    simulation.player(1).setActive(true);
+    simulation.setEconomyMode(btd4::MultiplayerEconomyMode::Shared);
+
+    const int before = simulation.player(0).economy().cash();
+    TEST_ASSERT(simulation.placeTower(static_cast<uint8_t>(1),
+                                      btd4::TowerType::DartMonkey, 200.0f, 120.0f));
+    TEST_ASSERT_EQ(simulation.player(0).economy().cash(), before - 200);
+    TEST_ASSERT_EQ(simulation.player(1).economy().cash(), before - 200);
+}
