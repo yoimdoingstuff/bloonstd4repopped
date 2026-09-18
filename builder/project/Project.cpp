@@ -104,10 +104,25 @@ static bool extractJsonBool(const std::string& json, const std::string& key, boo
     return defaultVal;
 }
 
+static std::string lowerPathName(const fs::path& path) {
+    std::string value = path.filename().string();
+    std::transform(value.begin(), value.end(), value.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return value;
+}
+
 static bool hasExtension(const fs::path& path, const char* wanted) {
     std::string ext = path.extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return ext == wanted;
+}
+
+static bool nameContains(const fs::path& path, std::initializer_list<const char*> tokens) {
+    const std::string name = lowerPathName(path);
+    for (const char* token : tokens) {
+        if (name.find(token) != std::string::npos) return true;
+    }
+    return false;
 }
 
 std::string Project::serialize() const {
@@ -175,14 +190,49 @@ bool Project::discoverSourceAssets(const std::string& directory) {
     const fs::path root(directory);
     if (!fs::exists(root, ec) || !fs::is_directory(root, ec)) return false;
 
-    std::vector<fs::path> candidates;
+    std::vector<fs::path> swfCandidates;
+    std::vector<fs::path> ipaCandidates;
     for (fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied, ec), end;
          it != end && !ec; it.increment(ec)) {
         if (!it->is_regular_file(ec)) continue;
-        if (hasExtension(it->path(), ".swf") || hasExtension(it->path(), ".ipa")) candidates.push_back(it->path());
+        if (hasExtension(it->path(), ".swf")) swfCandidates.push_back(it->path());
+        else if (hasExtension(it->path(), ".ipa")) ipaCandidates.push_back(it->path());
     }
-    std::sort(candidates.begin(), candidates.end());
-    for (const auto& candidate : candidates) addSourceFile(candidate.string());
+    std::sort(swfCandidates.begin(), swfCandidates.end());
+    std::sort(ipaCandidates.begin(), ipaCandidates.end());
+
+    // Prefer the non-expansion SWF as the base game. A plain lexical sort can
+    // put "Expansion" before the normal BTD4 SWF.
+    for (const auto& candidate : swfCandidates) {
+        if (!nameContains(candidate, {"expansion", "exp"})) {
+            addSourceFile(candidate.string());
+            if (!m_config.sourceSwf.empty()) break;
+        }
+    }
+    for (const auto& candidate : swfCandidates) {
+        if (nameContains(candidate, {"expansion", "exp"})) {
+            addSourceFile(candidate.string());
+            if (!m_config.sourceExpansionSwf.empty()) break;
+        }
+    }
+    for (const auto& candidate : swfCandidates) {
+        addSourceFile(candidate.string());
+    }
+
+    // Use filename hints for mobile packages when available. Otherwise keep
+    // the first generic IPA as the legacy/primary mobile source.
+    for (const auto& candidate : ipaCandidates) {
+        if (nameContains(candidate, {"hd", "ipad", "tablet"})) addSourceFile(candidate.string());
+    }
+    for (const auto& candidate : ipaCandidates) {
+        if (nameContains(candidate, {"mobile", "phone", "iphone"})) addSourceFile(candidate.string());
+    }
+    for (const auto& candidate : ipaCandidates) {
+        if (!nameContains(candidate, {"hd", "ipad", "tablet", "mobile", "phone", "iphone"})) {
+            addSourceFile(candidate.string());
+        }
+    }
+
     return !m_config.sourceSwf.empty();
 }
 
@@ -195,14 +245,31 @@ bool Project::addSourceFile(const std::string& filepath) {
     const fs::path absolute = fs::absolute(path, ec);
     const std::string value = (ec ? path : absolute).lexically_normal().string();
     if (hasExtension(path, ".swf")) {
-        if (m_config.sourceSwf.empty()) m_config.sourceSwf = value;
-        else if (m_config.sourceExpansionSwf.empty()) m_config.sourceExpansionSwf = value;
+        if (nameContains(path, {"expansion", "exp"}) && m_config.sourceExpansionSwf.empty()) {
+            m_config.sourceExpansionSwf = value;
+        } else if (m_config.sourceSwf.empty()) {
+            m_config.sourceSwf = value;
+        } else if (m_config.sourceExpansionSwf.empty()) {
+            m_config.sourceExpansionSwf = value;
+        } else {
+            return false;
+        }
         return true;
     }
     if (hasExtension(path, ".ipa")) {
-        if (m_config.sourceIpa.empty()) m_config.sourceIpa = value;
-        else if (m_config.sourceHdIpa.empty()) m_config.sourceHdIpa = value;
-        else if (m_config.sourceMobileIpa.empty()) m_config.sourceMobileIpa = value;
+        if (nameContains(path, {"hd", "ipad", "tablet"}) && m_config.sourceHdIpa.empty()) {
+            m_config.sourceHdIpa = value;
+        } else if (nameContains(path, {"mobile", "phone", "iphone"}) && m_config.sourceMobileIpa.empty()) {
+            m_config.sourceMobileIpa = value;
+        } else if (m_config.sourceIpa.empty()) {
+            m_config.sourceIpa = value;
+        } else if (m_config.sourceHdIpa.empty()) {
+            m_config.sourceHdIpa = value;
+        } else if (m_config.sourceMobileIpa.empty()) {
+            m_config.sourceMobileIpa = value;
+        } else {
+            return false;
+        }
         return true;
     }
     return false;
