@@ -216,6 +216,139 @@ TEST_CASE(ProjectDiscoversDroppedAssets) {
     btd4::Project project; TEST_ASSERT(project.discoverSourceAssets(root.string())); TEST_ASSERT(project.hasValidSwf()); TEST_ASSERT(project.hasValidIpa()); TEST_ASSERT(project.config().sourceSwf.find("BTD4.swf") != std::string::npos); TEST_ASSERT(project.config().sourceIpa.find("MobileContent.IPA") != std::string::npos); std::filesystem::remove_all(root, ec);
 }
 
+
+TEST_CASE(ProjectClassifiesMultipleSourceFiles) {
+    const std::filesystem::path root = std::filesystem::temp_directory_path() / "btd4_project_multi_source_test";
+    std::error_code ec;
+    std::filesystem::remove_all(root, ec);
+    std::filesystem::create_directories(root, ec);
+    TEST_ASSERT(!ec);
+
+    {
+        std::ofstream(root / "Expansion.swf") << "expansion";
+        std::ofstream(root / "BTD4.swf") << "base";
+        std::ofstream(root / "BTD4 HD iPad.ipa") << "hd";
+        std::ofstream(root / "BTD4 Mobile.ipa") << "mobile";
+    }
+
+    btd4::Project project;
+    TEST_ASSERT(project.discoverSourceAssets(root.string()));
+    TEST_ASSERT(project.config().sourceSwf.find("BTD4.swf") != std::string::npos);
+    TEST_ASSERT(project.config().sourceExpansionSwf.find("Expansion.swf") != std::string::npos);
+    TEST_ASSERT(project.config().sourceHdIpa.find("BTD4 HD iPad.ipa") != std::string::npos);
+    TEST_ASSERT(project.config().sourceMobileIpa.find("BTD4 Mobile.ipa") != std::string::npos);
+
+    std::filesystem::remove_all(root, ec);
+}
+
+TEST_CASE(ProjectSerializeEscapesConfiguredPaths) {
+    btd4::Project project;
+    project.config().projectName = "BTD4 \"Definitive\"";
+    project.config().sourceDirectory = R"(C:\Games\BTD4\Sources)";
+    project.config().sourceSwf = R"(C:\Games\BTD4\My "Base".swf)";
+    project.config().sourceIpa = R"(C:\Games\BTD4\Phone.ipa)";
+    project.config().sourceExpansionSwf = R"(C:\Games\BTD4\Expansion.swf)";
+    project.config().sourceHdIpa = R"(C:\Games\BTD4\HD iPad.ipa)";
+    project.config().sourceMobileIpa = R"(C:\Games\BTD4\Mobile.ipa)";
+    project.config().gameEdition = "Definitive Edition";
+    project.config().targetPlatform = "Windows";
+
+    const std::string json = project.serialize();
+    TEST_ASSERT(json.find(R"("project_name": "BTD4 \"Definitive\"")") != std::string::npos);
+    TEST_ASSERT(json.find(R"("source_swf": "C:\\Games\\BTD4\\My \"Base\".swf")") != std::string::npos);
+
+    btd4::Project roundTrip;
+    TEST_ASSERT(roundTrip.deserialize(json));
+    TEST_ASSERT_EQ(roundTrip.config().projectName, "BTD4 \"Definitive\"");
+    TEST_ASSERT_EQ(roundTrip.config().sourceSwf, R"(C:\Games\BTD4\My "Base".swf)");
+    TEST_ASSERT_EQ(roundTrip.config().sourceExpansionSwf, R"(C:\Games\BTD4\Expansion.swf)");
+    TEST_ASSERT_EQ(roundTrip.config().sourceHdIpa, R"(C:\Games\BTD4\HD iPad.ipa)");
+    TEST_ASSERT_EQ(roundTrip.config().sourceMobileIpa, R"(C:\Games\BTD4\Mobile.ipa)");
+}
+
+TEST_CASE(ProjectRescanInvalidDirectoryPreservesSources) {
+    const std::filesystem::path root = std::filesystem::temp_directory_path() / "btd4_project_rescan_test";
+    std::error_code ec;
+    std::filesystem::remove_all(root, ec);
+    std::filesystem::create_directories(root, ec);
+    TEST_ASSERT(!ec);
+
+    std::ofstream(root / "BTD4.swf") << "base";
+    btd4::Project project;
+    TEST_ASSERT(project.discoverSourceAssets(root.string()));
+    const std::string original = project.config().sourceSwf;
+
+    TEST_ASSERT(!project.discoverSourceAssets((root / "does-not-exist").string()));
+    TEST_ASSERT_EQ(project.config().sourceSwf, original);
+
+    std::filesystem::remove_all(root, ec);
+}
+
+TEST_CASE(AssetImporterSeparatesPhoneAndMobileIpaLayers) {
+    const std::filesystem::path root = std::filesystem::temp_directory_path() / "btd4_asset_import_ipa_layers_test";
+    const std::filesystem::path swfPath = root / "BTD4.swf";
+    const std::filesystem::path phoneIpa = root / "Phone.ipa";
+    const std::filesystem::path mobileIpa = root / "Mobile.ipa";
+    const std::filesystem::path outputDir = root / "game_data";
+    std::error_code ec;
+    std::filesystem::remove_all(root, ec);
+    std::filesystem::create_directories(root, ec);
+    TEST_ASSERT(!ec);
+
+    std::vector<uint8_t> swf = {'F','W','S',10,0,0,0,0,0x28,0x05,0x00,0x50,0x00,0x3C,0x01,0x00};
+    appendSwfTag(swf, 21, {20, 0, 0xFF, 0xD8});
+    appendSwfTag(swf, 76, {1, 0, 20, 0, 'D','a','r','t','M','o','n','k','e','y',0});
+    appendSwfTag(swf, 0, {});
+    const uint32_t fileLength = static_cast<uint32_t>(swf.size());
+    swf[4] = static_cast<uint8_t>(fileLength & 0xFF);
+    swf[5] = static_cast<uint8_t>((fileLength >> 8) & 0xFF);
+    swf[6] = static_cast<uint8_t>((fileLength >> 16) & 0xFF);
+    swf[7] = static_cast<uint8_t>((fileLength >> 24) & 0xFF);
+    {
+        std::ofstream out(swfPath, std::ios::binary | std::ios::trunc);
+        TEST_ASSERT(out.is_open());
+        out.write(reinterpret_cast<const char*>(swf.data()), static_cast<std::streamsize>(swf.size()));
+    }
+
+    const auto writeIpa = [](const std::filesystem::path& ipa, const std::string& filename, const std::string& bytes) {
+        std::ofstream out(ipa, std::ios::binary | std::ios::trunc);
+        if (!out.is_open()) return false;
+        uint32_t localOffset = 0;
+        const std::string entryName = "Payload/Test.app/" + filename;
+        appendStoredZipEntry(out, entryName, bytes, localOffset);
+        const uint32_t directoryOffset = static_cast<uint32_t>(out.tellp());
+        writeU32(out, 0x02014b50);
+        writeU16(out, 20); writeU16(out, 20); writeU16(out, 0); writeU16(out, 0);
+        writeU16(out, 0); writeU16(out, 0); writeU32(out, 0);
+        writeU32(out, static_cast<uint32_t>(bytes.size()));
+        writeU32(out, static_cast<uint32_t>(bytes.size()));
+        writeU16(out, static_cast<uint16_t>(entryName.size())); writeU16(out, 0); writeU16(out, 0);
+        writeU16(out, 0); writeU16(out, 0); writeU32(out, 0); writeU32(out, localOffset);
+        out.write(entryName.data(), static_cast<std::streamsize>(entryName.size()));
+        const uint32_t directorySize = static_cast<uint32_t>(out.tellp()) - directoryOffset;
+        writeU32(out, 0x06054b50); writeU16(out, 0); writeU16(out, 0); writeU16(out, 1);
+        writeU16(out, 1); writeU32(out, directorySize); writeU32(out, directoryOffset); writeU16(out, 0);
+        return out.good();
+    };
+
+    TEST_ASSERT(writeIpa(phoneIpa, "phone_marker.dat", "PHONE"));
+    TEST_ASSERT(writeIpa(mobileIpa, "mobile_marker.dat", "MOBILE"));
+
+    btd4::tools::ImportOptions options;
+    options.sourceSwf = swfPath.string();
+    options.sourceIpa = phoneIpa.string();
+    options.sourceMobileIpa = mobileIpa.string();
+    options.outputDir = outputDir.string();
+    options.targetPlatform = "Windows";
+
+    const btd4::tools::ImportReport report = btd4::tools::AssetImporter::run(options);
+    TEST_ASSERT(report.success);
+    TEST_ASSERT(std::filesystem::is_regular_file(outputDir / "mobile" / "phone" / "Payload" / "Test.app" / "phone_marker.dat"));
+    TEST_ASSERT(std::filesystem::is_regular_file(outputDir / "mobile" / "mobile" / "Payload" / "Test.app" / "mobile_marker.dat"));
+
+    std::filesystem::remove_all(root, ec);
+}
+
 TEST_CASE(InflateDynamicHuffmanStream) {
     const std::vector<uint8_t> zlibData = {
         0x78,0xDA,0xCB,0x48,0xCD,0xC9,0xC9,0x57,0xC8,0x40,0x27,0x01,0x68,0x03,0x08,0xB1
