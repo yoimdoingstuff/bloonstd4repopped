@@ -275,7 +275,7 @@ TEST_CASE(ProjectileExplosionDoesNotRehitSpawnedChildren) {
 
     BloonPool bloons;
     ProjectilePool projectiles;
-    Bloon* parent = bloons.spawn(BloonType::Black, 0, 0.0f);
+    Bloon* parent = bloons.spawn(BloonType::Blue, 0, 0.0f);
     TEST_ASSERT(parent != nullptr);
     parent->x = 20.0f;
     parent->y = 20.0f;
