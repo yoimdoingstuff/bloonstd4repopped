@@ -74,6 +74,7 @@ add_library(btd4_engine STATIC
     engine/map/MapLoader.cpp engine/game/Bloon.hpp engine/game/Bloon.cpp engine/game/Projectile.hpp
     engine/game/Projectile.cpp engine/game/Tower.hpp engine/game/Tower.cpp engine/game/TowerData.hpp
     engine/game/TowerData.cpp engine/game/Upgrade.hpp engine/game/Player.hpp engine/game/Player.cpp
+    engine/game/MultiplayerSession.hpp engine/game/MultiplayerSession.cpp
     engine/game/Upgrade.cpp engine/game/Economy.hpp engine/game/Economy.cpp engine/game/GameState.hpp
     engine/game/GameState.cpp engine/game/Rounds.cpp engine/game/RoundLoader.cpp engine/game/Freeplay.hpp
     engine/game/Freeplay.cpp engine/rendering/TextureAtlas.hpp engine/rendering/TextureAtlas.cpp
