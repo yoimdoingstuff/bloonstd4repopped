@@ -46,16 +46,22 @@ if(NOT TARGET_PSP)
         endif()
     endif()
 
-    FetchContent_Declare(SDL2_image
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-        GIT_TAG release-2.8.12
-        GIT_SHALLOW TRUE)
-    set(SDL2IMAGE_VENDORED ON CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_SAMPLES OFF CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_TESTS OFF CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_INSTALL OFF CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(SDL2_image)
-    if(NOT TARGET SDL2_image::SDL2_image AND TARGET SDL2_image)
+    find_package(SDL2_image QUIET)
+    if(NOT SDL2_image_FOUND AND NOT TARGET SDL2_image::SDL2_image AND NOT TARGET SDL2_image)
+        message(STATUS "SDL2_image not found on host. Fetching SDL2_image via FetchContent...")
+        FetchContent_Declare(SDL2_image
+            GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+            GIT_TAG release-2.8.12
+            GIT_SHALLOW TRUE)
+        set(SDL2IMAGE_VENDORED ON CACHE BOOL "" FORCE)
+        set(SDL2IMAGE_SAMPLES OFF CACHE BOOL "" FORCE)
+        set(SDL2IMAGE_TESTS OFF CACHE BOOL "" FORCE)
+        set(SDL2IMAGE_INSTALL OFF CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(SDL2_image)
+        if(NOT TARGET SDL2_image::SDL2_image AND TARGET SDL2_image)
+            add_library(SDL2_image::SDL2_image ALIAS SDL2_image)
+        endif()
+    elseif(TARGET SDL2_image AND NOT TARGET SDL2_image::SDL2_image)
         add_library(SDL2_image::SDL2_image ALIAS SDL2_image)
     endif()
 
