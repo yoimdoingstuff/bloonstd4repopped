@@ -184,6 +184,23 @@ BuildResult LinuxPlatform::package(const std::string& gameEdition) {
         result.outputLogs.push_back("[Linux Warning] No imported game_data/Linux directory was found; packaged game will use runtime fallbacks.");
     }
 
+    const fs::path customRounds = root / "rounds";
+    if (fs::is_directory(customRounds, ec)) {
+        const fs::path packageRounds = packageDir / "game_data" / "rounds";
+        fs::create_directories(packageRounds, ec);
+        if (ec) {
+            result.message = "Could not create packaged custom round directory: " + ec.message();
+            return result;
+        }
+        fs::copy(customRounds, packageRounds,
+                 fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+        if (ec) {
+            result.message = "Could not package custom rounds: " + ec.message();
+            return result;
+        }
+        result.outputLogs.push_back("[Linux] Packaged custom rounds from " + customRounds.string());
+    }
+
     const fs::path customMaps = root / "maps";
     if (fs::is_directory(customMaps, ec)) {
         const fs::path packageMaps = packageDir / "game_data" / "maps";
