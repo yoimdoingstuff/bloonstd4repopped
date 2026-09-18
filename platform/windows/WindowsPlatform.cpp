@@ -12,13 +12,18 @@ bool isProjectRoot(const fs::path& candidate){
            fs::is_regular_file(candidate/"platform"/"common"/"PlatformRegistry.cpp",ec);
 }
 
+bool isPortableRoot(const fs::path& candidate){
+    std::error_code ec;
+    return fs::is_regular_file(candidate/"btd4_game.exe",ec);
+}
+
 fs::path findSourceRoot(){
     std::error_code ec;
 
-    auto searchUpward = [&](fs::path current) -> fs::path {
+    auto searchUpward=[&](fs::path current)->fs::path{
         current=current.lexically_normal();
-        for(int i=0;i<12&&!current.empty();++i){
-            if(isProjectRoot(current)) return current;
+        for(int i=0;i<32&&!current.empty();++i){
+            if(isProjectRoot(current) || isPortableRoot(current)) return current;
             const fs::path parent=current.parent_path();
             if(parent==current)break;
             current=parent;
@@ -26,24 +31,24 @@ fs::path findSourceRoot(){
         return {};
     };
 
-    if (const char* configuredRoot = std::getenv("BTD4_SOURCE_ROOT")) {
-        if (*configuredRoot) {
+    if(const char* configuredRoot=std::getenv("BTD4_SOURCE_ROOT")){
+        if(*configuredRoot){
             const fs::path root(configuredRoot);
-            if (isProjectRoot(root)) return root;
+            if(isProjectRoot(root) || isPortableRoot(root)) return root;
         }
     }
 
-    fs::path current=fs::current_path(ec);
-    if(!ec){
-        const fs::path found=searchUpward(current);
-        if(!found.empty()) return found;
-    }
-
-    if (const char* builderRoot = std::getenv("BTD4_BUILDER_ROOT")) {
-        if (*builderRoot) {
+    if(const char* builderRoot=std::getenv("BTD4_BUILDER_ROOT")){
+        if(*builderRoot){
             const fs::path found=searchUpward(fs::path(builderRoot));
             if(!found.empty()) return found;
         }
+    }
+
+    const fs::path current=fs::current_path(ec);
+    if(!ec){
+        const fs::path found=searchUpward(current);
+        if(!found.empty()) return found;
     }
 
     return {};
