@@ -11,8 +11,12 @@ namespace btd4::tools {
 struct ImportOptions {
     std::string sourceSwf;
     std::string sourceIpa;
+    std::string sourceExpansionSwf;
+    std::string sourceHdIpa;
+    std::string sourceMobileIpa;
     std::string outputDir{"game_data"};
     std::string targetPlatform{"auto"};
+    std::string gameEdition{"BTD4 Flash"};
     bool extractTextures{true};
     bool extractAudio{true};
     bool generateManifest{true};
@@ -29,6 +33,8 @@ struct ImportReport {
     bool btd4Detected{false};
     bool ipaDetected{false};
     bool ipaArchiveDetected{false};
+    bool definitiveEdition{false};
+    uint32_t sourceLayersImported{0};
     uint32_t ipaFilesExtracted{0};
     uint64_t ipaBytesExtracted{0};
     std::string ipaOutputDirectory;
