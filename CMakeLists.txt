@@ -153,7 +153,9 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
     if(WIN32)
         add_executable(btd4_builder WIN32
             builder/main.cpp builder/project/Project.hpp builder/project/Project.cpp
-            builder/ui/BuilderUI.hpp builder/ui/BuilderUI.cpp builder/platform/FileDialog.hpp builder/platform/FileDialog.cpp)
+            builder/ui/BuilderUI.hpp builder/ui/BuilderUI.cpp
+            builder/map/MapEditor.hpp builder/map/MapEditor.cpp
+            builder/platform/FileDialog.hpp builder/platform/FileDialog.cpp)
     else()
         add_executable(btd4_builder
             builder/main.cpp builder/project/Project.hpp builder/project/Project.cpp
