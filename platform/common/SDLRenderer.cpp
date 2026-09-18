@@ -447,11 +447,13 @@ void SDLRenderer::drawSpriteRegion(const std::string& textureKey, const Rect& sr
     SDL_SetTextureColorMod(tex, tint.r, tint.g, tint.b);
     SDL_SetTextureAlphaMod(tex, tint.a);
 
+    const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
+    const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
     SDL_Rect dstRect{
-        static_cast<int>(std::round(x)),
-        static_cast<int>(std::round(y)),
-        static_cast<int>(std::round(w)),
-        static_cast<int>(std::round(h))
+        static_cast<int>(std::round(x * sx)),
+        static_cast<int>(std::round(y * sy)),
+        static_cast<int>(std::round(w * sx)),
+        static_cast<int>(std::round(h * sy))
     };
 
     SDL_Rect src;
