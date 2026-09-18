@@ -248,11 +248,34 @@ BuildResult WindowsPlatform::package(const std::string& gameEdition){
     const fs::path imageDlls[]={
         root/"SDL2_image.dll", cmakeDir/"SDL2_image.dll", cmakeDir/"Release"/"SDL2_image.dll", cmakeDir/"Debug"/"SDL2_image.dll"
     };
+    bool imageDllPackaged = false;
     for(const auto& dll:imageDlls){
         if(fs::exists(dll,ec)){
             fs::copy_file(dll,packageDir/dll.filename(),fs::copy_options::overwrite_existing,ec);
-            if(!ec){r.outputLogs.push_back("[Windows] Packaged "+dll.filename().string());break;}
+            if(!ec){
+                r.outputLogs.push_back("[Windows] Packaged "+dll.filename().string());
+                imageDllPackaged = true;
+                break;
+            }
         }
+    }
+    if(!imageDllPackaged && fs::is_directory(cmakeDir,ec)){
+        for(fs::recursive_directory_iterator it(cmakeDir,fs::directory_options::skip_permission_denied,ec),end;
+            it!=end&&!ec;it.increment(ec)){
+            if(!it->is_regular_file(ec)) continue;
+            const std::string filename = it->path().filename().string();
+            if(filename=="SDL2_image.dll"){
+                fs::copy_file(it->path(),packageDir/filename,fs::copy_options::overwrite_existing,ec);
+                if(!ec){
+                    r.outputLogs.push_back("[Windows] Packaged "+it->path().string());
+                    imageDllPackaged = true;
+                }
+                break;
+            }
+        }
+    }
+    if(!imageDllPackaged){
+        r.outputLogs.push_back("[Windows Warning] SDL2_image.dll was not found in the build tree; runtime image loading may fail.");
     }
     r.success=true;
     r.message="Playable Windows build packaged at "+packageDir.string();
