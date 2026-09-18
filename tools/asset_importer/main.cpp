@@ -10,6 +10,10 @@ void printUsage(const char* progName) {
               << "Options:\n"
               << "  --out <dir>        Output directory for extracted game_data (default: game_data)\n"
               << "  --ipa <file>       Optional mobile IPA package path\n"
+              << "  --expansion-swf <file>  Optional BTD4 Expansion SWF\n"
+              << "  --hd-ipa <file>        Optional BTD4 HD/iPad IPA\n"
+              << "  --mobile-ipa <file>    Optional phone/mobile IPA\n"
+              << "  --edition <name>       Build edition, including Definitive Edition\n"
               << "  --platform <name>  Target build platform: Windows, Linux, PSP, Xbox 360, or auto\n"
               << "  --help             Display this help message\n";
 }
@@ -23,6 +27,10 @@ int main(int argc, char* argv[]) {
     std::string swfPath;
     std::string outDir = "game_data";
     std::string ipaPath;
+    std::string expansionSwfPath;
+    std::string hdIpaPath;
+    std::string mobileIpaPath;
+    std::string edition = "BTD4 Flash";
     std::string platform = "auto";
 
     for (int i = 1; i < argc; ++i) {
@@ -34,6 +42,14 @@ int main(int argc, char* argv[]) {
             outDir = argv[++i];
         } else if (arg == "--ipa" && i + 1 < argc) {
             ipaPath = argv[++i];
+        } else if (arg == "--expansion-swf" && i + 1 < argc) {
+            expansionSwfPath = argv[++i];
+        } else if (arg == "--hd-ipa" && i + 1 < argc) {
+            hdIpaPath = argv[++i];
+        } else if (arg == "--mobile-ipa" && i + 1 < argc) {
+            mobileIpaPath = argv[++i];
+        } else if (arg == "--edition" && i + 1 < argc) {
+            edition = argv[++i];
         } else if (arg == "--platform" && i + 1 < argc) {
             platform = argv[++i];
         } else if (arg.rfind("--", 0) != 0 && swfPath.empty()) {
@@ -50,14 +66,19 @@ int main(int argc, char* argv[]) {
     btd4::tools::ImportOptions options;
     options.sourceSwf = swfPath;
     options.sourceIpa = ipaPath;
+    options.sourceExpansionSwf = expansionSwfPath;
+    options.sourceHdIpa = hdIpaPath;
+    options.sourceMobileIpa = mobileIpaPath;
     options.outputDir = outDir;
     options.targetPlatform = platform;
+    options.gameEdition = edition;
 
     std::cout << "========================================\n"
               << " BTD4 Asset Importer\n"
               << " Source: " << swfPath << "\n"
               << " Output: " << outDir << "\n"
               << " Platform: " << platform << "\n"
+              << " Edition: " << edition << "\n"
               << "========================================\n";
 
     auto logCallback = [](const std::string& msg) {
