@@ -83,6 +83,31 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
         }
     }
 
+    if (!loadedImportedMap && !runtimeDataDir.empty()) {
+        namespace fs = std::filesystem;
+        std::error_code mapEc;
+        const fs::path customMapDir = fs::path(runtimeDataDir) / "maps";
+        if (fs::is_directory(customMapDir, mapEc)) {
+            std::vector<fs::path> customMaps;
+            for (fs::directory_iterator it(customMapDir, fs::directory_options::skip_permission_denied, mapEc), end;
+                 it != end && !mapEc; it.increment(mapEc)) {
+                if (it->is_regular_file(mapEc) && it->path().extension() == ".json") {
+                    customMaps.push_back(it->path());
+                }
+            }
+            std::sort(customMaps.begin(), customMaps.end());
+            for (const auto& mapPath : customMaps) {
+                Map candidate;
+                if (loadMap(fs, mapPath.string(), candidate, mapErr)) {
+                    gameMap = std::move(candidate);
+                    loadedImportedMap = true;
+                    BTD4_LOG_INFO("Loaded custom packaged map: " + mapPath.string());
+                    break;
+                }
+            }
+        }
+    }
+
     if (!loadedImportedMap) {
         gameMap.setName("Classic Track");
         gameMap.addPath(Path({{-20.0f, 136.0f}, {100.0f, 136.0f}, {100.0f, 60.0f},
