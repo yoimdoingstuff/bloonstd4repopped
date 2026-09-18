@@ -13,6 +13,7 @@
 #include <windows.h>
 #endif
 #include <filesystem>
+#include <utility>
 #include <exception>
 
 namespace btd4 {
@@ -363,6 +364,12 @@ void BuilderUI::addSourceFile(const std::string& path) {
         m_swfPathBuffer[sizeof(m_swfPathBuffer) - 1] = '\0';
         std::strncpy(m_ipaPathBuffer, m_project.config().sourceIpa.c_str(), sizeof(m_ipaPathBuffer) - 1);
         m_ipaPathBuffer[sizeof(m_ipaPathBuffer) - 1] = '\0';
+        std::strncpy(m_expansionSwfPathBuffer, m_project.config().sourceExpansionSwf.c_str(), sizeof(m_expansionSwfPathBuffer) - 1);
+        m_expansionSwfPathBuffer[sizeof(m_expansionSwfPathBuffer) - 1] = '\0';
+        std::strncpy(m_hdIpaPathBuffer, m_project.config().sourceHdIpa.c_str(), sizeof(m_hdIpaPathBuffer) - 1);
+        m_hdIpaPathBuffer[sizeof(m_hdIpaPathBuffer) - 1] = '\0';
+        std::strncpy(m_mobileIpaPathBuffer, m_project.config().sourceMobileIpa.c_str(), sizeof(m_mobileIpaPathBuffer) - 1);
+        m_mobileIpaPathBuffer[sizeof(m_mobileIpaPathBuffer) - 1] = '\0';
         appendLog("[Assets] Added source file: " + path);
     } else {
         appendLog("[Assets] Ignored unsupported or missing file: " + path);
@@ -603,6 +610,12 @@ void BuilderUI::discoverAssets() {
     m_swfPathBuffer[sizeof(m_swfPathBuffer) - 1] = '\0';
     std::strncpy(m_ipaPathBuffer, m_project.config().sourceIpa.c_str(), sizeof(m_ipaPathBuffer) - 1);
     m_ipaPathBuffer[sizeof(m_ipaPathBuffer) - 1] = '\0';
+    std::strncpy(m_expansionSwfPathBuffer, m_project.config().sourceExpansionSwf.c_str(), sizeof(m_expansionSwfPathBuffer) - 1);
+    m_expansionSwfPathBuffer[sizeof(m_expansionSwfPathBuffer) - 1] = '\0';
+    std::strncpy(m_hdIpaPathBuffer, m_project.config().sourceHdIpa.c_str(), sizeof(m_hdIpaPathBuffer) - 1);
+    m_hdIpaPathBuffer[sizeof(m_hdIpaPathBuffer) - 1] = '\0';
+    std::strncpy(m_mobileIpaPathBuffer, m_project.config().sourceMobileIpa.c_str(), sizeof(m_mobileIpaPathBuffer) - 1);
+    m_mobileIpaPathBuffer[sizeof(m_mobileIpaPathBuffer) - 1] = '\0';
 
     if (found) {
         appendLog("[Assets] Source SWF ready: " + m_project.config().sourceSwf);
@@ -633,10 +646,18 @@ bool BuilderUI::validateProject() {
             valid = false;
         }
     }
-    if (!config.sourceIpa.empty()) {
+    const std::pair<const char*, const std::string*> optionalSources[] = {
+        {"IPA", &config.sourceIpa},
+        {"Expansion SWF", &config.sourceExpansionSwf},
+        {"HD iPad IPA", &config.sourceHdIpa},
+        {"Phone/mobile IPA", &config.sourceMobileIpa}
+    };
+    for (const auto& source : optionalSources) {
+        if (source.second->empty()) continue;
         std::error_code ec;
-        if (!fs::is_regular_file(fs::path(config.sourceIpa), ec)) {
-            appendLog("[Validation Error] Configured IPA does not exist: " + config.sourceIpa);
+        if (!fs::is_regular_file(fs::path(*source.second), ec)) {
+            appendLog(std::string("[Validation Error] Configured ") + source.first +
+                      " does not exist: " + *source.second);
             valid = false;
         }
     }
