@@ -7,6 +7,7 @@
 #include "Projectile.hpp"
 #include "Economy.hpp"
 #include "Player.hpp"
+#include "MultiplayerSession.hpp"
 #include <array>
 #include "Rounds.hpp"
 #include "../map/Map.hpp"
@@ -53,6 +54,9 @@ public:
     std::array<Player, MAX_PLAYERS>& players() { return m_players; }
     const std::array<Player, MAX_PLAYERS>& players() const { return m_players; }
 
+    void setEconomyMode(MultiplayerEconomyMode mode) { m_economyMode = mode; syncSharedEconomy(); }
+    MultiplayerEconomyMode economyMode() const { return m_economyMode; }
+
     const std::vector<Tower>& towers() const { return m_towers; }
     std::vector<Tower>& towers() { return m_towers; }
 
@@ -86,6 +90,11 @@ private:
     std::vector<Tower> m_towers;
     std::array<Player, MAX_PLAYERS> m_players{};
     uint8_t m_activePlayerId{0};
+    MultiplayerEconomyMode m_economyMode{MultiplayerEconomyMode::Split};
+
+    Economy& economyForPlayer(uint8_t playerId);
+    const Economy& economyForPlayer(uint8_t playerId) const;
+    void syncSharedEconomy();
     RoundScheduler m_rounds;
 
     uint32_t m_nextTowerId{1};
