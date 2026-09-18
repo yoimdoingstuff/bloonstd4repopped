@@ -253,9 +253,10 @@ void SDLRenderer::setViewport(const Viewport& viewport) {
     m_currentViewport = viewport;
     SDL_Rect r{viewport.x, viewport.y, viewport.width, viewport.height};
     SDL_RenderSetViewport(m_renderer, &r);
-
-    // Set logical coordinate size to 480x272 so drawings scale automatically
-    SDL_RenderSetLogicalSize(m_renderer, 480, 272);
+    // Do not use SDL_RenderSetLogicalSize here. Desktop builds must render at the
+    // actual drawable resolution instead of rasterizing the entire game at 480x272.
+    // Game coordinates remain in the existing 480x272 world space and are scaled
+    // into the current high-resolution viewport by the helpers below.
 }
 
 void SDLRenderer::clear(const Color& color) {
@@ -271,11 +272,13 @@ void SDLRenderer::drawRect(float x, float y, float w, float h, const Color& colo
         return;
     }
     SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
+    const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
+    const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
     SDL_Rect r{
-        static_cast<int>(std::round(x)),
-        static_cast<int>(std::round(y)),
-        static_cast<int>(std::round(w)),
-        static_cast<int>(std::round(h))
+        m_currentViewport.x + static_cast<int>(std::round(x * sx)),
+        m_currentViewport.y + static_cast<int>(std::round(y * sy)),
+        static_cast<int>(std::round(w * sx)),
+        static_cast<int>(std::round(h * sy))
     };
     if (filled) {
         SDL_RenderFillRect(m_renderer, &r);
@@ -289,11 +292,13 @@ void SDLRenderer::drawLine(float x1, float y1, float x2, float y2, const Color& 
         return;
     }
     SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
+    const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
+    const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
     SDL_RenderDrawLine(m_renderer,
-        static_cast<int>(std::round(x1)),
-        static_cast<int>(std::round(y1)),
-        static_cast<int>(std::round(x2)),
-        static_cast<int>(std::round(y2))
+        m_currentViewport.x + static_cast<int>(std::round(x1 * sx)),
+        m_currentViewport.y + static_cast<int>(std::round(y1 * sy)),
+        m_currentViewport.x + static_cast<int>(std::round(x2 * sx)),
+        m_currentViewport.y + static_cast<int>(std::round(y2 * sy))
     );
 }
 
@@ -302,9 +307,12 @@ void SDLRenderer::drawCircle(float cx, float cy, float radius, const Color& colo
         return;
     }
     SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
-    int icx = static_cast<int>(std::round(cx));
-    int icy = static_cast<int>(std::round(cy));
-    int ir = static_cast<int>(std::round(radius));
+    const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
+    const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
+    const float sr = (sx + sy) * 0.5f;
+    int icx = m_currentViewport.x + static_cast<int>(std::round(cx * sx));
+    int icy = m_currentViewport.y + static_cast<int>(std::round(cy * sy));
+    int ir = static_cast<int>(std::round(radius * sr));
 
     if (filled) {
         for (int dy = -ir; dy <= ir; ++dy) {
@@ -343,9 +351,11 @@ void SDLRenderer::drawText(const std::string& text, float x, float y, float scal
         return;
     }
     SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
-    int curX = static_cast<int>(std::round(x));
-    int curY = static_cast<int>(std::round(y));
-    int s = std::max(1, static_cast<int>(scale));
+    const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
+    const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
+    int curX = m_currentViewport.x + static_cast<int>(std::round(x * sx));
+    int curY = m_currentViewport.y + static_cast<int>(std::round(y * sy));
+    int s = std::max(1, static_cast<int>(std::round(scale * ((sx + sy) * 0.5f))));
 
     for (char c : text) {
         if (c < 32 || c > 126) {
@@ -358,12 +368,12 @@ void SDLRenderer::drawText(const std::string& text, float x, float y, float scal
             uint8_t line = glyph[col];
             for (int row = 0; row < 7; ++row) {
                 if (line & (1 << row)) {
-                    SDL_Rect pixel{curX + col * s, curY + row * s, s, s};
+                    SDL_Rect pixel{curX + col * s, curY + static_cast<int>(std::round(row * sy / ((sx + sy) * 0.5f))) * s, s, s};
                     SDL_RenderFillRect(m_renderer, &pixel);
                 }
             }
         }
-        curX += (5 + 1) * s; // 5 columns + 1 spacing
+        curX += static_cast<int>(std::round((5 + 1) * scale * ((sx + sy) * 0.5f))); // 5 columns + spacing
     }
 }
 
@@ -408,11 +418,13 @@ void SDLRenderer::drawSprite(const std::string& textureKey, float x, float y, fl
     SDL_SetTextureColorMod(tex, tint.r, tint.g, tint.b);
     SDL_SetTextureAlphaMod(tex, tint.a);
 
+    const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
+    const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
     SDL_Rect dstRect{
-        static_cast<int>(std::round(x)),
-        static_cast<int>(std::round(y)),
-        static_cast<int>(std::round(w)),
-        static_cast<int>(std::round(h))
+        m_currentViewport.x + static_cast<int>(std::round(x * sx)),
+        m_currentViewport.y + static_cast<int>(std::round(y * sy)),
+        static_cast<int>(std::round(w * sx)),
+        static_cast<int>(std::round(h * sy))
     };
 
     if (std::abs(angleDegrees) < 0.001f) {
