@@ -20,6 +20,10 @@ public:
     bool active() const { return m_active; }
     void setActive(bool active) { m_active = active; }
 
+    int32_t controllerInstanceId() const { return m_controllerInstanceId; }
+    void setControllerInstanceId(int32_t instanceId) { m_controllerInstanceId = instanceId; }
+    bool hasController() const { return m_controllerInstanceId >= 0; }
+
     Economy& economy() { return m_economy; }
     const Economy& economy() const { return m_economy; }
 
@@ -29,6 +33,7 @@ private:
     uint8_t m_id{0};
     std::string m_name{"Player 1"};
     bool m_active{true};
+    int32_t m_controllerInstanceId{-1};
     Economy m_economy{};
 };
 
