@@ -68,6 +68,8 @@ bool containsImportedTexture(const fs::path& textureRoot) {
     return false;
 }
 
+} // namespace
+
 bool LinuxPlatform::isAvailable() const {
 #if defined(__linux__)
     static const bool available = [] {
