@@ -156,12 +156,12 @@ std::string AssetManifest::serialize() const {
     std::ostringstream ss;
     ss << "{\n";
     ss << "  \"version\": " << version << ",\n";
-    ss << "  \"package_name\": \"" << packageName << "\",\n";
-    ss << "  \"source\": \"" << source << "\",\n";
+    ss << "  \"package_name\": \"" << escapeJsonString(packageName) << "\",\n";
+    ss << "  \"source\": \"" << escapeJsonString(source) << "\",\n";
     ss << "  \"textures\": {\n";
     size_t i = 0;
     for (const auto& [k, v] : textures) {
-        ss << "    \"" << k << "\": \"" << v << "\"";
+        ss << "    \"" << escapeJsonString(k) << "\": \"" << escapeJsonString(v) << "\"";
         if (++i < textures.size()) ss << ",";
         ss << "\n";
     }
@@ -176,12 +176,12 @@ std::string AssetManifest::serialize() const {
     ss << "  },\n";
     ss << "  \"maps\": [\n";
     for (size_t m = 0; m < maps.size(); ++m) {
-        ss << "    \"" << maps[m] << "\"";
+        ss << "    \"" << escapeJsonString(maps[m]) << "\"";
         if (m + 1 < maps.size()) ss << ",";
         ss << "\n";
     }
     ss << "  ],\n";
-    ss << "  \"rounds\": \"" << roundsFile << "\"\n";
+    ss << "  \"rounds\": \"" << escapeJsonString(roundsFile) << "\"\n";
     ss << "}\n";
     return ss.str();
 }
