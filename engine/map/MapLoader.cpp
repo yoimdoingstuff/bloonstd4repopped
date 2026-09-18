@@ -23,7 +23,8 @@ public:
             expect(':');
             unsigned bit = key == "version" ? 1 : key == "name" ? 2 :
                 key == "paths" ? 4 : key == "buildable_regions" ? 8 :
-                key == "blocked_regions" ? 16 : 0;
+                key == "blocked_regions" ? 16 : key == "track_set" ? 32 :
+                key == "bloon_density" ? 64 : 0;
             if (!bit) fail("Unknown map field");
             if (fields & bit) fail("Duplicate map field");
             fields |= bit;
@@ -44,6 +45,14 @@ public:
                     });
                     map.addPath(Path(std::move(points)));
                 });
+            } else if (bit == 32) {
+                const double value = number();
+                if (value < 0 || value > 3 || std::floor(value) != value) fail("Invalid track set");
+                map.setTrackSet(static_cast<uint8_t>(value));
+            } else if (bit == 64) {
+                const double value = number();
+                if (value < 0 || value > 2 || std::floor(value) != value) fail("Invalid bloon density");
+                map.setBloonDensity(static_cast<BloonDensity>(static_cast<uint8_t>(value)));
             } else {
                 array(MaxRegions, [&] {
                     expect('[');
@@ -105,6 +114,8 @@ std::string btd4::serializeMap(const btd4::Map& map) {
         out << ch;
     }
     out << "\",\n";
+    out << "  \"track_set\": " << static_cast<unsigned>(map.trackSet()) << ",\n";
+    out << "  \"bloon_density\": " << static_cast<unsigned>(map.bloonDensity()) << ",\n";
     out << "  \"paths\": [\n";
     for (size_t p = 0; p < map.paths().size(); ++p) {
         const auto& points = map.paths()[p].waypoints();
