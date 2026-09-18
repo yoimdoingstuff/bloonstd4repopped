@@ -456,7 +456,7 @@ void BuilderUI::renderSourceFilesSection() {
         for (const auto& file : files) addSourceFile(file);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Rescan Assets")) discoverAssets();
+    if (ImGui::Button("Rescan Assets")) discoverAssets(true);
 
     ImGui::Spacing();
     ImGui::Text("SWF File:");
@@ -598,9 +598,9 @@ void BuilderUI::renderActionButtons() {
     }
 }
 
-void BuilderUI::discoverAssets() {
+void BuilderUI::discoverAssets(bool forceRescan) {
     bool found = m_project.hasValidSwf();
-    if (!found) {
+    if (forceRescan || !found) {
         found = m_project.discoverSourceAssets();
     } else if (m_project.hasValidIpa()) {
         appendLog("[Assets] Preserving project-configured source files.");
