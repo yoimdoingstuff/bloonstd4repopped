@@ -15,6 +15,7 @@ void Player::setName(std::string name) {
 
 void Player::reset(int cash, int lives) {
     m_active = true;
+    m_controllerInstanceId = -1;
     m_economy.reset(cash, lives);
 }
 
