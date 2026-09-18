@@ -11,6 +11,7 @@ struct AssetManifest {
     int version{1};
     std::string packageName;
     std::string source;
+    std::string targetPlatform;
     std::unordered_map<std::string, std::string> textures;
     std::unordered_map<std::string, std::string> audio;
     std::vector<std::string> maps;
