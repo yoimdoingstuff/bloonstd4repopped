@@ -599,7 +599,10 @@ MILESTONE 14: GAME BUILDER
 * [x]	Round editor
     Agent: builder
     Notes: Builder edits bloon groups, timing, and path indexes and saves validated custom_rounds.json.
-* [ ]	Tower editor
+* [x]	Tower editor
+    Agent: builder
+    Notes: Builder edits base tower cost, range, cooldown, projectile, damage, pierce, speed, and explosion values and saves custom_towers.json.
+
 * [ ]	Upgrade editor
 * [ ]	Preview mode
 
