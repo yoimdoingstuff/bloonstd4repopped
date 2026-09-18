@@ -152,6 +152,23 @@ BuildResult WindowsPlatform::package(const std::string& gameEdition){
         r.outputLogs.push_back("[Windows Error] "+r.message);return r;
     }
 
+    const fs::path customRounds = root / "rounds";
+    if (fs::is_directory(customRounds, ec)) {
+        const fs::path packageRounds = packageData / "rounds";
+        fs::create_directories(packageRounds, ec);
+        if (ec) {
+            r.message = "Could not create packaged custom round directory: " + ec.message();
+            return r;
+        }
+        fs::copy(customRounds, packageRounds,
+                 fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+        if (ec) {
+            r.message = "Could not package custom rounds: " + ec.message();
+            return r;
+        }
+        r.outputLogs.push_back("[Windows] Packaged custom rounds from " + customRounds.string());
+    }
+
     const customMaps = root / "maps";
     if (fs::is_directory(customMaps, ec)) {
         const fs::path packageMaps = packageData / "maps";
