@@ -58,7 +58,12 @@ TEST_CASE(AssetImporterGeneratesRuntimeAliases) {
     const uint32_t fileLength = static_cast<uint32_t>(swf.size()); swf[4] = static_cast<uint8_t>(fileLength & 0xFF); swf[5] = static_cast<uint8_t>((fileLength >> 8) & 0xFF); swf[6] = static_cast<uint8_t>((fileLength >> 16) & 0xFF); swf[7] = static_cast<uint8_t>((fileLength >> 24) & 0xFF);
     { std::ofstream out(swfPath, std::ios::binary | std::ios::trunc); TEST_ASSERT(out.is_open()); out.write(reinterpret_cast<const char*>(swf.data()), static_cast<std::streamsize>(swf.size())); }
     btd4::tools::ImportOptions options; options.sourceSwf = swfPath.string(); options.outputDir = outputDir.string(); options.targetPlatform = "Windows"; btd4::tools::ImportReport report = btd4::tools::AssetImporter::run(options); TEST_ASSERT(report.success); TEST_ASSERT_EQ(report.texturesExtracted, static_cast<uint32_t>(1));
-    std::ifstream manifest(outputDir / "manifest.json"); TEST_ASSERT(manifest.is_open()); std::string json((std::istreambuf_iterator<char>(manifest)), std::istreambuf_iterator<char>()); TEST_ASSERT(json.find("\"dart_monkey\": \"textures/dart_monkey.jpg\"") != std::string::npos); TEST_ASSERT(json.find("Native gameplay asset aliases") != std::string::npos); TEST_ASSERT(std::filesystem::is_regular_file(outputDir / "textures" / "dart_monkey.jpg")); std::filesystem::remove_all(root, ec);
+    std::ifstream manifest(outputDir / "manifest.json"); TEST_ASSERT(manifest.is_open()); std::string json((std::istreambuf_iterator<char>(manifest)), std::istreambuf_iterator<char>()); TEST_ASSERT(json.find("\"dart_monkey\": \"textures/dart_monkey.jpg\"") != std::string::npos); TEST_ASSERT(json.find("Native gameplay asset aliases") != std::string::npos);
+    btd4::AssetManifest importedManifest;
+    std::string manifestError;
+    TEST_ASSERT(importedManifest.loadFromFile(btd4::NativeFileSystem{}, (outputDir / "manifest.json").string(), manifestError));
+    TEST_ASSERT_EQ(importedManifest.source, swfPath.string());
+    TEST_ASSERT(std::filesystem::is_regular_file(outputDir / "textures" / "dart_monkey.jpg")); std::filesystem::remove_all(root, ec);
 }
 
 TEST_CASE(AssetImporterCanRunTwiceOnSameOutput) {

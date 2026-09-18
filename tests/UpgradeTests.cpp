@@ -275,7 +275,7 @@ TEST_CASE(ProjectileExplosionDoesNotRehitSpawnedChildren) {
 
     BloonPool bloons;
     ProjectilePool projectiles;
-    Bloon* parent = bloons.spawn(BloonType::Blue, 0, 0.0f);
+    Bloon* parent = bloons.spawn(BloonType::Rainbow, 0, 0.0f);
     TEST_ASSERT(parent != nullptr);
     parent->x = 20.0f;
     parent->y = 20.0f;
@@ -288,5 +288,5 @@ TEST_CASE(ProjectileExplosionDoesNotRehitSpawnedChildren) {
 
     const int cash = projectiles.update(0.016f, bloons, map);
     TEST_ASSERT_EQ(cash, 1);
-    TEST_ASSERT_EQ(bloons.activeCount(), static_cast<size_t>(2));
+    TEST_ASSERT_EQ(bloons.activeCount(), static_cast<size_t>(4));
 }

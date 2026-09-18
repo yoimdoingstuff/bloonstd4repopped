@@ -1,6 +1,5 @@
 #include "AssetManifest.hpp"
 #include <sstream>
-#include <cctype>
 
 namespace btd4 {
 

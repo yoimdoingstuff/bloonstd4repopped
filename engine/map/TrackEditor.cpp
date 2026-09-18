@@ -121,7 +121,8 @@ int TrackEditor::findCell(int x, int y) const {
 }
 
 void TrackEditor::rebuildMapFromCells() {
-    Map rebuilt("Track Editor Map");
+    Map rebuilt = m_map;
+    rebuilt.paths().clear();
     rebuilt.setTrackSet(m_trackSet);
     rebuilt.setBloonDensity(m_bloonDensity);
 
@@ -137,7 +138,6 @@ void TrackEditor::rebuildMapFromCells() {
         rebuilt.addPath(path);
     }
 
-    rebuilt.addBuildableRegion({0.0f, 0.0f, 480.0f, 272.0f});
     m_map = std::move(rebuilt);
 }
 
@@ -151,13 +151,35 @@ void TrackEditor::rebuildCellsFromMap() {
         const auto& source = m_map.paths()[pathIndex].waypoints();
         auto& cells = m_pathCells[pathIndex];
 
+        auto appendCell = [&cells](int cell) {
+            if (cell >= 0 && (cells.empty() || cells.back() != cell)) cells.push_back(cell);
+        };
+        int previousCell = -1;
         for (const auto& point : source) {
             int gx = static_cast<int>(std::lround((point.x - kGridOriginX - kCellSize * 0.5f) / kCellSize));
             int gy = static_cast<int>(std::lround((point.y - kGridOriginY - kCellSize * 0.5f) / kCellSize));
             gx = std::clamp(gx, 0, kColumns - 1);
             gy = std::clamp(gy, 0, kRows - 1);
             const int cell = findCell(gx, gy);
-            if (cell >= 0 && (cells.empty() || cells.back() != cell)) cells.push_back(cell);
+            if (cell < 0) continue;
+
+            if (previousCell < 0) {
+                appendCell(cell);
+            } else {
+                int x = cellX(previousCell);
+                int y = cellY(previousCell);
+                const int targetX = cellX(cell);
+                const int targetY = cellY(cell);
+                while (x != targetX || y != targetY) {
+                    if (x != targetX) {
+                        x += x < targetX ? 1 : -1;
+                    } else {
+                        y += y < targetY ? 1 : -1;
+                    }
+                    appendCell(findCell(x, y));
+                }
+            }
+            previousCell = cell;
         }
 
         if (cells.size() >= 2) {
