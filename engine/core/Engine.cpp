@@ -286,7 +286,7 @@ void Engine::frame(int windowWidth, int windowHeight) {
         return;
     }
     const InputAction towerActions[] = {InputAction::SelectTower1, InputAction::SelectTower2,
-        InputAction::SelectTower3, InputAction::SelectTower4, InputAction::SelectTower5, InputAction::SelectTower6};
+        InputAction::SelectTower3, InputAction::SelectTower4, InputAction::SelectTower6};
     for (const InputAction action : towerActions) {
         if (m_input.isActionJustPressed(action)) {
             bool matched = false;
@@ -305,9 +305,9 @@ void Engine::frame(int windowWidth, int windowHeight) {
             }
         } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f) {
             const int idx = static_cast<int>((ptr.logicalY - 22.0f) / 36.0f);
-            if (idx >= 0 && idx < 6) {
+            if (idx >= 0 && idx < 5) {
                 static const TowerType tts[] = {TowerType::DartMonkey, TowerType::TackShooter, TowerType::BombTower,
-                    TowerType::BoomerangThrower, TowerType::SniperMonkey, TowerType::SuperMonkey};
+                    TowerType::BoomerangThrower, TowerType::SuperMonkey};
                 selectTowerType(tts[idx]);
             }
         } else if (m_selectedTowerId != 0 && ptr.logicalX < 400.0f && ptr.logicalY >= 28.0f && ptr.logicalY < 76.0f) {
