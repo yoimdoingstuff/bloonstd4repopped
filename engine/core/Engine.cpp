@@ -18,8 +18,7 @@ TowerType towerForAction(InputAction action, bool& matched) {
         case InputAction::SelectTower2: return TowerType::TackShooter;
         case InputAction::SelectTower3: return TowerType::BombTower;
         case InputAction::SelectTower4: return TowerType::BoomerangThrower;
-        case InputAction::SelectTower5: return TowerType::SniperMonkey;
-        case InputAction::SelectTower6: return TowerType::SuperMonkey;
+        case InputAction::SelectTower5: return TowerType::SuperMonkey;
         default: matched = false; return TowerType::DartMonkey;
     }
 }
@@ -286,7 +285,7 @@ void Engine::frame(int windowWidth, int windowHeight) {
         return;
     }
     const InputAction towerActions[] = {InputAction::SelectTower1, InputAction::SelectTower2,
-        InputAction::SelectTower3, InputAction::SelectTower4, InputAction::SelectTower6};
+        InputAction::SelectTower3, InputAction::SelectTower4, InputAction::SelectTower5};
     for (const InputAction action : towerActions) {
         if (m_input.isActionJustPressed(action)) {
             bool matched = false;
