@@ -192,7 +192,7 @@ TEST_CASE(AssetImporterExtractsIpaResources) {
     TEST_ASSERT_EQ(report.ipaFilesExtracted, static_cast<uint32_t>(1));
     TEST_ASSERT_EQ(report.ipaBytesExtracted, static_cast<uint64_t>(entryData.size()));
     TEST_ASSERT_EQ(report.ipaOutputDirectory, "mobile");
-    TEST_ASSERT(std::filesystem::is_regular_file(outputDir / "mobile" / entryName));
+    TEST_ASSERT(std::filesystem::is_regular_file(outputDir / "mobile" / "phone" / entryName));
     TEST_ASSERT(std::ifstream(outputDir / "mobile" / entryName).good());
 
     std::ifstream manifest(outputDir / "manifest.json");
