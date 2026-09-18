@@ -118,7 +118,69 @@ std::string AssetManager::getProjectileAssetId(ProjectileType type){switch(type)
 void AssetManager::drawBloon(IRenderer& renderer,const Bloon& bloon) const{if(!bloon.active)return;const std::string logical=getBloonAssetId(bloon.type);const std::string id=findImportedTextureId(m_manifest,renderer,logical);if(!id.empty())renderer.drawSprite(id,bloon.x-bloon.radius,bloon.y-bloon.radius,bloon.radius*2.0f,bloon.radius*2.0f);else{PlaceholderColor pc=getPlaceholderColor(logical);Color c{pc.r,pc.g,pc.b,255};renderer.drawCircle(bloon.x,bloon.y-1.0f,bloon.radius,c,true);renderer.drawCircle(bloon.x,bloon.y-1.0f,bloon.radius,Color::black(),false);renderer.drawCircle(bloon.x-bloon.radius*.35f,bloon.y-bloon.radius*.45f,1.5f,Color::white(),true);renderer.drawRect(bloon.x-1.0f,bloon.y+bloon.radius-1.0f,2.0f,2.0f,c,true);}}
 void AssetManager::drawTower(IRenderer& renderer,const Tower& tower,bool isSelected) const{if(isSelected)DebugRenderer::drawTowerRange(renderer,tower.x(),tower.y(),tower.range());const std::string logical=getTowerAssetId(tower.type());const std::string id=findImportedTextureId(m_manifest,renderer,logical);if(!id.empty())renderer.drawSprite(id,tower.x()-16.0f,tower.y()-16.0f,32.0f,32.0f);else{PlaceholderColor pc=getPlaceholderColor(logical);Color c{pc.r,pc.g,pc.b,255};renderer.drawCircle(tower.x(),tower.y(),12.0f,c,true);renderer.drawCircle(tower.x(),tower.y(),12.0f,Color::black(),false);renderer.drawCircle(tower.x(),tower.y(),4.0f,Color::white(),true);renderer.drawCircle(tower.x(),tower.y(),2.0f,Color::black(),true);}}
 void AssetManager::drawProjectile(IRenderer& renderer,const Projectile& proj) const{if(!proj.active)return;const std::string logical=getProjectileAssetId(proj.type);const std::string id=findImportedTextureId(m_manifest,renderer,logical);if(!id.empty())renderer.drawSprite(id,proj.x-4.0f,proj.y-4.0f,8.0f,8.0f);else if(proj.type==ProjectileType::Bomb){renderer.drawCircle(proj.x,proj.y,4.0f,Color::black(),true);renderer.drawCircle(proj.x,proj.y,4.0f,Color::red(),false);}else if(proj.type==ProjectileType::Plasma)renderer.drawCircle(proj.x,proj.y,5.0f,Color::cyan(),true);else{float len=6.0f,speed=std::sqrt(proj.vx*proj.vx+proj.vy*proj.vy);float dx=speed>.001f?proj.vx/speed:1.0f,dy=speed>.001f?proj.vy/speed:0.0f;renderer.drawLine(proj.x,proj.y,proj.x-dx*len,proj.y-dy*len,Color::yellow());}}
-void AssetManager::drawMap(IRenderer& renderer,const Map& map) const{std::string backgroundId;if(renderer.hasTexture("map_background"))backgroundId="map_background";else if(m_hasManifest){for(const auto& [id,path]:m_manifest.textures){(void)path;const std::string lowered=lowerId(id);if(lowered.find("map")==std::string::npos&&lowered.find("background")==std::string::npos&&lowered.find("track")==std::string::npos&&lowered.find("level")==std::string::npos)continue;if(renderer.hasTexture(id)){backgroundId=id;break;}}}if(!backgroundId.empty()){renderer.drawSprite(backgroundId,0,0,480,272);return;}renderer.drawRect(0,0,480,272,{34,139,34,255},true);for(const auto& br:map.blockedRegions()){renderer.drawRect(br.x,br.y,br.w,br.h,{46,117,46,255},true);renderer.drawRect(br.x,br.y,br.w,br.h,{25,80,25,255},false);}for(const auto& path:map.paths()){const auto& w=path.waypoints();for(size_t i=0;i+1<w.size();++i){for(float o=-8;o<=8;o+=2)renderer.drawLine(w[i].x+o,w[i].y,w[i+1].x+o,w[i+1].y,{210,180,140,255});renderer.drawLine(w[i].x-9,w[i].y,w[i+1].x-9,w[i+1].y,{160,130,95,255});renderer.drawLine(w[i].x+9,w[i].y,w[i+1].x+9,w[i+1].y,{160,130,95,255});}}}
+void AssetManager::drawMap(IRenderer& renderer,const Map& map) const{
+    std::string backgroundId;
+    const std::string mapName = lowerId(map.name());
+
+    // Prefer an explicitly matching HD map background. The imported definitive
+    // package contains the real HD map art, so do not accidentally pick the
+    // first alphabetically-sorted map texture (which used to make every map
+    // render as Ant Hill).
+    std::vector<std::string> candidates;
+    if (mapName.find("farm") != std::string::npos) candidates.push_back("farm_yard");
+    if (mapName.find("ocean") != std::string::npos) candidates.push_back("ocean_road");
+    if (mapName.find("rail") != std::string::npos) candidates.push_back("rail_track");
+    if (mapName.find("river") != std::string::npos) candidates.push_back("river_bed");
+    if (mapName.find("snow") != std::string::npos) candidates.push_back("snow_trail");
+    if (mapName.find("lava") != std::string::npos) candidates.push_back("lava_lake");
+    if (mapName.find("pool") != std::string::npos) candidates.push_back("pool_party");
+    if (mapName.find("bee") != std::string::npos) candidates.push_back("bee_hive");
+    if (mapName.find("cactus") != std::string::npos) candidates.push_back("cactus_creek");
+    if (mapName.find("daisy") != std::string::npos) candidates.push_back("daisy_chain");
+    if (mapName.find("ant") != std::string::npos) candidates.push_back("ant_hill");
+    if (mapName.find("world") != std::string::npos) candidates.push_back("world_tour");
+
+    for (const auto& base : candidates) {
+        const std::string hdHigh = base + "_high_res@hd";
+        const std::string hd = base + "@hd";
+        const std::string phoneHigh = base + "_high_res@phone";
+        const std::string phone = base + "@phone";
+        if (renderer.hasTexture(hdHigh)) { backgroundId = hdHigh; break; }
+        if (renderer.hasTexture(hd)) { backgroundId = hd; break; }
+        if (renderer.hasTexture(phoneHigh)) { backgroundId = phoneHigh; break; }
+        if (renderer.hasTexture(phone)) { backgroundId = phone; break; }
+    }
+
+    // A deterministic desktop fallback for the built-in Classic Track.
+    if (backgroundId.empty()) {
+        const std::string fallbackIds[] = {
+            "farm_yard_high_res@hd", "farm_yard@hd",
+            "farm_yard_high_res@phone", "farm_yard@phone"
+        };
+        for (const auto& id : fallbackIds) {
+            if (renderer.hasTexture(id)) { backgroundId = id; break; }
+        }
+    }
+
+    if (!backgroundId.empty()) {
+        renderer.drawSprite(backgroundId,0,0,480,272);
+        return;
+    }
+
+    renderer.drawRect(0,0,480,272,{34,139,34,255},true);
+    for (const auto& br:map.blockedRegions()){
+        renderer.drawRect(br.x,br.y,br.w,br.h,{46,117,46,255},true);
+        renderer.drawRect(br.x,br.y,br.w,br.h,{25,80,25,255},false);
+    }
+    for (const auto& path:map.paths()){
+        const auto& w=path.waypoints();
+        for(size_t i=0;i+1<w.size();++i){
+            for(float o=-8;o<=8;o+=2) renderer.drawLine(w[i].x+o,w[i].y,w[i+1].x+o,w[i+1].y,{210,180,140,255});
+            renderer.drawLine(w[i].x-9,w[i].y,w[i+1].x-9,w[i+1].y,{160,130,95,255});
+            renderer.drawLine(w[i].x+9,w[i].y,w[i+1].x+9,w[i+1].y,{160,130,95,255});
+        }
+    }
+}
 void AssetManager::drawHUD(IRenderer& renderer,const Economy& economy,int currentRound,size_t totalRounds,double fps,TowerType selectedPlacementType,bool hasPlacement) const{
     // Desktop/HD-style HUD laid out in the existing 480x272 world space. The
     // renderer now scales this layout to the actual desktop viewport, so it is
