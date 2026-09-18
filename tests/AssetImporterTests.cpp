@@ -134,6 +134,76 @@ TEST_CASE(AssetManagerPlaceholderPackage) {
     auto& manager = btd4::AssetManager::instance(); btd4::NativeFileSystem fs; bool ok = manager.initialize(fs, "non_existent_dir_forces_placeholder"); TEST_ASSERT(ok); TEST_ASSERT(manager.hasManifest()); TEST_ASSERT_EQ(manager.manifest().packageName, "Bloons TD 4 Placeholder Data");
 }
 
+TEST_CASE(AssetImporterExtractsIpaResources) {
+    const std::filesystem::path root = std::filesystem::temp_directory_path() / "btd4_asset_import_ipa_test";
+    const std::filesystem::path swfPath = root / "BTD4.swf";
+    const std::filesystem::path ipaPath = root / "BTD4HD.ipa";
+    const std::filesystem::path outputDir = root / "game_data";
+    std::error_code ec;
+    std::filesystem::remove_all(root, ec);
+    std::filesystem::create_directories(root, ec);
+    TEST_ASSERT(!ec);
+
+    std::vector<uint8_t> swf = {'F','W','S',10,0,0,0,0,0x28,0x05,0x00,0x50,0x00,0x3C,0x01,0x00};
+    appendSwfTag(swf, 21, {20, 0, 0xFF, 0xD8});
+    appendSwfTag(swf, 76, {1, 0, 20, 0, 'D','a','r','t','M','o','n','k','e','y',0});
+    appendSwfTag(swf, 0, {});
+    const uint32_t fileLength = static_cast<uint32_t>(swf.size());
+    swf[4] = static_cast<uint8_t>(fileLength & 0xFF);
+    swf[5] = static_cast<uint8_t>((fileLength >> 8) & 0xFF);
+    swf[6] = static_cast<uint8_t>((fileLength >> 16) & 0xFF);
+    swf[7] = static_cast<uint8_t>((fileLength >> 24) & 0xFF);
+    {
+        std::ofstream out(swfPath, std::ios::binary | std::ios::trunc);
+        TEST_ASSERT(out.is_open());
+        out.write(reinterpret_cast<const char*>(swf.data()), static_cast<std::streamsize>(swf.size()));
+    }
+
+    const std::string entryName = "Payload/BTD4HD.app/Assets/hd_map.dat";
+    const std::string entryData = "HD-ASSET";
+    {
+        std::ofstream out(ipaPath, std::ios::binary | std::ios::trunc);
+        TEST_ASSERT(out.is_open());
+        uint32_t localOffset = 0;
+        appendStoredZipEntry(out, entryName, entryData, localOffset);
+        const uint32_t directoryOffset = static_cast<uint32_t>(out.tellp());
+        writeU32(out, 0x02014b50);
+        writeU16(out, 20); writeU16(out, 20); writeU16(out, 0); writeU16(out, 0);
+        writeU16(out, 0); writeU16(out, 0); writeU32(out, 0);
+        writeU32(out, static_cast<uint32_t>(entryData.size()));
+        writeU32(out, static_cast<uint32_t>(entryData.size()));
+        writeU16(out, static_cast<uint16_t>(entryName.size())); writeU16(out, 0); writeU16(out, 0);
+        writeU16(out, 0); writeU16(out, 0); writeU32(out, 0); writeU32(out, localOffset);
+        out.write(entryName.data(), static_cast<std::streamsize>(entryName.size()));
+        const uint32_t directorySize = static_cast<uint32_t>(out.tellp()) - directoryOffset;
+        writeU32(out, 0x06054b50); writeU16(out, 0); writeU16(out, 0); writeU16(out, 1);
+        writeU16(out, 1); writeU32(out, directorySize); writeU32(out, directoryOffset); writeU16(out, 0);
+    }
+
+    btd4::tools::ImportOptions options;
+    options.sourceSwf = swfPath.string();
+    options.sourceIpa = ipaPath.string();
+    options.outputDir = outputDir.string();
+    options.targetPlatform = "Windows";
+    const btd4::tools::ImportReport report = btd4::tools::AssetImporter::run(options);
+    TEST_ASSERT(report.success);
+    TEST_ASSERT(report.ipaDetected);
+    TEST_ASSERT(report.ipaArchiveDetected);
+    TEST_ASSERT_EQ(report.ipaFilesExtracted, static_cast<uint32_t>(1));
+    TEST_ASSERT_EQ(report.ipaBytesExtracted, static_cast<uint64_t>(entryData.size()));
+    TEST_ASSERT_EQ(report.ipaOutputDirectory, "mobile");
+    TEST_ASSERT(std::filesystem::is_regular_file(outputDir / "mobile" / entryName));
+    TEST_ASSERT(std::ifstream(outputDir / "mobile" / entryName).good());
+
+    std::ifstream manifest(outputDir / "manifest.json");
+    TEST_ASSERT(manifest.is_open());
+    std::string json((std::istreambuf_iterator<char>(manifest)), std::istreambuf_iterator<char>());
+    TEST_ASSERT(json.find("\"ipa_files_extracted\": 1") != std::string::npos);
+    TEST_ASSERT(json.find("\"ipa_output_directory\": \"mobile\"") != std::string::npos);
+
+    std::filesystem::remove_all(root, ec);
+}
+
 TEST_CASE(ZipArchiveStoredEntry) {
     const std::filesystem::path testPath = std::filesystem::temp_directory_path() / "btd4_test_ipa.zip"; const std::string name = "Payload/Test.app/Info.plist"; const std::string payload = "plist-test-data";
     { std::ofstream out(testPath, std::ios::binary | std::ios::trunc); TEST_ASSERT(out.is_open()); uint32_t localOffset = 0; appendStoredZipEntry(out, name, payload, localOffset); const uint32_t directoryOffset = static_cast<uint32_t>(out.tellp()); writeU32(out, 0x02014b50); writeU16(out, 20); writeU16(out, 20); writeU16(out, 0); writeU16(out, 0); writeU16(out, 0); writeU16(out, 0); writeU32(out, 0); writeU32(out, static_cast<uint32_t>(payload.size())); writeU32(out, static_cast<uint32_t>(payload.size())); writeU16(out, static_cast<uint16_t>(name.size())); writeU16(out, 0); writeU16(out, 0); writeU16(out, 0); writeU16(out, 0); writeU32(out, 0); writeU32(out, localOffset); out.write(name.data(), static_cast<std::streamsize>(name.size())); const uint32_t directorySize = static_cast<uint32_t>(out.tellp()) - directoryOffset; writeU32(out, 0x06054b50); writeU16(out, 0); writeU16(out, 0); writeU16(out, 1); writeU16(out, 1); writeU32(out, directorySize); writeU32(out, directoryOffset); writeU16(out, 0); }
