@@ -168,3 +168,18 @@ TEST_CASE(TowerCyclesTargetingBothDirections) {
     tower.cycleTargetingModeBackward();
     TEST_ASSERT_EQ(tower.targetingMode(), btd4::TargetingMode::First);
 }
+
+
+TEST_CASE(PlayerStateInitializesAndResets) {
+    btd4::Player player(1, "Co-op Player");
+    TEST_ASSERT_EQ(player.id(), static_cast<uint8_t>(1));
+    TEST_ASSERT_EQ(player.name(), "Co-op Player");
+    TEST_ASSERT(player.active());
+    player.economy().spendCash(100);
+    TEST_ASSERT_EQ(player.economy().cash(), 550);
+    player.reset(900, 50);
+    TEST_ASSERT_EQ(player.economy().cash(), 900);
+    TEST_ASSERT_EQ(player.economy().lives(), 50);
+    player.setActive(false);
+    TEST_ASSERT(!player.active());
+}
