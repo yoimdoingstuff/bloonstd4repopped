@@ -58,7 +58,9 @@ public:
 
     // Tower management
     bool placeTower(TowerType type, float x, float y);
+    bool placeTower(uint8_t playerId, TowerType type, float x, float y);
     bool sellTower(uint32_t towerId);
+    bool sellTower(uint8_t playerId, uint32_t towerId);
     Tower* findTower(uint32_t towerId);
 
     // Configure before the first round (or after reset). Manual spawning remains
@@ -83,6 +85,7 @@ private:
     ProjectilePool m_projectilePool;
     std::vector<Tower> m_towers;
     std::array<Player, MAX_PLAYERS> m_players{};
+    uint8_t m_activePlayerId{0};
     RoundScheduler m_rounds;
 
     uint32_t m_nextTowerId{1};
