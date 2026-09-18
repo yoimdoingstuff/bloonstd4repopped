@@ -5,63 +5,80 @@
 namespace btd4 {
 
 namespace {
-
-std::string extractStringValue(const std::string& json, const std::string& key) {
-    std::string needle = "\"" + key + "\"";
-    size_t pos = json.find(needle);
-    if (pos == std::string::npos) return "";
-
-    size_t colon = json.find(':', pos + needle.size());
-    if (colon == std::string::npos) return "";
-
-    size_t q1 = json.find('"', colon + 1);
-    if (q1 == std::string::npos) return "";
-
-    size_t q2 = json.find('"', q1 + 1);
-    if (q2 == std::string::npos) return "";
-
-    return json.substr(q1 + 1, q2 - q1 - 1);
+std::string parseQuotedString(const std::string& json, size_t quote, size_t* nextPos = nullptr) {
+    if (quote >= json.size() || json[quote] != '"') return {};
+    std::string value;
+    for (size_t i = quote + 1; i < json.size(); ++i) {
+        const char c = json[i];
+        if (c == '"') {
+            if (nextPos) *nextPos = i + 1;
+            return value;
+        }
+        if (c != '\\') {
+            value += c;
+            continue;
+        }
+        if (++i >= json.size()) return {};
+        switch (json[i]) {
+            case '"': value += '"'; break;
+            case '\\': value += '\\'; break;
+            case '/': value += '/'; break;
+            case 'b': value += '\b'; break;
+            case 'f': value += '\f'; break;
+            case 'n': value += '\n'; break;
+            case 'r': value += '\r'; break;
+            case 't': value += '\t'; break;
+            default: return {};
+        }
+    }
+    return {};
 }
 
-void parseDictionary(const std::string& json, const std::string& objKey, std::unordered_map<std::string, std::string>& outMap) {
-    std::string needle = "\"" + objKey + "\"";
-    size_t pos = json.find(needle);
+std::string extractStringValue(const std::string& json, const std::string& key) {
+    const std::string needle = "\""+key+"\"";
+    const size_t pos = json.find(needle);
+    if (pos == std::string::npos) return "";
+    const size_t colon = json.find(':', pos + needle.size());
+    if (colon == std::string::npos) return "";
+    const size_t quote = json.find('"', colon + 1);
+    if (quote == std::string::npos) return "";
+    return parseQuotedString(json, quote);
+}
+
+void parseDictionary(const std::string& json, const std::string& objKey,
+                     std::unordered_map<std::string, std::string>& outMap) {
+    const std::string needle = "\""+objKey+"\"";
+    const size_t pos = json.find(needle);
     if (pos == std::string::npos) return;
-
-    size_t braceOpen = json.find('{', pos + needle.size());
+    const size_t braceOpen = json.find('{', pos + needle.size());
     if (braceOpen == std::string::npos) return;
-
-    size_t braceClose = json.find('}', braceOpen + 1);
+    const size_t braceClose = json.find('}', braceOpen + 1);
     if (braceClose == std::string::npos) return;
 
-    std::string block = json.substr(braceOpen + 1, braceClose - braceOpen - 1);
-    size_t cur = 0;
-    while (cur < block.size()) {
-        size_t k1 = block.find('"', cur);
-        if (k1 == std::string::npos) break;
-        size_t k2 = block.find('"', k1 + 1);
-        if (k2 == std::string::npos) break;
-        std::string key = block.substr(k1 + 1, k2 - k1 - 1);
-
-        size_t colon = block.find(':', k2 + 1);
-        if (colon == std::string::npos) break;
-
-        size_t v1 = block.find('"', colon + 1);
-        if (v1 == std::string::npos) break;
-        size_t v2 = block.find('"', v1 + 1);
-        if (v2 == std::string::npos) break;
-        std::string val = block.substr(v1 + 1, v2 - v1 - 1);
-
-        outMap[key] = val;
-        cur = v2 + 1;
+    size_t cur = braceOpen + 1;
+    while (cur < braceClose) {
+        const size_t k1 = json.find('"', cur);
+        if (k1 == std::string::npos || k1 >= braceClose) break;
+        size_t keyEnd = 0;
+        const std::string key = parseQuotedString(json, k1, &keyEnd);
+        if (key.empty() && keyEnd == 0) break;
+        const size_t colon = json.find(':', keyEnd);
+        if (colon == std::string::npos || colon >= braceClose) break;
+        const size_t v1 = json.find('"', colon + 1);
+        if (v1 == std::string::npos || v1 >= braceClose) break;
+        size_t valueEnd = 0;
+        const std::string value = parseQuotedString(json, v1, &valueEnd);
+        if (valueEnd == 0) break;
+        outMap[key] = value;
+        cur = valueEnd;
     }
 }
 
-void parseStringArray(const std::string& json, const std::string& key, std::vector<std::string>& out) {
-    const std::string needle = "\"" + key + "\"";
+void parseStringArray(const std::string& json, const std::string& key,
+                      std::vector<std::string>& out) {
+    const std::string needle = "\""+key+"\"";
     const size_t keyPos = json.find(needle);
     if (keyPos == std::string::npos) return;
-
     const size_t open = json.find('[', keyPos + needle.size());
     if (open == std::string::npos) return;
     const size_t close = json.find(']', open + 1);
@@ -71,12 +88,36 @@ void parseStringArray(const std::string& json, const std::string& key, std::vect
     while (cur < close) {
         const size_t q1 = json.find('"', cur);
         if (q1 == std::string::npos || q1 >= close) break;
-        const size_t q2 = json.find('"', q1 + 1);
-        if (q2 == std::string::npos || q2 > close) break;
-        const std::string value = json.substr(q1 + 1, q2 - q1 - 1);
+        size_t valueEnd = 0;
+        const std::string value = parseQuotedString(json, q1, &valueEnd);
+        if (valueEnd == 0 || valueEnd > close) break;
         if (!value.empty()) out.push_back(value);
-        cur = q2 + 1;
+        cur = valueEnd;
     }
+}
+
+std::string escapeJsonString(const std::string& value) {
+    std::string out;
+    out.reserve(value.size() + 8);
+    for (unsigned char c : value) {
+        switch (c) {
+            case '\\': out += "\\\\"; break;
+            case '"': out += "\\\""; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default:
+                if (c < 0x20) {
+                    const char* hex = "0123456789abcdef";
+                    out += "\\u00";
+                    out += hex[(c >> 4) & 0xF];
+                    out += hex[c & 0xF];
+                } else {
+                    out += static_cast<char>(c);
+                }
+        }
+    }
+    return out;
 }
 
 } // namespace
