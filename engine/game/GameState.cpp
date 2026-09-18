@@ -31,6 +31,7 @@ void GameSimulation::reset() {
     m_rounds.reset();
     m_state = GameStateType::Playing;
     m_nextTowerId = 1;
+    m_activePlayerId = 0;
     m_currentRound = 1;
     m_totalBloonsPopped = 0;
     m_totalBloonsLeaked = 0;
@@ -49,8 +50,15 @@ void GameSimulation::resume() {
 }
 
 bool GameSimulation::placeTower(TowerType type, float x, float y) {
+    return placeTower(m_activePlayerId, type, x, y);
+}
+
+bool GameSimulation::placeTower(uint8_t playerId, TowerType type, float x, float y) {
+    if (playerId >= MAX_PLAYERS || !m_players[playerId].active()) return false;
+
     TowerBaseStats stats = getTowerBaseStats(type);
-    if (!m_economy.canAfford(stats.cost)) {
+    Economy& playerEconomy = m_players[playerId].economy();
+    if (!playerEconomy.canAfford(stats.cost)) {
         return false;
     }
 
@@ -62,22 +70,27 @@ bool GameSimulation::placeTower(TowerType type, float x, float y) {
     for (const auto& existing : m_towers) {
         float dx = existing.x() - x;
         float dy = existing.y() - y;
-        float minDist = stats.footprintRadius + 12.0f; // Minimal spacing
+        float minDist = stats.footprintRadius + 12.0f;
         if ((dx * dx + dy * dy) < (minDist * minDist)) {
             return false;
         }
     }
 
-    m_economy.spendCash(stats.cost);
-    m_towers.emplace_back(m_nextTowerId++, type, x, y);
+    playerEconomy.spendCash(stats.cost);
+    m_towers.emplace_back(m_nextTowerId++, type, x, y, playerId);
     return true;
 }
 
 bool GameSimulation::sellTower(uint32_t towerId) {
+    return sellTower(m_activePlayerId, towerId);
+}
+
+bool GameSimulation::sellTower(uint8_t playerId, uint32_t towerId) {
+    if (playerId >= MAX_PLAYERS || !m_players[playerId].active()) return false;
     for (auto it = m_towers.begin(); it != m_towers.end(); ++it) {
-        if (it->id() == towerId) {
+        if (it->id() == towerId && it->ownerId() == playerId) {
             int refund = it->sellValue();
-            m_economy.addCash(refund);
+            m_players[playerId].economy().addCash(refund);
             m_towers.erase(it);
             return true;
         }
