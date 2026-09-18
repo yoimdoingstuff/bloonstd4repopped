@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../swf/SwfTypes.hpp"
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <functional>
@@ -28,6 +29,9 @@ struct ImportReport {
     bool btd4Detected{false};
     bool ipaDetected{false};
     bool ipaArchiveDetected{false};
+    uint32_t ipaFilesExtracted{0};
+    uint64_t ipaBytesExtracted{0};
+    std::string ipaOutputDirectory;
     std::string sourceFamily{"Unknown"};
     std::string targetPlatform{"auto"};
     std::vector<std::string> detectedFeatures;
