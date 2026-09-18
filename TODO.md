@@ -191,8 +191,10 @@ Display & Resolution
 
 MILESTONE 4: INPUT
 
-* [ ]	Keyboard input
-* [ ]	Mouse input
+* [x]	Keyboard input
+    Agent: platform-abstraction / builder
+* [x]	Mouse input
+    Agent: platform-abstraction / builder
 * [ ]	PSP controls
 * [ ]	PSP analog input
 * [ ]	Xbox controller abstraction
@@ -331,7 +333,9 @@ MILESTONE 6: ECONOMY
     Agent: Antigravity
 * [x]	Tower costs
     Agent: Antigravity
-* [ ]	Upgrade costs
+* [x]	Upgrade costs
+    Agent: builder
+    Notes: Upgrade purchase costs are read from UpgradeDefinition data and deducted from the game economy.
 * [x]	Sell values
     Agent: Antigravity
 * [x]	Round rewards
@@ -343,12 +347,24 @@ MILESTONE 6: ECONOMY
 
 MILESTONE 7: UPGRADES
 
-* [ ]	Upgrade data format
-* [ ]	Upgrade loading
-* [ ]	Upgrade UI
-* [ ]	Stat modifications
-* [ ]	Multiple upgrade paths
-* [ ]	Upgrade validation
+* [x]	Upgrade data format
+    Agent: builder
+    Notes: JSON upgrade definitions are parsed into validated UpgradeDefinition records.
+* [x]	Upgrade loading
+    Agent: builder
+    Notes: Runtime loads imported upgrade data when present, otherwise the bundled placeholder set.
+* [x]	Upgrade UI
+    Agent: builder
+    Notes: Selected towers expose both upgrade paths with mouse-click and desktop Q/E controls.
+* [x]	Stat modifications
+    Agent: builder
+    Notes: UpgradeEffect values are applied to range, cooldown, damage, pierce, projectile speed, and explosion radius.
+* [x]	Multiple upgrade paths
+    Agent: builder
+    Notes: Two independent upgrade paths are supported and tier progression is validated.
+* [x]	Upgrade validation
+    Agent: builder
+    Notes: Duplicate IDs and tower/path/tier entries plus invalid effect values are rejected.
 
 ⸻
 
