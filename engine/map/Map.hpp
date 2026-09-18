@@ -39,6 +39,7 @@ public:
     void addWaypoint(float x, float y);
     void clear();
 
+    std::vector<Point2D>& waypoints() { return m_waypoints; }
     const std::vector<Point2D>& waypoints() const { return m_waypoints; }
     float totalLength() const { return m_totalLength; }
     size_t waypointCount() const { return m_waypoints.size(); }
