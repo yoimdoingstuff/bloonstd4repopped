@@ -59,6 +59,12 @@ void GameSimulation::syncSharedEconomy() {
     }
 }
 
+bool GameSimulation::setActivePlayer(uint8_t playerId) {
+    if (playerId >= MAX_PLAYERS || !m_players[playerId].active()) return false;
+    m_activePlayerId = playerId;
+    return true;
+}
+
 void GameSimulation::pause() {
     if (m_state == GameStateType::Playing) {
         m_state = GameStateType::Paused;
