@@ -46,6 +46,19 @@ if(NOT TARGET_PSP)
         endif()
     endif()
 
+    FetchContent_Declare(SDL2_image
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+        GIT_TAG release-2.8.12
+        GIT_SHALLOW TRUE)
+    set(SDL2IMAGE_VENDORED ON CACHE BOOL "" FORCE)
+    set(SDL2IMAGE_SAMPLES OFF CACHE BOOL "" FORCE)
+    set(SDL2IMAGE_TESTS OFF CACHE BOOL "" FORCE)
+    set(SDL2IMAGE_INSTALL OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(SDL2_image)
+    if(NOT TARGET SDL2_image::SDL2_image AND TARGET SDL2_image)
+        add_library(SDL2_image::SDL2_image ALIAS SDL2_image)
+    endif()
+
     if(BUILD_BUILDER)
         FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git GIT_TAG v1.91.5 GIT_SHALLOW TRUE)
         FetchContent_MakeAvailable(imgui)
@@ -108,6 +121,11 @@ if(NOT TARGET_PSP)
     elseif(SDL2_LIBRARIES)
         target_link_libraries(btd4_platform PUBLIC ${SDL2_LIBRARIES})
         target_include_directories(btd4_platform PUBLIC ${SDL2_INCLUDE_DIRS})
+    endif()
+    if(TARGET SDL2_image::SDL2_image)
+        target_link_libraries(btd4_platform PUBLIC SDL2_image::SDL2_image)
+    elseif(TARGET SDL2_image)
+        target_link_libraries(btd4_platform PUBLIC SDL2_image)
     endif()
 endif()
 
