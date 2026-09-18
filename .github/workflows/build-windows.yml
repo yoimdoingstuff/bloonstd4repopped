@@ -29,7 +29,7 @@ jobs:
       if: ${{ always() }}
       shell: bash
       run: |
-        mkdir -p package/bin/assets/placeholder/rounds package/bin/assets/placeholder/upgrades
+        mkdir -p package/bin/assets/placeholder/rounds package/bin/assets/placeholder/upgrades package/bin/assets/placeholder/towers
         cp build/Release/btd4_game.exe package/bin/ || cp build/btd4_game.exe package/bin/
         cp build/Release/btd4_builder.exe package/bin/ || cp build/btd4_builder.exe package/bin/
         cp build/Release/btd4_importer.exe package/bin/ || cp build/btd4_importer.exe package/bin/
@@ -38,6 +38,7 @@ jobs:
         cp CMakeLists.txt package/bin/CMakeLists.txt
         cp assets/placeholder/rounds/default_rounds.json package/bin/assets/placeholder/rounds/default_rounds.json
         cp assets/placeholder/upgrades/default_upgrades.json package/bin/assets/placeholder/upgrades/default_upgrades.json
+        cp assets/placeholder/towers/default_towers.json package/bin/assets/placeholder/towers/default_towers.json
         7z a btd4-windows-x64.zip ./package/bin/*
 
     - name: Upload Windows Artifact
