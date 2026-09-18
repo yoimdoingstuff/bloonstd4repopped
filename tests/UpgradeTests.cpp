@@ -1,6 +1,7 @@
 #include "TestRunner.hpp"
 #include "game/TowerData.hpp"
 #include "game/Player.hpp"
+#include "game/MultiplayerSession.hpp"
 #include "game/Upgrade.hpp"
 
 using namespace btd4;
@@ -183,4 +184,22 @@ TEST_CASE(PlayerStateInitializesAndResets) {
     TEST_ASSERT_EQ(player.economy().lives(), 50);
     player.setActive(false);
     TEST_ASSERT(!player.active());
+}
+
+
+TEST_CASE(MultiplayerSessionConfiguresLocalPlayers) {
+    btd4::MultiplayerSession session;
+    std::string error;
+    TEST_ASSERT(session.configure(3, btd4::MultiplayerEconomyMode::Split, error));
+    TEST_ASSERT(error.empty());
+    TEST_ASSERT_EQ(session.playerCount(), static_cast<uint8_t>(3));
+    TEST_ASSERT_EQ(session.economyMode(), btd4::MultiplayerEconomyMode::Split);
+    TEST_ASSERT(session.player(0).active());
+    TEST_ASSERT(session.player(1).active());
+    TEST_ASSERT(session.player(2).active());
+    TEST_ASSERT(!session.player(3).active());
+    TEST_ASSERT(session.start(error));
+    TEST_ASSERT(session.active());
+    session.stop();
+    TEST_ASSERT(!session.active());
 }
