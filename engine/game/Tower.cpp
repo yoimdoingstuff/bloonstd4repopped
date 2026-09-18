@@ -64,6 +64,14 @@ void Tower::cycleTargetingMode() {
         case TargetingMode::Strong: m_targetingMode = TargetingMode::First; break;
     }
 }
+void Tower::cycleTargetingModeBackward() {
+    switch (m_targetingMode) {
+        case TargetingMode::First:  m_targetingMode = TargetingMode::Strong; break;
+        case TargetingMode::Last:   m_targetingMode = TargetingMode::First; break;
+        case TargetingMode::Close:  m_targetingMode = TargetingMode::Last; break;
+        case TargetingMode::Strong: m_targetingMode = TargetingMode::Close; break;
+    }
+}
 
 uint8_t Tower::upgradeTier(uint8_t path) const {
     return path < 2 ? m_upgradeTiers[path] : 0;
