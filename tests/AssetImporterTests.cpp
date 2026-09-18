@@ -112,9 +112,9 @@ TEST_CASE(AssetConverterNormalization) {
 }
 
 TEST_CASE(AssetManifestSerializationAndParsing) {
-    btd4::AssetManifest manifest; manifest.packageName = "Test Package"; manifest.source = "game.swf"; manifest.textures["dart_monkey"] = "textures/dart_monkey.bmp"; manifest.audio["pop"] = "audio/pop.wav"; manifest.maps.push_back("maps/level1.json"); manifest.roundsFile = "rounds/rounds.json";
-    std::string json = manifest.serialize(); TEST_ASSERT(json.find("\"package_name\": \"Test Package\"") != std::string::npos); TEST_ASSERT(json.find("\"dart_monkey\": \"textures/dart_monkey.bmp\"") != std::string::npos);
-    btd4::AssetManifest parsed; std::string err; bool ok = parsed.parseJson(json, err); TEST_ASSERT(ok); TEST_ASSERT_EQ(parsed.packageName, "Test Package"); TEST_ASSERT_EQ(parsed.textures["dart_monkey"], "textures/dart_monkey.bmp"); TEST_ASSERT_EQ(parsed.audio["pop"], "audio/pop.wav"); TEST_ASSERT_EQ(parsed.roundsFile, "rounds/rounds.json");
+    btd4::AssetManifest manifest; manifest.packageName = "Test \"Package"; manifest.source = "C:\\Users\\Tester\\BTD4 \"Flash\".swf"; manifest.textures["dart\\monkey"] = "textures\\dart\\monkey.bmp"; manifest.audio["pop"] = "audio/pop.wav"; manifest.maps.push_back("maps/level1.json"); manifest.roundsFile = "rounds/rounds.json";
+    std::string json = manifest.serialize(); TEST_ASSERT(json.find("\"package_name\": \"Test \\\"Package\"") != std::string::npos); TEST_ASSERT(json.find("\\Users\\\\Tester") != std::string::npos);
+    btd4::AssetManifest parsed; std::string err; bool ok = parsed.parseJson(json, err); TEST_ASSERT(ok); TEST_ASSERT_EQ(parsed.packageName, "Test \"Package"); TEST_ASSERT_EQ(parsed.source, "C:\\Users\\Tester\\BTD4 \"Flash\".swf"); TEST_ASSERT_EQ(parsed.textures["dart\\monkey"], "textures\\dart\\monkey.bmp"); TEST_ASSERT_EQ(parsed.audio["pop"], "audio/pop.wav"); TEST_ASSERT_EQ(parsed.roundsFile, "rounds/rounds.json");
 }
 
 TEST_CASE(AssetManagerFallbacks) {
