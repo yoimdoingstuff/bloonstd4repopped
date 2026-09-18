@@ -5,6 +5,9 @@
 #include <cstring>
 #include <algorithm>
 #include <cstddef>
+#include <chrono>
+#include <fstream>
+#include <sstream>
 #include <filesystem>
 #include <exception>
 
@@ -52,6 +55,140 @@ std::string makeImportKey(const Project& project) {
     key += '\n';
     key += project.config().targetPlatform;
     return key;
+}
+
+fs::path findImporterExecutable() {
+    std::error_code ec;
+    fs::path root;
+    if (const char* envRoot = std::getenv("BTD4_BUILDER_ROOT")) {
+        if (*envRoot) root = fs::path(envRoot);
+    }
+    if (root.empty()) root = fs::current_path(ec);
+
+#ifdef _WIN32
+    const fs::path candidate = root / "btd4_importer.exe";
+#else
+    const fs::path candidate = root / "btd4_importer";
+#endif
+    if (fs::is_regular_file(candidate, ec)) return candidate;
+    return {};
+}
+
+std::string readTextFile(const fs::path& path) {
+    std::ifstream input(path, std::ios::binary);
+    if (!input.is_open()) return {};
+    std::ostringstream contents;
+    contents << input.rdbuf();
+    return contents.str();
+}
+
+std::string shellQuote(const std::string& value) {
+    std::string result = "'";
+    for (char c : value) {
+        if (c == '\\'') result += "'\\''";
+        else result += c;
+    }
+    result += "'";
+    return result;
+}
+
+#ifdef _WIN32
+std::wstring utf8ToWide(const std::string& value) {
+    if (value.empty()) return {};
+    const int size = MultiByteToWideChar(CP_UTF8, 0, value.data(), static_cast<int>(value.size()), nullptr, 0);
+    if (size <= 0) return {};
+    std::wstring result(static_cast<size_t>(size), L'\\0');
+    MultiByteToWideChar(CP_UTF8, 0, value.data(), static_cast<int>(value.size()), result.data(), size);
+    return result;
+}
+
+std::wstring quoteWindowsArg(const std::wstring& value) {
+    std::wstring result = L"\\\"";
+    for (wchar_t c : value) {
+        if (c == L'\\') result += L"\\\\";
+        else result += c;
+    }
+    result += L"\\\"";
+    return result;
+}
+#endif
+
+int runStandaloneImporter(const fs::path& importer,
+                           const fs::path& sourceSwf,
+                           const fs::path& sourceIpa,
+                           const fs::path& outputDir,
+                           const fs::path& projectRoot,
+                           std::string& outputLog) {
+    const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+    const fs::path logPath = fs::temp_directory_path() /
+        ("btd4_builder_import_" + std::to_string(stamp) + ".log");
+
+#ifdef _WIN32
+    HANDLE logHandle = CreateFileW(
+        logPath.wstring().c_str(), GENERIC_WRITE | GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (logHandle == INVALID_HANDLE_VALUE) {
+        outputLog = "Could not create temporary importer log.";
+        return -1;
+    }
+
+    std::wstring commandLine = quoteWindowsArg(utf8ToWide(importer.string()));
+    commandLine += L" " + quoteWindowsArg(utf8ToWide(sourceSwf.string()));
+    commandLine += L" --out " + quoteWindowsArg(utf8ToWide(outputDir.string()));
+    commandLine += L" --platform " + quoteWindowsArg(L"Windows");
+    if (!sourceIpa.empty()) {
+        commandLine += L" --ipa " + quoteWindowsArg(utf8ToWide(sourceIpa.string()));
+    }
+
+    std::vector<wchar_t> mutableCommand(commandLine.begin(), commandLine.end());
+    mutableCommand.push_back(L'\\0');
+
+    STARTUPINFOW startup{};
+    startup.cb = sizeof(startup);
+    startup.dwFlags = STARTF_USESTDHANDLES;
+    startup.hStdOutput = logHandle;
+    startup.hStdError = logHandle;
+
+    PROCESS_INFORMATION process{};
+    const std::wstring workingDirectory = projectRoot.wstring();
+    const BOOL created = CreateProcessW(
+        nullptr, mutableCommand.data(), nullptr, nullptr, TRUE,
+        CREATE_NO_WINDOW, nullptr, workingDirectory.c_str(), &startup, &process);
+
+    CloseHandle(logHandle);
+
+    if (!created) {
+        outputLog = "Could not launch standalone asset importer. Windows error " +
+                    std::to_string(GetLastError()) + ".";
+        return -1;
+    }
+
+    WaitForSingleObject(process.hProcess, INFINITE);
+    DWORD exitCode = 1;
+    GetExitCodeProcess(process.hProcess, &exitCode);
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+
+    outputLog = readTextFile(logPath);
+    std::error_code ec;
+    fs::remove(logPath, ec);
+    return static_cast<int>(exitCode);
+#else
+    const std::string command =
+        shellQuote(importer.string()) + " " +
+        shellQuote(sourceSwf.string()) +
+        " --out " + shellQuote(outputDir.string()) +
+        " --platform " + shellQuote("Linux") +
+        (sourceIpa.empty() ? std::string{} : " --ipa " + shellQuote(sourceIpa.string())) +
+        " > " + shellQuote(logPath.string()) + " 2>&1";
+
+    const int status = std::system(command.c_str());
+    outputLog = readTextFile(logPath);
+    std::error_code ec;
+    fs::remove(logPath, ec);
+    return status == 0 ? 0 : status;
+#endif
 }
 
 } // namespace
@@ -360,28 +497,45 @@ bool BuilderUI::triggerImport() {
     appendLog("[Pipeline] Import target: " + options.targetPlatform);
     appendLog("[Pipeline] Output: " + options.outputDir);
 
-    tools::ImportReport report;
-    try {
-        report = tools::AssetImporter::run(
-            options,
-            [this](const std::string& msg) { appendLog(msg); }
-        );
-    } catch (const std::bad_alloc&) {
-        appendLog("[Pipeline Error] Asset import ran out of memory.");
-        appendLog("=========================================");
-        return false;
-    } catch (const std::exception& e) {
-        appendLog(std::string("[Pipeline Error] Asset importer threw an exception: ") + e.what());
-        appendLog("=========================================");
-        return false;
-    } catch (...) {
-        appendLog("[Pipeline Error] Asset importer failed with an unknown exception.");
+    const fs::path importerExecutable = findImporterExecutable();
+    if (importerExecutable.empty()) {
+        appendLog("[Pipeline Error] Standalone btd4_importer executable was not found next to the builder.");
+        appendLog("[Pipeline Error] The importer must be packaged with btd4_builder.exe.");
         appendLog("=========================================");
         return false;
     }
 
-    if (!report.success) {
-        appendLog("[Pipeline Error] Import failed: " + report.errorMessage);
+    appendLog("[Pipeline] Running isolated asset importer: " + importerExecutable.string());
+    std::string importerOutput;
+    const int importerExitCode = runStandaloneImporter(
+        importerExecutable,
+        fs::path(options.sourceSwf),
+        fs::path(options.sourceIpa),
+        fs::path(options.outputDir),
+        projectRoot,
+        importerOutput);
+
+    if (!importerOutput.empty()) {
+        std::istringstream importerLines(importerOutput);
+        std::string line;
+        while (std::getline(importerLines, line)) {
+            if (!line.empty() && line.back() == '\\r') line.pop_back();
+            if (!line.empty()) appendLog(line);
+        }
+    }
+
+    const fs::path manifestPath = fs::path(options.outputDir) / "manifest.json";
+    std::error_code manifestEc;
+    if (importerExitCode != 0) {
+        appendLog("[Pipeline Error] Standalone importer exited with code " + std::to_string(importerExitCode) + ".");
+        if (importerExitCode == static_cast<int>(0xC0000005u)) {
+            appendLog("[Pipeline Error] The importer hit a native access violation. The builder was kept alive by isolating the importer process.");
+        }
+        appendLog("=========================================");
+        return false;
+    }
+    if (!fs::is_regular_file(manifestPath, manifestEc)) {
+        appendLog("[Pipeline Error] Importer reported success, but manifest.json was not produced.");
         appendLog("=========================================");
         return false;
     }
