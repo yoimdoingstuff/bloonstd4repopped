@@ -152,6 +152,23 @@ BuildResult WindowsPlatform::package(const std::string& gameEdition){
         r.outputLogs.push_back("[Windows Error] "+r.message);return r;
     }
 
+    const customMaps = root / "maps";
+    if (fs::is_directory(customMaps, ec)) {
+        const fs::path packageMaps = packageData / "maps";
+        fs::create_directories(packageMaps, ec);
+        if (ec) {
+            r.message = "Could not create packaged custom map directory: " + ec.message();
+            return r;
+        }
+        fs::copy(customMaps, packageMaps,
+                 fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+        if (ec) {
+            r.message = "Could not package custom maps: " + ec.message();
+            return r;
+        }
+        r.outputLogs.push_back("[Windows] Packaged custom maps from " + customMaps.string());
+    }
+
     const fs::path fallbackAssets = packageDir / "assets" / "placeholder";
     const fs::path sourceFallbackAssets = root / "assets" / "placeholder";
     if(fs::exists(sourceFallbackAssets, ec)){
