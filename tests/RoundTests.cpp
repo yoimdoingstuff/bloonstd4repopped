@@ -208,3 +208,26 @@ TEST_CASE(SimulationDelayedSpawnDoesNotMoveBeforeBirth) {
     sim.update(0.01f);
     TEST_ASSERT(sim.bloonPool().findById(1)->distanceTraveled > 0);
 }
+
+
+TEST_CASE(RoundSerializationRoundTripsEditorData) {
+    btd4::Map map("Round Test Map");
+    map.addPath(btd4::Path({{0.0f, 0.0f}, {200.0f, 0.0f}}));
+
+    btd4::RoundSet source;
+    btd4::RoundDefinition round;
+    round.groups.push_back({btd4::BloonType::Blue, 15, 420, 250, 0});
+    round.groups.push_back({btd4::BloonType::Lead, 3, 900, 1000, 0});
+    source.rounds.push_back(round);
+
+    const std::string json = btd4::serializeRounds(source);
+    btd4::RoundSet loaded;
+    std::string error;
+    TEST_ASSERT(btd4::parseRounds(json, map, loaded, error));
+    TEST_ASSERT(error.empty());
+    TEST_ASSERT_EQ(loaded.rounds.size(), size_t(1));
+    TEST_ASSERT_EQ(loaded.rounds[0].groups.size(), size_t(2));
+    TEST_ASSERT_EQ(loaded.rounds[0].groups[0].count, uint32_t(15));
+    TEST_ASSERT_EQ(loaded.rounds[0].groups[1].type, btd4::BloonType::Lead);
+    TEST_ASSERT_EQ(loaded.rounds[0].groups[1].delayMs, uint32_t(1000));
+}
