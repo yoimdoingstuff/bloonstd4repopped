@@ -1,7 +1,10 @@
 #include "Upgrade.hpp"
+#include "TowerData.hpp"
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 #include <limits>
 
 namespace btd4 {
