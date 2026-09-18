@@ -236,11 +236,24 @@ BuildResult WindowsPlatform::package(const std::string& gameEdition){
         r.outputLogs.push_back("[Windows] Packaged placeholder rounds/upgrades for runtime fallback.");
     }
 
-    const fs::path possibleDlls[]={
-        root/"SDL2.dll", cmakeDir/"SDL2.dll", cmakeDir/"Release"/"SDL2.dll", cmakeDir/"Debug"/"SDL2.dll",
+    const fs::path sdlDlls[]={
+        root/"SDL2.dll", cmakeDir/"SDL2.dll", cmakeDir/"Release"/"SDL2.dll", cmakeDir/"Debug"/"SDL2.dll"
+    };
+    for(const auto& dll:sdlDlls){
+        if(fs::exists(dll,ec)){
+            fs::copy_file(dll,packageDir/dll.filename(),fs::copy_options::overwrite_existing,ec);
+            if(!ec){r.outputLogs.push_back("[Windows] Packaged "+dll.filename().string());break;}
+        }
+    }
+    const fs::path imageDlls[]={
         root/"SDL2_image.dll", cmakeDir/"SDL2_image.dll", cmakeDir/"Release"/"SDL2_image.dll", cmakeDir/"Debug"/"SDL2_image.dll"
     };
-    for(const auto& dll:possibleDlls)if(fs::exists(dll,ec)){fs::copy_file(dll,packageDir/dll.filename(),fs::copy_options::overwrite_existing,ec);if(!ec){r.outputLogs.push_back("[Windows] Packaged "+dll.filename().string());break;}}
+    for(const auto& dll:imageDlls){
+        if(fs::exists(dll,ec)){
+            fs::copy_file(dll,packageDir/dll.filename(),fs::copy_options::overwrite_existing,ec);
+            if(!ec){r.outputLogs.push_back("[Windows] Packaged "+dll.filename().string());break;}
+        }
+    }
     r.success=true;
     r.message="Playable Windows build packaged at "+packageDir.string();
     r.outputLogs.push_back("[Windows] Executable: "+(packageDir/executable.filename()).string());
