@@ -1,6 +1,9 @@
 #include "MapLoader.hpp"
 #include "core/JsonReader.hpp"
 #include <utility>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 
 namespace btd4 {
 namespace {
@@ -88,4 +91,69 @@ bool loadMap(const IFileSystem& files, const std::string& path, Map& output, std
     if (bytes.empty()) return parseMap({}, output, error);
     return parseMap(std::string_view(reinterpret_cast<const char*>(bytes.data()), bytes.size()), output, error);
 }
+}
+
+
+std::string btd4::serializeMap(const btd4::Map& map) {
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(3);
+    out << "{\n";
+    out << "  \"version\": 1,\n";
+    out << "  \"name\": \"" ;
+    for (char ch : map.name()) {
+        if (ch == '\\' || ch == '"') out << '\\';
+        out << ch;
+    }
+    out << "\",\n";
+    out << "  \"paths\": [\n";
+    for (size_t p = 0; p < map.paths().size(); ++p) {
+        const auto& points = map.paths()[p].waypoints();
+        out << "    [";
+        for (size_t i = 0; i < points.size(); ++i) {
+            if (i) out << ", ";
+            out << "[" << points[i].x << ", " << points[i].y << "]";
+        }
+        out << "]";
+        if (p + 1 < map.paths().size()) out << ",";
+        out << "\n";
+    }
+    out << "  ],\n";
+    out << "  \"buildable_regions\": [\n";
+    for (size_t i = 0; i < map.buildableRegions().size(); ++i) {
+        const auto& r = map.buildableRegions()[i];
+        out << "    [" << r.x << ", " << r.y << ", " << r.w << ", " << r.h << "]";
+        if (i + 1 < map.buildableRegions().size()) out << ",";
+        out << "\n";
+    }
+    out << "  ],\n";
+    out << "  \"blocked_regions\": [\n";
+    for (size_t i = 0; i < map.blockedRegions().size(); ++i) {
+        const auto& r = map.blockedRegions()[i];
+        out << "    [" << r.x << ", " << r.y << ", " << r.w << ", " << r.h << "]";
+        if (i + 1 < map.blockedRegions().size()) out << ",";
+        out << "\n";
+    }
+    out << "  ]\n";
+    out << "}\n";
+    return out.str();
+}
+
+bool btd4::saveMap(const std::string& path, const btd4::Map& map, std::string& error) {
+    error.clear();
+    if (!map.validate()) {
+        error = "Map must contain at least one valid path with two or more waypoints.";
+        return false;
+    }
+    std::ofstream out(path, std::ios::binary);
+    if (!out.is_open()) {
+        error = "Cannot write map: " + path;
+        return false;
+    }
+    const std::string json = btd4::serializeMap(map);
+    out.write(json.data(), static_cast<std::streamsize>(json.size()));
+    if (!out.good()) {
+        error = "Failed while writing map: " + path;
+        return false;
+    }
+    return true;
 }
