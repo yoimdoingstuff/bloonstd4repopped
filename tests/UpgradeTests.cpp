@@ -2,6 +2,7 @@
 #include "game/TowerData.hpp"
 #include "game/Player.hpp"
 #include "game/MultiplayerSession.hpp"
+#include "game/GameState.hpp"
 #include "game/Upgrade.hpp"
 
 using namespace btd4;
