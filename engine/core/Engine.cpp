@@ -257,6 +257,34 @@ void Engine::frame(int windowWidth, int windowHeight) {
 
     PointerState ptr = m_input.pointerState();
     m_testScreen.setCursorPosition(ptr.logicalX, ptr.logicalY);
+
+    if (m_input.isActionJustPressed(InputAction::OpenTrackEditor)) {
+        if (!m_simulation.roundActive()) {
+            m_trackEditor.open(m_simulation.map());
+        } else {
+            BTD4_LOG_INFO("Track Editor can only be opened between rounds.");
+        }
+    }
+
+    if (m_trackEditor.isOpen()) {
+        m_trackEditor.update(m_input, ptr);
+        Map editedMap;
+        if (m_trackEditor.consumeApplyRequest(editedMap)) {
+            m_simulation.reset();
+            m_simulation.setMap(std::move(editedMap));
+            m_simulation.setState(GameStateType::Playing);
+            m_selectedTowerId = 0;
+            m_hasPlacement = false;
+            BTD4_LOG_INFO("Track Editor play test applied to the active game map.");
+        }
+
+        m_renderer.beginFrame();
+        m_renderer.clear(Color::black());
+        m_renderer.setViewport(m_viewport);
+        m_trackEditor.render(m_renderer);
+        m_renderer.endFrame();
+        return;
+    }
     const InputAction towerActions[] = {InputAction::SelectTower1, InputAction::SelectTower2,
         InputAction::SelectTower3, InputAction::SelectTower4, InputAction::SelectTower5, InputAction::SelectTower6};
     for (const InputAction action : towerActions) {
@@ -269,7 +297,13 @@ void Engine::frame(int windowWidth, int windowHeight) {
     if (m_input.isActionJustPressed(InputAction::StartRound)) startNextRound();
 
     if (m_input.isActionJustPressed(InputAction::Confirm)) {
-        if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f) {
+        if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY < 22.0f) {
+            if (!m_simulation.roundActive()) {
+                m_trackEditor.open(m_simulation.map());
+            } else {
+                BTD4_LOG_INFO("Track Editor can only be opened between rounds.");
+            }
+        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f) {
             const int idx = static_cast<int>((ptr.logicalY - 22.0f) / 36.0f);
             if (idx >= 0 && idx < 6) {
                 static const TowerType tts[] = {TowerType::DartMonkey, TowerType::TackShooter, TowerType::BombTower,
