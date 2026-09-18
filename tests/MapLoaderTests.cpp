@@ -90,3 +90,23 @@ TEST_CASE(MapLoaderRejectsInvalidUtf8AndOversizedStrings) {
         TEST_ASSERT(!btd4::parseMap(std::string(R"({"version":1,"name":")") + name + R"(","paths":[[[0,0],[1,1]]]})", map, error));
     }
 }
+
+
+TEST_CASE(MapSerializationRoundTripsEditorGeometry) {
+    btd4::Map source("Editor \"Preview\" Map");
+    source.addPath(btd4::Path({{-10.0f, 12.5f}, {100.25f, 40.0f}, {300.0f, 200.0f}}));
+    source.addBuildableRegion({0.0f, 0.0f, 400.0f, 272.0f});
+    source.addBlockedRegion({120.0f, 80.0f, 40.0f, 60.0f});
+
+    const std::string json = btd4::serializeMap(source);
+    btd4::Map loaded;
+    std::string error;
+    TEST_ASSERT(btd4::parseMap(json, loaded, error));
+    TEST_ASSERT(error.empty());
+    TEST_ASSERT_EQ(loaded.name(), source.name());
+    TEST_ASSERT_EQ(loaded.paths().size(), size_t(1));
+    TEST_ASSERT_EQ(loaded.paths()[0].waypointCount(), size_t(3));
+    TEST_ASSERT(loaded.paths()[0].totalLength() > 0.0f);
+    TEST_ASSERT_EQ(loaded.buildableRegions().size(), size_t(1));
+    TEST_ASSERT_EQ(loaded.blockedRegions().size(), size_t(1));
+}
