@@ -6,6 +6,8 @@
 #include <imgui.h>
 #include <algorithm>
 #include <cmath>
+#include <cctype>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 
