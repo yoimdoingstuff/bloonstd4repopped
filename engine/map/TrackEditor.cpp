@@ -511,7 +511,7 @@ void TrackEditor::render(IRenderer& renderer) const {
             const float y = kGridOriginY + cellY(cell) * kCellSize;
 
             Color road = styleRoad(m_trackSet);
-            if (!selectedPath) road = {road.r / 2, road.g / 2, road.b / 2, 255};
+            if (!selectedPath) road = {static_cast<uint8_t>(road.r / 2), static_cast<uint8_t>(road.g / 2), static_cast<uint8_t>(road.b / 2), 255};
             renderer.drawRect(x + 1.0f, y + 1.0f, kCellSize - 2.0f, kCellSize - 2.0f, road, true);
             renderer.drawRect(x + 1.0f, y + 1.0f, kCellSize - 2.0f, kCellSize - 2.0f,
                               selectedPath ? styleRoadEdge(m_trackSet) : Color{70,70,70,255}, false);
