@@ -2,9 +2,16 @@
 
 #include <vector>
 #include <string>
+#include <cstdint>
 #include <cmath>
 
 namespace btd4 {
+
+enum class BloonDensity : uint8_t {
+    Low = 0,
+    Normal = 1,
+    High = 2
+};
 
 struct Point2D {
     float x{0.0f};
@@ -64,6 +71,12 @@ public:
     const std::string& name() const { return m_name; }
     void setName(const std::string& name) { m_name = name; }
 
+    uint8_t trackSet() const { return m_trackSet; }
+    void setTrackSet(uint8_t value) { m_trackSet = value % 4; }
+
+    BloonDensity bloonDensity() const { return m_bloonDensity; }
+    void setBloonDensity(BloonDensity value) { m_bloonDensity = value; }
+
     void addPath(const Path& path);
     const std::vector<Path>& paths() const { return m_paths; }
     std::vector<Path>& paths() { return m_paths; }
@@ -79,6 +92,8 @@ public:
 
 private:
     std::string m_name{"Default Map"};
+    uint8_t m_trackSet{0};
+    BloonDensity m_bloonDensity{BloonDensity::Normal};
     std::vector<Path> m_paths;
     std::vector<MapRect> m_buildableRegions;
     std::vector<MapRect> m_blockedRegions;
