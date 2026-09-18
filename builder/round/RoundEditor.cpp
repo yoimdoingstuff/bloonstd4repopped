@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <utility>
 
 namespace btd4 {
 namespace fs = std::filesystem;
