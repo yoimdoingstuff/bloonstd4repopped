@@ -143,7 +143,7 @@ int runStandaloneImporter(const fs::path& importer,
     std::wstring commandLine = quoteWindowsArg(utf8ToWide(importer.string()));
     commandLine += L" " + quoteWindowsArg(utf8ToWide(sourceSwf.string()));
     commandLine += L" --out " + quoteWindowsArg(utf8ToWide(outputDir.string()));
-    commandLine += L" --platform " + quoteWindowsArg(L"Windows");
+    commandLine += L" --platform " + quoteWindowsArg(utf8ToWide(targetPlatform));
     if (!sourceIpa.empty()) {
         commandLine += L" --ipa " + quoteWindowsArg(utf8ToWide(sourceIpa.string()));
     }
@@ -186,7 +186,7 @@ int runStandaloneImporter(const fs::path& importer,
         shellQuote(importer.string()) + " " +
         shellQuote(sourceSwf.string()) +
         " --out " + shellQuote(outputDir.string()) +
-        " --platform " + shellQuote("Linux") +
+        " --platform " + shellQuote(targetPlatform) +
         (sourceIpa.empty() ? std::string{} : " --ipa " + shellQuote(sourceIpa.string())) +
         " > " + shellQuote(logPath.string()) + " 2>&1";
 
@@ -520,6 +520,7 @@ bool BuilderUI::triggerImport() {
         fs::path(options.sourceIpa),
         fs::path(options.outputDir),
         projectRoot,
+        options.targetPlatform,
         importerOutput);
 
     if (!importerOutput.empty()) {
