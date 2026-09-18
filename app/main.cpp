@@ -42,13 +42,13 @@ int main(int argc, char* argv[]) {
     (void)argv;
     BTD4_LOG_INFO("Starting Bloons TD 4 Repopped...");
 
-    SDL_ShowCursor(SDL_ENABLE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
-
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
         std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return 1;
     }
+
+    SDL_ShowCursor(SDL_ENABLE);
+    SDL_SetRelativeMouseMode(SDL_FALSE);
 
     const std::string baseDir = executableDirectory();
     std::error_code ec;
