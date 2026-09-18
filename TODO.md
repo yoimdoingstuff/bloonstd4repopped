@@ -645,7 +645,9 @@ MILESTONE 15: MAP EDITOR
 
 MILESTONE 16: MULTIPLAYER
 
-* [ ]	Local multiplayer framework
+* [x]	Local multiplayer framework
+    Agent: multiplayer
+    Notes: Local session supports 1-4 players, explicit session lifecycle, and shared/split economy policy.
 * [x]	Player abstraction
     Agent: multiplayer
     Notes: Four player slots with stable IDs and display names are available.
