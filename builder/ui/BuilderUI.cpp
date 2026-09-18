@@ -8,6 +8,10 @@
 #include <chrono>
 #include <fstream>
 #include <sstream>
+#include <cstdlib>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <filesystem>
 #include <exception>
 
