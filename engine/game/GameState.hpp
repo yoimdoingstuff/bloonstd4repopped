@@ -54,6 +54,9 @@ public:
     std::array<Player, MAX_PLAYERS>& players() { return m_players; }
     const std::array<Player, MAX_PLAYERS>& players() const { return m_players; }
 
+    bool setActivePlayer(uint8_t playerId);
+    uint8_t activePlayerId() const { return m_activePlayerId; }
+
     void setEconomyMode(MultiplayerEconomyMode mode) { m_economyMode = mode; syncSharedEconomy(); }
     MultiplayerEconomyMode economyMode() const { return m_economyMode; }
 
