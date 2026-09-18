@@ -252,3 +252,5 @@ bool saveUpgrades(const std::string& path, const UpgradeSet& upgrades, std::stri
     }
     return true;
 }
+
+} // namespace btd4
