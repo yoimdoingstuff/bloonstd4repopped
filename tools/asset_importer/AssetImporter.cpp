@@ -274,5 +274,33 @@ ImportReport AssetImporter::run(const ImportOptions& options,LogCallback logCall
     };
     importAdditionalSwfLayer(options.sourceExpansionSwf, "expansion");
     importAdditionalSwfLayer(options.sourceSwf, "flash");
+
+    auto indexIpaImages = [&](const std::string& layer) {
+        const fs::path root = outDir / "mobile" / layer / "Payload";
+        std::error_code ec;
+        if (!fs::is_directory(root, ec)) return;
+        for (fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied, ec), end;
+             it != end && !ec; it.increment(ec)) {
+            if (!it->is_regular_file(ec)) continue;
+            const std::string ext = lower(it->path().extension().string());
+            if (ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".bmp") continue;
+            const std::string baseId = btd4::tools::AssetConverter::normalizeIdentifier(it->path().stem().string(), "mobile_tex", 0);
+            const std::string relative = (fs::path("mobile") / layer / fs::relative(it->path(), outDir / "mobile" / layer)).generic_string();
+            addManifestEntry(textureManifestEntries, textureIds, baseId + "@" + layer, relative);
+        }
+    };
+
+    indexIpaImages("phone");
+    indexIpaImages("hd");
+
+    // Definitive Edition uses the highest-quality compatible duplicate for the target.
+    // PSP deliberately prefers phone/mobile assets to avoid wasting its tiny memory budget.
+    // Desktop and Xbox prefer HD assets, then phone, then Flash/Expansion.
+    if (options.gameEdition == "Definitive Edition") {
+        report.definitiveEdition = true;
+        addFeature(report, "Definitive Edition asset merger");
+        addFeature(report, options.targetPlatform == "PSP" ? "PSP mobile-first asset policy" : "HD-first asset policy");
+    }
+
     if(options.extractTextures){emitLog("[Importer] Converting textures...");const size_t total=parser.images().size();for(size_t i=0;i<total;++i){const auto& img=parser.images()[i];std::string baseId=AssetConverter::normalizeIdentifier(img.className,"tex",img.characterId);std::string ext=img.format==swf::ImageFormat::JPEG?".jpg":".bmp";std::string fileName=baseId+ext;fs::path filePath=texturesDir/fileName;if(AssetConverter::saveImage(img,filePath.string())){++report.texturesExtracted;const std::string relative="textures/"+fileName;addManifestEntry(textureManifestEntries,textureIds,baseId,relative);const std::string alias=nativeAssetAlias(img.className);if(!alias.empty()){addManifestEntry(textureManifestEntries,textureIds,alias,relative);addFeature(report,"Native gameplay asset aliases");}}if(progressCallback&&(i%20==0||i+1==total)){float p=total==0 ? 0.8f : 0.5f+0.3f*(float)(i+1)/(float)total;progressCallback(p,"Exporting textures ("+std::to_string(i+1)+"/"+std::to_string(total)+")...");}}emitLog("[Importer] Extracted "+std::to_string(report.texturesExtracted)+" textures.");}std::vector<std::string> audioManifestEntries;std::unordered_set<std::string> audioIds;if(options.extractAudio){emitLog("[Importer] Converting audio...");const size_t total=parser.sounds().size();for(size_t i=0;i<total;++i){const auto& snd=parser.sounds()[i];std::string baseId=AssetConverter::normalizeIdentifier(snd.className,"snd",snd.characterId);std::string ext=snd.format==swf::SoundFormat::MP3?".mp3":".wav";std::string fileName=baseId+ext;fs::path filePath=audioDir/fileName;if(AssetConverter::saveSound(snd,filePath.string())){++report.soundsExtracted;addManifestEntry(audioManifestEntries,audioIds,baseId,"audio/"+fileName);}if(progressCallback&&(i%10==0||i+1==total)){float p=total==0 ? 0.95f : 0.8f+0.15f*(float)(i+1)/(float)total;progressCallback(p,"Exporting audio ("+std::to_string(i+1)+"/"+std::to_string(total)+")...");}}emitLog("[Importer] Extracted "+std::to_string(report.soundsExtracted)+" audio cues.");}if(options.generateManifest){emitLog("[Importer] Generating manifest.json...");fs::path manifestFile=outDir/"manifest.json";std::ofstream mf(manifestFile);if(!mf.is_open()){report.errorMessage="Unable to create manifest: "+manifestFile.string();emitLog("[Importer Error] "+report.errorMessage);return report;}mf<<"{\n"<<"  \"version\": 2,\n"<<"  \"package_name\": \"Bloons TD 4 Game Data\",\n"<<"  \"source\": \""<<escapeJsonString(options.sourceSwf)<<"\",\n"<<"  \"source_family\": \""<<report.sourceFamily<<"\",\n"<<"  \"btd4_detected\": "<<(report.btd4Detected?"true":"false")<<",\n"<<"  \"swf_version\": "<<(unsigned)report.swfVersion<<",\n"<<"  \"target_platform\": \""<<options.targetPlatform<<"\",\n"<<"  \"ipa_detected\": "<<(report.ipaDetected?"true":"false")<<",\n"<<"  \"ipa_archive_detected\": "<<(report.ipaArchiveDetected?"true":"false")<<",\n"<<"  \"ipa_files_extracted\": "<<report.ipaFilesExtracted<<",\n"<<"  \"ipa_bytes_extracted\": "<<report.ipaBytesExtracted<<",\n"<<"  \"ipa_output_directory\": \"" <<escapeJsonString(report.ipaOutputDirectory)<<"\",\n"<<"  \"detected_features\": [\n";for(size_t i=0;i<report.detectedFeatures.size();++i){mf<<"    \""<<report.detectedFeatures[i]<<"\""<<(i+1==report.detectedFeatures.size()?"":",")<<"\n";}mf<<"  ],\n  \"textures\": {\n";for(size_t i=0;i<textureManifestEntries.size();++i)mf<<textureManifestEntries[i]<<(i+1==textureManifestEntries.size()?"":",")<<"\n";mf<<"  },\n  \"audio\": {\n";for(size_t i=0;i<audioManifestEntries.size();++i)mf<<audioManifestEntries[i]<<(i+1==audioManifestEntries.size()?"":",")<<"\n";mf<<"  },\n  \"maps\": [],\n  \"rounds\": null\n}\n";mf.close();report.manifestPath=manifestFile.string();emitLog("[Importer] Manifest written: "+report.manifestPath);}if(progressCallback)progressCallback(1.0f,"Import complete.");report.success=true;emitLog("[Importer] Import completed successfully. Ready for "+options.targetPlatform+".");return report;}
 }
