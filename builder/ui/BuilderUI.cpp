@@ -894,6 +894,25 @@ bool BuilderUI::triggerImport() {
         return false;
     }
 
+    bool importedTextureFound = false;
+    const fs::path importedTextureDir = fs::path(options.outputDir) / "textures";
+    std::error_code textureEc;
+    if (fs::is_directory(importedTextureDir, textureEc)) {
+        for (fs::recursive_directory_iterator it(importedTextureDir, fs::directory_options::skip_permission_denied, textureEc), end;
+             it != end && !textureEc; it.increment(textureEc)) {
+            if (it->is_regular_file(textureEc)) {
+                importedTextureFound = true;
+                break;
+            }
+        }
+    }
+    if (!importedTextureFound) {
+        appendLog("[Pipeline Error] Importer completed without producing any texture files.");
+        appendLog("[Pipeline Error] The source may be unsupported or the asset conversion stage failed.");
+        appendLog("=========================================");
+        return false;
+    }
+
     try {
         const fs::path outputRounds = fs::path(options.outputDir) / "rounds" / "default_rounds.json";
         if (!fs::exists(outputRounds)) {
