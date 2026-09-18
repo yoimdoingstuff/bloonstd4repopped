@@ -65,7 +65,7 @@ std::string escapeJsonString(const std::string& value) {
     for (unsigned char c : value) {
         switch (c) {
             case '\\': out += "\\\\"; break;
-            case '"': out += "\\""; break;
+            case '"': out += "\\\""; break;
             case '\n': out += "\\n"; break;
             case '\r': out += "\\r"; break;
             case '\t': out += "\\t"; break;
