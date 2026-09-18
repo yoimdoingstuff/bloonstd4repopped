@@ -153,3 +153,17 @@ TEST_CASE(UpgradeSerializationRoundTripsEditorData) {
     TEST_ASSERT_EQ(loaded.upgrades[0].path, static_cast<uint8_t>(1));
     TEST_ASSERT_EQ(loaded.upgrades[0].effect.cost, 333);
 }
+
+
+TEST_CASE(TowerCyclesTargetingBothDirections) {
+    btd4::Tower tower(4, btd4::TowerType::DartMonkey, 0.0f, 0.0f);
+    TEST_ASSERT_EQ(tower.targetingMode(), btd4::TargetingMode::First);
+    tower.cycleTargetingMode();
+    TEST_ASSERT_EQ(tower.targetingMode(), btd4::TargetingMode::Last);
+    tower.cycleTargetingMode();
+    TEST_ASSERT_EQ(tower.targetingMode(), btd4::TargetingMode::Close);
+    tower.cycleTargetingModeBackward();
+    TEST_ASSERT_EQ(tower.targetingMode(), btd4::TargetingMode::Last);
+    tower.cycleTargetingModeBackward();
+    TEST_ASSERT_EQ(tower.targetingMode(), btd4::TargetingMode::First);
+}
