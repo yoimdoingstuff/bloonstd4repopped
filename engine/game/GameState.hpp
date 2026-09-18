@@ -6,6 +6,8 @@
 #include "Tower.hpp"
 #include "Projectile.hpp"
 #include "Economy.hpp"
+#include "Player.hpp"
+#include <array>
 #include "Rounds.hpp"
 #include "../map/Map.hpp"
 
@@ -42,8 +44,14 @@ public:
     ProjectilePool& projectilePool() { return m_projectilePool; }
     const ProjectilePool& projectilePool() const { return m_projectilePool; }
 
-    Economy& economy() { return m_economy; }
-    const Economy& economy() const { return m_economy; }
+    Economy& economy() { return m_players[0].economy(); }
+    const Economy& economy() const { return m_players[0].economy(); }
+
+    static constexpr size_t MAX_PLAYERS = Player::MaxPlayers;
+    Player& player(size_t index) { return m_players.at(index); }
+    const Player& player(size_t index) const { return m_players.at(index); }
+    std::array<Player, MAX_PLAYERS>& players() { return m_players; }
+    const std::array<Player, MAX_PLAYERS>& players() const { return m_players; }
 
     const std::vector<Tower>& towers() const { return m_towers; }
     std::vector<Tower>& towers() { return m_towers; }
@@ -74,7 +82,7 @@ private:
     BloonPool m_bloonPool;
     ProjectilePool m_projectilePool;
     std::vector<Tower> m_towers;
-    Economy m_economy;
+    std::array<Player, MAX_PLAYERS> m_players{};
     RoundScheduler m_rounds;
 
     uint32_t m_nextTowerId{1};
