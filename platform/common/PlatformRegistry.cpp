@@ -3,6 +3,7 @@
 #include "../windows/WindowsPlatform.hpp"
 #include "../psp/PSPBackend.hpp"
 #include "../xbox360/Xbox360Backend.hpp"
+#include "../future/FuturePlatformBackend.hpp"
 
 namespace btd4 {
 
@@ -17,6 +18,18 @@ PlatformRegistry::PlatformRegistry() {
     registerBackend(std::make_unique<WindowsPlatform>());
     registerBackend(std::make_unique<PSPBackend>());
     registerBackend(std::make_unique<Xbox360Backend>());
+    registerBackend(std::make_unique<FuturePlatformBackend>(
+        "PlayStation Vita",
+        "PlayStation Vita Future Target / VitaSDK / Native Package",
+        "VITASDK"));
+    registerBackend(std::make_unique<FuturePlatformBackend>(
+        "Android",
+        "Android Future Target / Android 4.0+ Compatible Build (planned)",
+        "ANDROID_NDK_HOME"));
+    registerBackend(std::make_unique<FuturePlatformBackend>(
+        "iOS",
+        "iOS Future Target / Jailbroken and legacy iOS 9-or-earlier build path (planned)",
+        "IOS_SDK"));
 }
 
 void PlatformRegistry::registerBackend(std::unique_ptr<PlatformBackend> backend) {
