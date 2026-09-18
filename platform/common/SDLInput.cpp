@@ -211,6 +211,18 @@ void SDLInput::updateCurrentActions() {
 void SDLInput::processEvent(const SDL_Event& event, const Viewport& viewport) {
     updateControllerDevice(event);
 
+    if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+        m_keyboardActions = 0;
+        m_pointerActions = 0;
+        m_controllerActions = 0;
+        m_keyDown.fill(false);
+        m_keyActionCounts.fill(0);
+        m_pointer.primaryDown = false;
+        m_pointer.secondaryDown = false;
+        updateCurrentActions();
+        return;
+    }
+
     if (event.type == SDL_KEYDOWN) {
         if (!event.key.repeat) {
             mapKey(event.key.keysym.sym, event.key.keysym.scancode, true);
