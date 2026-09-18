@@ -66,6 +66,7 @@ public:
     TargetingMode targetingMode() const { return m_targetingMode; }
     void setTargetingMode(TargetingMode mode) { m_targetingMode = mode; }
     void cycleTargetingMode();
+    void cycleTargetingModeBackward();
 
     int totalInvestedCost() const { return m_totalInvestedCost; }
     void addInvestedCost(int cost) { m_totalInvestedCost += cost; }
