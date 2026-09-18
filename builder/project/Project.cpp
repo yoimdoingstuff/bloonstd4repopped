@@ -238,12 +238,15 @@ bool Project::discoverSourceAssets(const std::string& directory) {
             m_config.sourceMobileIpa = (absoluteEc ? candidate : absolute).lexically_normal().string();
         }
     }
+    // Keep sourceIpa as the generic/backwards-compatible IPA slot even when
+    // the same file is also classified as a mobile/phone source.
+    // Specialized slots are additive rather than mutually exclusive.
     for (const auto& candidate : ipaCandidates) {
-        if (!nameContains(candidate, {"hd", "ipad", "tablet", "mobile", "phone", "iphone"}) &&
-            m_config.sourceIpa.empty()) {
+        if (m_config.sourceIpa.empty()) {
             std::error_code absoluteEc;
             const fs::path absolute = fs::absolute(candidate, absoluteEc);
             m_config.sourceIpa = (absoluteEc ? candidate : absolute).lexically_normal().string();
+            break;
         }
     }
 
@@ -272,20 +275,29 @@ bool Project::addSourceFile(const std::string& filepath) {
         return true;
     }
     if (hasExtension(path, ".ipa")) {
+        bool assigned = false;
         if (nameContains(path, {"hd", "ipad", "tablet"}) && m_config.sourceHdIpa.empty()) {
             m_config.sourceHdIpa = value;
-        } else if (nameContains(path, {"mobile", "phone", "iphone"}) && m_config.sourceMobileIpa.empty()) {
-            m_config.sourceMobileIpa = value;
-        } else if (m_config.sourceIpa.empty()) {
-            m_config.sourceIpa = value;
-        } else if (m_config.sourceHdIpa.empty()) {
-            m_config.sourceHdIpa = value;
-        } else if (m_config.sourceMobileIpa.empty()) {
-            m_config.sourceMobileIpa = value;
-        } else {
-            return false;
+            assigned = true;
         }
-        return true;
+        if (nameContains(path, {"mobile", "phone", "iphone"}) && m_config.sourceMobileIpa.empty()) {
+            m_config.sourceMobileIpa = value;
+            assigned = true;
+        }
+        if (m_config.sourceIpa.empty()) {
+            m_config.sourceIpa = value;
+            assigned = true;
+        }
+        if (assigned) return true;
+        if (m_config.sourceHdIpa.empty()) {
+            m_config.sourceHdIpa = value;
+            return true;
+        }
+        if (m_config.sourceMobileIpa.empty()) {
+            m_config.sourceMobileIpa = value;
+            return true;
+        }
+        return false;
     }
     return false;
 }
