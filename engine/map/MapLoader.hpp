@@ -9,4 +9,8 @@ namespace btd4 {
 bool parseMap(std::string_view json, Map& output, std::string& error);
 bool loadMap(const IFileSystem& files, const std::string& path,
              Map& output, std::string& error);
+
+// Serializes the internal versioned map format used by the runtime loader.
+std::string serializeMap(const Map& map);
+bool saveMap(const std::string& path, const Map& map, std::string& error);
 }
