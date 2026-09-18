@@ -596,7 +596,9 @@ MILESTONE 14: GAME BUILDER
 * [x]	Map editor
     Agent: builder
     Notes: Integrated visual map editor saves to the versioned internal map schema.
-* [ ]	Round editor
+* [x]	Round editor
+    Agent: builder
+    Notes: Builder edits bloon groups, timing, and path indexes and saves validated custom_rounds.json.
 * [ ]	Tower editor
 * [ ]	Upgrade editor
 * [ ]	Preview mode
