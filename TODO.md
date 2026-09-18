@@ -654,7 +654,9 @@ MILESTONE 16: MULTIPLAYER
 * [x]	Player state
     Agent: multiplayer
     Notes: Each player has an active flag and independent Economy state; player 0 remains the single-player compatibility slot.
-* [ ]	Multiple tower ownership
+* [x]	Multiple tower ownership
+    Agent: multiplayer
+    Notes: Towers carry an owner player ID; placement and selling use the owning player's economy.
 * [ ]	Shared economy mode
 * [ ]	Split economy mode
 * [ ]	Local multiplayer UI
