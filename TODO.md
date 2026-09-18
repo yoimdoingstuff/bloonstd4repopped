@@ -707,6 +707,50 @@ MILESTONE 17: XBOX 360
 
 ⸻
 
+MILESTONE 17A: MOBILE / HANDHELD TARGETS
+
+PlayStation Vita
+
+* [x] Vita backend skeleton
+    Notes: Registered as a future target only, matching the Xbox 360 backend stage.
+* [ ] Vita renderer
+* [ ] Vita input
+* [ ] Vita audio
+* [ ] Vita filesystem
+* [ ] Vita packaging
+* [ ] Vita deployment
+* [ ] Vita hardware / Vita3K validation
+
+Android
+
+* [x] Android backend skeleton
+    Notes: Registered as a future target only. The planned compatibility floor is Android 4.0-class devices.
+* [ ] Android renderer
+* [ ] Android input
+* [ ] Android audio
+* [ ] Android filesystem
+* [ ] Android packaging
+* [ ] Android 4.0 compatibility validation
+* [ ] Modern Android compatibility validation
+* [ ] APK / package signing
+
+iOS
+
+* [x] iOS backend skeleton
+    Notes: Registered as a future target only. Planned deployment includes jailbroken devices and legacy iOS 9-or-earlier targets.
+* [ ] iOS renderer
+* [ ] iOS input
+* [ ] iOS audio
+* [ ] iOS filesystem
+* [ ] iOS packaging
+* [ ] Jailbroken-device deployment
+* [ ] iOS 9-or-earlier compatibility validation
+* [ ] Legacy signing / installation workflow
+
+⸻
+
+⸻
+
 MILESTONE 18: PSP
 
 * [ ]	PSP renderer implementation
