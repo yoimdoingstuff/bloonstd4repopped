@@ -20,15 +20,59 @@ namespace fs = std::filesystem;
 
 namespace {
 
+bool isProjectRoot(const fs::path& candidate) {
+    std::error_code ec;
+    return fs::is_regular_file(candidate / "CMakeLists.txt", ec) &&
+           fs::is_regular_file(candidate / "engine" / "core" / "Engine.cpp", ec) &&
+           fs::is_regular_file(candidate / "platform" / "common" / "PlatformRegistry.cpp", ec);
+}
+
+void setSourceRootEnvironment(const fs::path& root) {
+#ifdef _WIN32
+    _putenv_s("BTD4_SOURCE_ROOT", root.string().c_str());
+#else
+    setenv("BTD4_SOURCE_ROOT", root.string().c_str(), 1);
+#endif
+}
+
 fs::path findProjectRoot() {
     std::error_code ec;
-    fs::path current = fs::current_path(ec);
-    if (ec) return {};
-    for (int i = 0; i < 10 && !current.empty(); ++i) {
-        if (fs::is_regular_file(current / "CMakeLists.txt", ec)) return current;
-        const fs::path parent = current.parent_path();
-        if (parent == current) break;
-        current = parent;
+
+    auto searchUpward = [&](fs::path current) -> fs::path {
+        current = current.lexically_normal();
+        for (int i = 0; i < 12 && !current.empty(); ++i) {
+            if (isProjectRoot(current)) return current;
+            const fs::path parent = current.parent_path();
+            if (parent == current) break;
+            current = parent;
+        }
+        return {};
+    };
+
+    if (const char* configuredRoot = std::getenv("BTD4_SOURCE_ROOT")) {
+        if (*configuredRoot) {
+            const fs::path candidate(configuredRoot);
+            if (isProjectRoot(candidate)) return candidate;
+        }
+    }
+
+    if (const char* builderRoot = std::getenv("BTD4_BUILDER_ROOT")) {
+        if (*builderRoot) {
+            const fs::path found = searchUpward(fs::path(builderRoot));
+            if (!found.empty()) {
+                setSourceRootEnvironment(found);
+                return found;
+            }
+        }
+    }
+
+    const fs::path current = fs::current_path(ec);
+    if (!ec) {
+        const fs::path found = searchUpward(current);
+        if (!found.empty()) {
+            setSourceRootEnvironment(found);
+            return found;
+        }
     }
     return {};
 }
