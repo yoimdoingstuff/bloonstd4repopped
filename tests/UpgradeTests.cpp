@@ -264,3 +264,29 @@ TEST_CASE(ActivePlayerSelection) {
     TEST_ASSERT(!simulation.setActivePlayer(3));
     TEST_ASSERT_EQ(simulation.activePlayerId(), static_cast<uint8_t>(1));
 }
+
+
+TEST_CASE(ProjectileExplosionDoesNotRehitSpawnedChildren) {
+    Map map("projectile-child-test");
+    Path path;
+    path.addWaypoint(0.0f, 0.0f);
+    path.addWaypoint(100.0f, 0.0f);
+    map.addPath(path);
+
+    BloonPool bloons;
+    ProjectilePool projectiles;
+    Bloon* parent = bloons.spawn(BloonType::Black, 0, 0.0f);
+    TEST_ASSERT(parent != nullptr);
+    parent->x = 20.0f;
+    parent->y = 20.0f;
+
+    Projectile* bomb = projectiles.spawn(
+        ProjectileType::Bomb, DamageType::Explosive,
+        20.0f, 20.0f, 1.0f, 0.0f,
+        0.0f, 1, 1, 40.0f, 1.0f);
+    TEST_ASSERT(bomb != nullptr);
+
+    const int cash = projectiles.update(0.016f, bloons, map);
+    TEST_ASSERT_EQ(cash, 1);
+    TEST_ASSERT_EQ(bloons.activeCount(), static_cast<size_t>(2));
+}
