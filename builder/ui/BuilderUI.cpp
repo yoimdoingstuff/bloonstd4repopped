@@ -70,6 +70,12 @@ void BuilderUI::initialize() {
 }
 
 void BuilderUI::appendLog(const std::string& line) {
+    constexpr std::size_t kMaxLogEntries = 5000;
+    constexpr std::size_t kTrimLogEntries = 1000;
+    if (m_logs.size() >= kMaxLogEntries) {
+        const auto trimCount = std::min(kTrimLogEntries, m_logs.size());
+        m_logs.erase(m_logs.begin(), m_logs.begin() + static_cast<std::ptrdiff_t>(trimCount));
+    }
     m_logs.push_back(line);
 }
 
