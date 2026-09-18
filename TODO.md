@@ -206,7 +206,9 @@ Controller System
 * [ ]	Controller enumeration
 * [ ]	Controller connection/disconnection detection
 * [ ]	Controller assignment
-* [ ]	Player-to-controller mapping
+* [x]	Player-to-controller mapping
+    Agent: multiplayer
+    Notes: MultiplayerSession assigns SDL-compatible controller instance IDs to active player slots with duplicate-assignment checks.
 * [ ]	Per-player input state
 * [ ]	Multiple simultaneous controllers
 * [ ]	Controller configuration
