@@ -11,6 +11,9 @@ struct ProjectConfig {
     std::string sourceDirectory{"assets"};
     std::string sourceSwf;
     std::string sourceIpa;
+    std::string sourceExpansionSwf;
+    std::string sourceHdIpa;
+    std::string sourceMobileIpa;
     std::string gameEdition{"BTD4 Flash"};
     bool enableMobileContent{false};
     std::string targetPlatform{"Linux"};
