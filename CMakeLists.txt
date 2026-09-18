@@ -71,7 +71,8 @@ add_library(btd4_engine STATIC
     engine/rendering/IRenderer.hpp engine/rendering/LogicalResolution.hpp engine/rendering/LogicalResolution.cpp
     engine/rendering/TestScreen.hpp engine/rendering/TestScreen.cpp engine/input/IInput.hpp
     engine/input/InputActions.hpp engine/input/FrontendProfile.hpp engine/map/Map.hpp engine/map/Map.cpp
-    engine/map/MapLoader.cpp engine/game/Bloon.hpp engine/game/Bloon.cpp engine/game/Projectile.hpp
+    engine/map/MapLoader.cpp engine/map/TrackEditor.hpp engine/map/TrackEditor.cpp
+    engine/game/Bloon.hpp engine/game/Bloon.cpp engine/game/Projectile.hpp
     engine/game/Projectile.cpp engine/game/Tower.hpp engine/game/Tower.cpp engine/game/TowerData.hpp
     engine/game/TowerData.cpp engine/game/Upgrade.hpp engine/game/Player.hpp engine/game/Player.cpp
     engine/game/MultiplayerSession.hpp engine/game/MultiplayerSession.cpp
