@@ -4,6 +4,7 @@
 #include "../map/MapEditor.hpp"
 #include "../round/RoundEditor.hpp"
 #include "../tower/TowerEditor.hpp"
+#include "../upgrade/UpgradeEditor.hpp"
 #include "../../platform/common/PlatformRegistry.hpp"
 #include <vector>
 #include <string>
@@ -28,6 +29,7 @@ private:
     MapEditor m_mapEditor;
     RoundEditor m_roundEditor;
     TowerEditor m_towerEditor;
+    UpgradeEditor m_upgradeEditor;
     std::vector<std::string> m_logs;
     bool m_autoScrollLogs{true};
     std::string m_lastSuccessfulImportKey;
