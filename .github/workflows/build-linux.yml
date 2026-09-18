@@ -31,12 +31,13 @@ jobs:
 
     - name: Package Artifacts
       run: |
-        mkdir -p package/bin/assets/placeholder/rounds package/bin/assets/placeholder/upgrades
+        mkdir -p package/bin/assets/placeholder/rounds package/bin/assets/placeholder/upgrades package/bin/assets/placeholder/towers
         cp build/btd4_game package/bin/
         cp build/btd4_builder package/bin/
         cp build/btd4_importer package/bin/
         cp assets/placeholder/rounds/default_rounds.json package/bin/assets/placeholder/rounds/default_rounds.json
         cp assets/placeholder/upgrades/default_upgrades.json package/bin/assets/placeholder/upgrades/default_upgrades.json
+        cp assets/placeholder/towers/default_towers.json package/bin/assets/placeholder/towers/default_towers.json
         tar -czf btd4-linux-x86_64.tar.gz -C package bin
 
     - name: Upload Linux Artifact
