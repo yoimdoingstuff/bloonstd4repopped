@@ -502,15 +502,21 @@ void BuilderUI::renderActionButtons() {
 }
 
 void BuilderUI::discoverAssets() {
-    const bool found = m_project.discoverSourceAssets();
+    bool found = m_project.hasValidSwf();
+    if (!found) {
+        found = m_project.discoverSourceAssets();
+    } else if (m_project.hasValidIpa()) {
+        appendLog("[Assets] Preserving project-configured source files.");
+    }
+
     std::strncpy(m_swfPathBuffer, m_project.config().sourceSwf.c_str(), sizeof(m_swfPathBuffer) - 1);
     m_swfPathBuffer[sizeof(m_swfPathBuffer) - 1] = '\0';
     std::strncpy(m_ipaPathBuffer, m_project.config().sourceIpa.c_str(), sizeof(m_ipaPathBuffer) - 1);
     m_ipaPathBuffer[sizeof(m_ipaPathBuffer) - 1] = '\0';
 
     if (found) {
-        appendLog("[Assets] Discovered source SWF: " + m_project.config().sourceSwf);
-        if (m_project.hasValidIpa()) appendLog("[Assets] Discovered optional IPA: " + m_project.config().sourceIpa);
+        appendLog("[Assets] Source SWF ready: " + m_project.config().sourceSwf);
+        if (m_project.hasValidIpa()) appendLog("[Assets] Optional IPA ready: " + m_project.config().sourceIpa);
     } else {
         appendLog("[Assets] No SWF found in " + m_project.config().sourceDirectory + ".");
     }
