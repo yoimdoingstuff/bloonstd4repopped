@@ -118,6 +118,9 @@ bool Project::discoverSourceAssets(const std::string& directory) {
     m_config.sourceDirectory = directory;
     m_config.sourceSwf.clear();
     m_config.sourceIpa.clear();
+    m_config.sourceExpansionSwf.clear();
+    m_config.sourceHdIpa.clear();
+    m_config.sourceMobileIpa.clear();
     if (directory.empty()) return false;
 
     std::error_code ec;
