@@ -140,7 +140,18 @@ int runStandaloneImporter(const fs::path& importer,
                            const std::string& targetPlatform,
                            std::string& outputLog) {
     const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
-    const fs::path logPath = fs::temp_directory_path() /
+    std::error_code tempEc;
+    fs::path tempRoot = fs::temp_directory_path(tempEc);
+    if (tempEc || tempRoot.empty()) {
+        tempRoot = projectRoot / "builds";
+        tempEc.clear();
+    }
+    fs::create_directories(tempRoot, tempEc);
+    if (tempEc) {
+        outputLog = "Could not create temporary importer log directory: " + tempEc.message();
+        return -1;
+    }
+    const fs::path logPath = tempRoot /
         ("btd4_builder_import_" + std::to_string(stamp) + ".log");
 
 #ifdef _WIN32
@@ -165,7 +176,7 @@ int runStandaloneImporter(const fs::path& importer,
     }
 
     std::vector<wchar_t> mutableCommand(commandLine.begin(), commandLine.end());
-    mutableCommand.push_back(L'\\0');
+    mutableCommand.push_back(L'\0');
 
     STARTUPINFOW startup{};
     startup.cb = sizeof(startup);
