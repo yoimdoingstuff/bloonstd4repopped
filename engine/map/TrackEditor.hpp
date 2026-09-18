@@ -3,6 +3,7 @@
 #include "Map.hpp"
 #include "../input/IInput.hpp"
 #include "../rendering/IRenderer.hpp"
+#include <array>
 #include <string>
 #include <vector>
 
@@ -17,14 +18,14 @@ public:
         Erase
     };
 
+    static constexpr int MaxPaths = 4;
+
     void open(const Map& sourceMap);
     void close();
 
     bool isOpen() const { return m_open; }
     const Map& map() const { return m_map; }
 
-    // Returns true when the editor requested a playable handoff. The caller
-    // owns applying the returned map to the active simulation.
     bool consumeApplyRequest(Map& outputMap);
 
     void update(const IInput& input, const PointerState& pointer);
@@ -41,13 +42,15 @@ private:
     bool m_applyRequested{false};
     Map m_map{"Track Editor"};
     Tool m_tool{Tool::Road};
-    int m_trackStyle{0};
-    std::string m_status{"Click a grid cell to start a track."};
+    int m_activePath{0};
+    uint8_t m_trackSet{0};
+    BloonDensity m_bloonDensity{BloonDensity::Normal};
+    std::string m_status{"Select a path and connect its edge entrance to an edge exit."};
     bool m_statusGood{true};
 
-    bool m_hasStart{false};
-    bool m_hasFinish{false};
-    std::vector<int> m_pathCells;
+    std::array<bool, MaxPaths> m_hasStart{};
+    std::array<bool, MaxPaths> m_hasFinish{};
+    std::array<std::vector<int>, MaxPaths> m_pathCells;
 
     bool isInsideGrid(float x, float y) const;
     int cellFromPointer(float x, float y) const;
@@ -58,6 +61,7 @@ private:
     bool isBoundaryCell(int cell) const;
     bool isAdjacent(int a, int b) const;
     int findCell(int x, int y) const;
+
     void rebuildMapFromCells();
     void rebuildCellsFromMap();
     bool setStartCell(int cell);
@@ -66,6 +70,7 @@ private:
     bool eraseCell(int cell);
     bool save();
     bool load();
+    bool validateCurrent() const;
     void setStatus(const std::string& text, bool good);
 };
 
