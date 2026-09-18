@@ -197,6 +197,24 @@ void inspectIpa(const std::string& path,
                     continue;
                 }
 
+                // Preserve the historical generic IPA output path for the
+                // primary/sourceIpa slot. Specialized phone/mobile/HD layers
+                // remain available under their layer-specific directories.
+                if(layerName == "phone"){
+                    const fs::path compatibilityTarget = outputDir/"mobile"/relative;
+                    if(compatibilityTarget != target){
+                        std::error_code compatibilityEc;
+                        fs::create_directories(compatibilityTarget.parent_path(), compatibilityEc);
+                        if(!compatibilityEc){
+                            fs::copy_file(target, compatibilityTarget,
+                                          fs::copy_options::overwrite_existing, compatibilityEc);
+                        }
+                        if(compatibilityEc){
+                            report.warnings.push_back("Could not create legacy IPA compatibility path: "+compatibilityTarget.string());
+                        }
+                    }
+                }
+
                 ++report.ipaFilesExtracted;
                 report.ipaBytesExtracted+=static_cast<uint64_t>(data.size());
                 if(++progressCounter%25==0){
