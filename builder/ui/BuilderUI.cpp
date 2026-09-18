@@ -108,11 +108,22 @@ std::wstring utf8ToWide(const std::string& value) {
 
 std::wstring quoteWindowsArg(const std::wstring& value) {
     std::wstring result = L"\\\"";
+    size_t backslashes = 0;
     for (wchar_t c : value) {
-        if (c == L'\\') result += L"\\\\";
-        else result += c;
+        if (c == L'\\\\') {
+            ++backslashes;
+        } else if (c == L'\\\"') {
+            result.append(backslashes * 2 + 1, L'\\\\');
+            result += L'\\\"';
+            backslashes = 0;
+        } else {
+            result.append(backslashes, L'\\\\');
+            result += c;
+            backslashes = 0;
+        }
     }
-    result += L"\\\"";
+    result.append(backslashes * 2, L'\\\\');
+    result += L'\\\"';
     return result;
 }
 #endif
