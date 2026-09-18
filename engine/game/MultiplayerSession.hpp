@@ -19,6 +19,10 @@ public:
     bool start(std::string& error);
     void stop();
 
+    bool assignController(uint8_t playerId, int32_t controllerInstanceId, std::string& error);
+    void unassignController(int32_t controllerInstanceId);
+    int playerForController(int32_t controllerInstanceId) const;
+
     bool active() const { return m_active; }
     uint8_t playerCount() const { return m_playerCount; }
     MultiplayerEconomyMode economyMode() const { return m_economyMode; }
