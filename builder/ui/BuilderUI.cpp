@@ -91,7 +91,18 @@ fs::path findWorkspaceRoot() {
 
     std::error_code ec;
     const fs::path current = fs::current_path(ec);
-    return ec ? fs::path{} : current.lexically_normal();
+    if (ec) return fs::path{};
+    const fs::path workspace = current.lexically_normal();
+#ifdef _WIN32
+    if (std::getenv("BTD4_BUILDER_ROOT") == nullptr) {
+        _putenv_s("BTD4_BUILDER_ROOT", workspace.string().c_str());
+    }
+#else
+    if (std::getenv("BTD4_BUILDER_ROOT") == nullptr) {
+        setenv("BTD4_BUILDER_ROOT", workspace.string().c_str(), 1);
+    }
+#endif
+    return workspace;
 }
 
 std::string fileFingerprint(const fs::path& path) {
@@ -407,7 +418,7 @@ void BuilderUI::renderSourceFilesSection() {
     if (editionIndex == 2) ImGui::TextDisabled("iPad HD release. Mobile-only maps/assets can be imported without replacing Flash content.");
 
     ImGui::Spacing();
-    ImGui::Text("Asset Folder:");
+    ImGui::Text("Source Asset Folder:");
     if (ImGui::InputText("##SourceDirectory", m_sourceDirectoryBuffer, sizeof(m_sourceDirectoryBuffer))) {
         m_project.config().sourceDirectory = m_sourceDirectoryBuffer;
     }
@@ -626,9 +637,9 @@ bool BuilderUI::validateProject() {
 }
 
 void BuilderUI::previewBuild() {
-    const fs::path projectRoot = findProjectRoot();
+    const fs::path projectRoot = findWorkspaceRoot();
     if (projectRoot.empty()) {
-        appendLog("[Preview Error] Could not locate the project root.");
+        appendLog("[Preview Error] Could not locate the builder workspace.");
         return;
     }
 
