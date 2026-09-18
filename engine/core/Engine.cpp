@@ -291,6 +291,19 @@ void Engine::frame(int windowWidth, int windowHeight) {
             }
         }
     }
+    if (m_selectedTowerId != 0 && m_input.isActionJustPressed(InputAction::NextTarget)) {
+        if (Tower* tower = m_simulation.findTower(m_selectedTowerId)) {
+            tower->cycleTargetingMode();
+            BTD4_LOG_INFO("Targeting mode advanced.");
+        }
+    }
+    if (m_selectedTowerId != 0 && m_input.isActionJustPressed(InputAction::PrevTarget)) {
+        if (Tower* tower = m_simulation.findTower(m_selectedTowerId)) {
+            tower->cycleTargetingModeBackward();
+            BTD4_LOG_INFO("Targeting mode reversed.");
+        }
+    }
+
     if (m_input.isActionJustPressed(InputAction::Upgrade)) applySelectedUpgrade(0);
     if (m_input.isActionJustPressed(InputAction::UpgradePath1)) applySelectedUpgrade(0);
     if (m_input.isActionJustPressed(InputAction::UpgradePath2)) applySelectedUpgrade(1);
