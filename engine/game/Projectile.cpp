@@ -83,6 +83,11 @@ int ProjectilePool::update(float deltaTime, BloonPool& bloonPool, const Map& map
 
     std::vector<Bloon*> activeBloons;
     bloonPool.getActiveBloons(activeBloons);
+    std::vector<uint32_t> activeBloonIds;
+    activeBloonIds.reserve(activeBloons.size());
+    for (const Bloon* bloon : activeBloons) {
+        if (bloon) activeBloonIds.push_back(bloon->id);
+    }
 
     for (auto& p : m_pool) {
         if (!p.active) {
@@ -109,8 +114,9 @@ int ProjectilePool::update(float deltaTime, BloonPool& bloonPool, const Map& map
         }
 
         // Check collision against active bloons
-        for (Bloon* b : activeBloons) {
-            if (!b->active || p.hasHitBloon(b->id)) {
+        for (uint32_t bloonId : activeBloonIds) {
+            Bloon* b = bloonPool.findById(bloonId);
+            if (!b || !b->active || p.hasHitBloon(bloonId)) {
                 continue;
             }
 
@@ -125,12 +131,13 @@ int ProjectilePool::update(float deltaTime, BloonPool& bloonPool, const Map& map
                 if (p.explosionRadius > 0.0f) {
                     // Area of effect explosion
                     float expRadiusSq = p.explosionRadius * p.explosionRadius;
-                    for (Bloon* target : activeBloons) {
-                        if (!target->active) continue;
+                    for (uint32_t targetId : activeBloonIds) {
+                        Bloon* target = bloonPool.findById(targetId);
+                        if (!target || !target->active) continue;
                         float edx = p.x - target->x;
                         float edy = p.y - target->y;
                         if ((edx * edx + edy * edy) <= expRadiusSq) {
-                            totalCashEarned += bloonPool.damageBloon(target->id, p.damage, p.damageType, map);
+                            totalCashEarned += bloonPool.damageBloon(targetId, p.damage, p.damageType, map);
                         }
                     }
                     p.pierce = 0; // Bombs explode and disappear
