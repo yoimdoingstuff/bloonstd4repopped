@@ -277,6 +277,15 @@ BuilderUI::BuilderUI() {
 }
 
 void BuilderUI::initialize() {
+    const fs::path projectRoot = findProjectRoot();
+    if (!projectRoot.empty()) {
+        const fs::path projectFile = projectRoot / "project.btd4proj";
+        std::error_code ec;
+        if (fs::is_regular_file(projectFile, ec) && m_project.loadFromFile(projectFile.string())) {
+            appendLog("[Project] Loaded configuration from " + projectFile.string());
+        }
+    }
+
     std::strncpy(m_sourceDirectoryBuffer, m_project.config().sourceDirectory.c_str(), sizeof(m_sourceDirectoryBuffer) - 1);
     m_sourceDirectoryBuffer[sizeof(m_sourceDirectoryBuffer) - 1] = '\0';
     std::strncpy(m_swfPathBuffer, m_project.config().sourceSwf.c_str(), sizeof(m_swfPathBuffer) - 1);
@@ -459,9 +468,27 @@ void BuilderUI::renderPlatformSection() {
 void BuilderUI::renderActionButtons() {
     ImGui::Separator();
 
-    if (ImGui::Button("Import Assets", ImVec2(130, 32))) triggerImport();
+    if (ImGui::Button("Load Project", ImVec2(110, 32))) {
+        const fs::path projectRoot = findProjectRoot();
+        const fs::path loadPath = projectRoot.empty() ? fs::path("project.btd4proj") : (projectRoot / "project.btd4proj");
+        if (m_project.loadFromFile(loadPath.string())) {
+            std::strncpy(m_sourceDirectoryBuffer, m_project.config().sourceDirectory.c_str(), sizeof(m_sourceDirectoryBuffer) - 1);
+            m_sourceDirectoryBuffer[sizeof(m_sourceDirectoryBuffer) - 1] = '\0';
+            std::strncpy(m_swfPathBuffer, m_project.config().sourceSwf.c_str(), sizeof(m_swfPathBuffer) - 1);
+            m_swfPathBuffer[sizeof(m_swfPathBuffer) - 1] = '\0';
+            std::strncpy(m_ipaPathBuffer, m_project.config().sourceIpa.c_str(), sizeof(m_ipaPathBuffer) - 1);
+            m_ipaPathBuffer[sizeof(m_ipaPathBuffer) - 1] = '\0';
+            m_lastSuccessfulImportKey.clear();
+            appendLog("[Project] Loaded configuration from " + loadPath.string());
+            discoverAssets();
+        } else {
+            appendLog("[Project] No readable project file found at " + loadPath.string());
+        }
+    }
     ImGui::SameLine();
-    if (ImGui::Button("Build Game", ImVec2(130, 32))) triggerBuild();
+    if (ImGui::Button("Import Assets", ImVec2(120, 32))) triggerImport();
+    ImGui::SameLine();
+    if (ImGui::Button("Build Game", ImVec2(120, 32))) triggerBuild();
     ImGui::SameLine();
     if (ImGui::Button("Save Project", ImVec2(110, 32))) {
         const fs::path projectRoot = findProjectRoot();
