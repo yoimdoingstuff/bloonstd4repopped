@@ -625,7 +625,9 @@ MILESTONE 15: MAP EDITOR
     Agent: builder
 * [x]	Map save/load
     Agent: builder
-* [ ]	Custom map packaging
+* [x]	Custom map packaging
+    Agent: builder
+    Notes: Builder-saved maps are copied into Playable/game_data/maps and loaded by the runtime before the built-in fallback map.
 
 ⸻
 
