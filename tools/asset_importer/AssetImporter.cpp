@@ -59,6 +59,15 @@ std::string nativeAssetAlias(const std::string& name){
     return {};
 }
 
+std::string detectLayerName(const std::string& path, const std::string& fallback) {
+    const std::string n = lower(path);
+    if (n.find("expansion") != std::string::npos) return "expansion";
+    if (n.find("hd") != std::string::npos || n.find("ipad") != std::string::npos) return "hd";
+    if (n.find("mobile") != std::string::npos || n.find("iphone") != std::string::npos || n.find("phone") != std::string::npos) return "mobile";
+    if (n.find("flash") != std::string::npos || n.find("swf") != std::string::npos) return "flash";
+    return fallback;
+}
+
 std::string escapeJsonString(const std::string& value) {
     std::string out;
     out.reserve(value.size() + 8);
