@@ -69,6 +69,7 @@ void SDLInput::mapKey(SDL_Keycode key, SDL_Scancode scancode, bool isDown) {
                 case SDLK_LEFT: action = InputAction::MoveLeft; break;
                 case SDLK_RIGHT: action = InputAction::MoveRight; break;
                 case SDLK_TAB: action = InputAction::NextTarget; break;
+                case SDLK_F2: action = InputAction::OpenTrackEditor; break;
                 case SDLK_1: action = InputAction::SelectTower1; break;
                 case SDLK_2: action = InputAction::SelectTower2; break;
                 case SDLK_3: action = InputAction::SelectTower3; break;
