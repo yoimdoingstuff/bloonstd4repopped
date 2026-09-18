@@ -13,6 +13,7 @@ public:
 
     void initialize();
     void render(const std::string& projectRoot);
+    const Map& map() const { return m_map; }
 
 private:
     enum class Tool {
