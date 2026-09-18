@@ -59,9 +59,38 @@ std::string nativeAssetAlias(const std::string& name){
     return {};
 }
 
-std::string escapeJsonString(const std::string& value){std::string out;out.reserve(value.size()+8);for(unsigned char c:value){switch(c){case '\\\\':out += "\\\\\\\\";break;case '\"':out += "\\\\\"";break;case '\\n':out += "\\\\n";break;case '\\r':out += "\\\\r";break;case '\\t':out += "\\\\t";break;default:if(c<0x20){const char* hex="0123456789abcdef";out += "\\\\u00";out += hex[(c>>4)&0xF];out += hex[c&0xF];}else{out += static_cast<char>(c);}}}return out;}
+std::string escapeJsonString(const std::string& value) {
+    std::string out;
+    out.reserve(value.size() + 8);
+    for (unsigned char c : value) {
+        switch (c) {
+            case '\\': out += "\\\\"; break;
+            case '"': out += "\\""; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default:
+                if (c < 0x20) {
+                    const char* hex = "0123456789abcdef";
+                    out += "\\u00";
+                    out += hex[(c >> 4) & 0xF];
+                    out += hex[c & 0xF];
+                } else {
+                    out += static_cast<char>(c);
+                }
+        }
+    }
+    return out;
+}
 
-void addManifestEntry(std::vector<std::string>& entries,std::unordered_set<std::string>& ids,const std::string& id,const std::string& path){if(id.empty()||!ids.insert(id).second)return;entries.push_back("    \\\""+escapeJsonString(id)+"\\\": \\\""+escapeJsonString(path)+"\\\"");}
+void addManifestEntry(std::vector<std::string>& entries,
+                      std::unordered_set<std::string>& ids,
+                      const std::string& id,
+                      const std::string& path) {
+    if (id.empty() || !ids.insert(id).second) return;
+    entries.push_back("    \"" + escapeJsonString(id) +
+                      "\": \"" + escapeJsonString(path) + "\"");
+}
 
 void inspectIpa(const std::string& path,ImportReport& report,const std::function<void(const std::string&)>& emitLog){
     if(path.empty()||!fs::exists(path))return;
