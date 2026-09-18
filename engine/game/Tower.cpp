@@ -1,4 +1,5 @@
 #include "Tower.hpp"
+#include "TowerData.hpp"
 #include "Upgrade.hpp"
 #include <cmath>
 #include <algorithm>
@@ -6,6 +7,10 @@
 namespace btd4 {
 
 TowerBaseStats getTowerBaseStats(TowerType type) {
+    for (const auto& definition : configuredTowerDefinitions().towers) {
+        if (definition.type == type) return definition.stats;
+    }
+
     TowerBaseStats stats;
     switch (type) {
         case TowerType::DartMonkey:
