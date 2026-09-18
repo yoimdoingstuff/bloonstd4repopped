@@ -54,6 +54,12 @@ std::string findImportedTextureId(const AssetManifest& manifest, const IRenderer
         if (lowered == token) score += 50;
         if (tokenPos == 0) score += 15;
         if (lowered.find(wanted) != std::string::npos) score += 30;
+        if (lowered.find("@hd") != std::string::npos)
+            score += (manifest.targetPlatform == "PSP" ? -40 : 35);
+        if (lowered.find("@phone") != std::string::npos || lowered.find("@mobile") != std::string::npos)
+            score += (manifest.targetPlatform == "PSP" ? 35 : 10);
+        if (lowered.find("@expansion") != std::string::npos)
+            score += 5;
         if (logicalId.rfind("projectile_", 0) == 0 &&
             (lowered.find("projectile") != std::string::npos || lowered.find("shot") != std::string::npos || lowered.find("bullet") != std::string::npos)) score += 20;
         if (logicalId.rfind("bloon_", 0) == 0 && lowered.find("bloon") != std::string::npos) score += 20;
