@@ -1,6 +1,9 @@
 #include "Rounds.hpp"
 #include "core/JsonReader.hpp"
 #include <utility>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 
 namespace btd4 {
 namespace {
@@ -95,4 +98,52 @@ bool loadRounds(const IFileSystem& files, const std::string& path, const Map& ma
     if (bytes.empty()) return parseRounds({}, map, output, error);
     return parseRounds(std::string_view(reinterpret_cast<const char*>(bytes.data()), bytes.size()), map, output, error);
 }
+}
+
+
+std::string btd4::serializeRounds(const btd4::RoundSet& rounds) {
+    static const char* const names[] = {
+        "none", "red", "blue", "green", "yellow", "pink",
+        "black", "white", "lead", "rainbow", "ceramic", "moab"
+    };
+
+    std::ostringstream out;
+    out << "{\n  \"version\": 1,\n  \"rounds\": [\n";
+    for (size_t r = 0; r < rounds.rounds.size(); ++r) {
+        out << "    {\n      \"groups\": [\n";
+        const auto& groups = rounds.rounds[r].groups;
+        for (size_t g = 0; g < groups.size(); ++g) {
+            const auto& group = groups[g];
+            out << "        {\"type\": \"" << names[static_cast<size_t>(group.type)]
+                << "\", \"count\": " << group.count
+                << ", \"spacing_ms\": " << group.spacingMs
+                << ", \"delay_ms\": " << group.delayMs
+                << ", \"path\": " << group.pathIndex << "}";
+            if (g + 1 < groups.size()) out << ",";
+            out << "\n";
+        }
+        out << "      ]\n    }";
+        if (r + 1 < rounds.rounds.size()) out << ",";
+        out << "\n";
+    }
+    out << "  ]\n}\n";
+    return out.str();
+}
+
+bool btd4::saveRounds(const std::string& path, const btd4::RoundSet& rounds,
+                      const btd4::Map& map, std::string& error) {
+    error.clear();
+    if (!btd4::validateRounds(rounds, map, error)) return false;
+    std::ofstream out(path, std::ios::binary);
+    if (!out.is_open()) {
+        error = "Cannot write rounds: " + path;
+        return false;
+    }
+    const std::string json = btd4::serializeRounds(rounds);
+    out.write(json.data(), static_cast<std::streamsize>(json.size()));
+    if (!out.good()) {
+        error = "Failed while writing rounds: " + path;
+        return false;
+    }
+    return true;
 }
