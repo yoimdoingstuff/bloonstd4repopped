@@ -1,5 +1,6 @@
 #include "SDLRenderer.hpp"
 #include "../../engine/core/Logger.hpp"
+#include <SDL_image.h>
 #include <algorithm>
 #include <cmath>
 
@@ -353,7 +354,7 @@ bool SDLRenderer::loadTexture(const std::string& key, const std::string& filePat
     if (!m_renderer) {
         return false;
     }
-    SDL_Surface* surface = SDL_LoadBMP(filePath.c_str());
+    SDL_Surface* surface = IMG_Load(filePath.c_str());
     if (!surface) {
         BTD4_LOG_WARN("Failed to load image at " + filePath + ": " + SDL_GetError());
         return false;
