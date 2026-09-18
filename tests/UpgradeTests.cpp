@@ -1,4 +1,5 @@
 #include "TestRunner.hpp"
+#include "game/TowerData.hpp"
 #include "game/Upgrade.hpp"
 
 using namespace btd4;
