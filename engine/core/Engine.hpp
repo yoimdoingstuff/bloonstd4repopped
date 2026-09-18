@@ -11,6 +11,7 @@
 #include "../game/GameState.hpp"
 #include "../game/Upgrade.hpp"
 #include "../assets/AssetManager.hpp"
+#include "../map/TrackEditor.hpp"
 
 namespace btd4 {
 
@@ -50,6 +51,7 @@ private:
     TestScreen m_testScreen;
     GameSimulation m_simulation;
     UpgradeSet m_upgrades;
+    TrackEditor m_trackEditor;
 
     Viewport m_viewport;
     bool m_running{false};
