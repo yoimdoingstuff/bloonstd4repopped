@@ -9,8 +9,10 @@ public:
     static constexpr int LOGICAL_WIDTH = 480;
     static constexpr int LOGICAL_HEIGHT = 272;
     static constexpr float ASPECT_RATIO = static_cast<float>(LOGICAL_WIDTH) / static_cast<float>(LOGICAL_HEIGHT);
+    // The game world keeps its historical coordinate space, but desktop can
+    // render at any resolution. PSP alone opts into strict 480x272 output.
 
-    static Viewport calculateViewport(int windowWidth, int windowHeight);
+    static Viewport calculateViewport(int windowWidth, int windowHeight, bool preserveLogicalAspect = false);
 
     // Screen pixel (e.g. mouse cursor) to logical coordinate (0..480, 0..272)
     static bool screenToLogical(int screenX, int screenY, const Viewport& viewport, float& outLogicalX, float& outLogicalY);
