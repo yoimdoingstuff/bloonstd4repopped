@@ -145,6 +145,7 @@ bool Project::addSourceFile(const std::string& filepath) {
     const std::string value = (ec ? path : absolute).lexically_normal().string();
     if (hasExtension(path, ".swf")) {
         if (m_config.sourceSwf.empty()) m_config.sourceSwf = value;
+        else if (m_config.sourceExpansionSwf.empty()) m_config.sourceExpansionSwf = value;
         return true;
     }
     if (hasExtension(path, ".ipa")) {
