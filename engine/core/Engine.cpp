@@ -5,6 +5,7 @@
 #include <cmath>
 #include <filesystem>
 #include <algorithm>
+#include <utility>
 
 namespace btd4 {
 
@@ -97,6 +98,17 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
     m_simulation.setState(GameStateType::Playing);
 
     std::string roundErr;
+    std::string upgradeErr;
+    const std::string importedUpgrades = runtimeDataDir.empty() ? std::string{} : runtimeDataDir + "/upgrades/default_upgrades.json";
+    const std::string placeholderUpgrades = "assets/placeholder/upgrades/default_upgrades.json";
+    bool loadedImportedUpgrades = !importedUpgrades.empty() && loadUpgrades(fs, importedUpgrades, m_upgrades, upgradeErr);
+    if (loadedImportedUpgrades || loadUpgrades(fs, placeholderUpgrades, m_upgrades, upgradeErr)) {
+        BTD4_LOG_INFO(std::string("Loaded ") + (loadedImportedUpgrades ? "imported" : "fallback") + " upgrade definitions (" + std::to_string(m_upgrades.upgrades.size()) + ").");
+    } else {
+        m_upgrades.upgrades.clear();
+        BTD4_LOG_WARN("Upgrade data unavailable: " + upgradeErr);
+    }
+
     RoundSet roundSet;
     const std::string manifestRounds = manifest.roundsFile.empty()
         ? std::string{}
@@ -141,6 +153,31 @@ void Engine::startNextRound() { if (!m_simulation.roundActive()) m_simulation.st
 void Engine::selectTowerType(TowerType type) { m_hasPlacement = true; m_placementType = type; }
 void Engine::cancelPlacement() { m_hasPlacement = false; }
 
+bool Engine::applySelectedUpgrade(uint8_t path) {
+    Tower* tower = m_simulation.findTower(m_selectedTowerId);
+    if (!tower) {
+        BTD4_LOG_WARN("Upgrade requested without a selected tower.");
+        return false;
+    }
+    const uint8_t tier = static_cast<uint8_t>(tower->upgradeTier(path) + 1);
+    const UpgradeDefinition* definition = findUpgrade(m_upgrades, tower->type(), path, tier);
+    if (!definition) {
+        BTD4_LOG_INFO("No further upgrades are defined for this path.");
+        return false;
+    }
+    if (!m_simulation.economy().spendCash(definition->effect.cost)) {
+        BTD4_LOG_INFO("Cannot afford upgrade: " + definition->displayName);
+        return false;
+    }
+    if (!tower->applyUpgrade(definition->effect, path, tier)) {
+        m_simulation.economy().addCash(definition->effect.cost);
+        BTD4_LOG_WARN("Upgrade application failed; purchase was refunded.");
+        return false;
+    }
+    BTD4_LOG_INFO("Purchased " + definition->displayName + " for $" + std::to_string(definition->effect.cost) + ".");
+    return true;
+}
+
 void Engine::frame(int windowWidth, int windowHeight) {
     (void)windowWidth; (void)windowHeight;
     if (!m_running) return;
@@ -161,12 +198,14 @@ void Engine::frame(int windowWidth, int windowHeight) {
 
     if (m_input.isActionJustPressed(InputAction::Confirm)) {
         if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f) {
-            const int idx = static_cast<int>((ptr.logicalY - 22.0f) / 40.0f);
+            const int idx = static_cast<int>((ptr.logicalY - 22.0f) / 36.0f);
             if (idx >= 0 && idx < 6) {
-                static const TowerType tts[] = {TowerType::DartMonkey, TowerType::TackShooter,
-                    TowerType::BombTower, TowerType::BoomerangThrower, TowerType::SniperMonkey, TowerType::SuperMonkey};
+                static const TowerType tts[] = {TowerType::DartMonkey, TowerType::TackShooter, TowerType::BombTower,
+                    TowerType::BoomerangThrower, TowerType::SniperMonkey, TowerType::SuperMonkey};
                 selectTowerType(tts[idx]);
             }
+        } else if (m_selectedTowerId != 0 && ptr.logicalX < 400.0f && ptr.logicalY >= 28.0f && ptr.logicalY < 76.0f) {
+            applySelectedUpgrade(ptr.logicalX < 200.0f ? 0 : 1);
         } else if (ptr.logicalX < 400.0f) {
             if (m_hasPlacement) {
                 if (m_simulation.placeTower(m_placementType, ptr.logicalX, ptr.logicalY)) cancelPlacement();
@@ -180,10 +219,15 @@ void Engine::frame(int windowWidth, int windowHeight) {
             }
         }
     }
-    if (m_input.isActionJustPressed(InputAction::Upgrade) && m_selectedTowerId != 0)
-        BTD4_LOG_INFO("Upgrade requested for selected tower.");
-    if (m_input.isActionJustPressed(InputAction::Sell) && m_selectedTowerId != 0)
-        BTD4_LOG_INFO("Sell requested for selected tower.");
+    if (m_input.isActionJustPressed(InputAction::Upgrade)) applySelectedUpgrade(0);
+    if (m_input.isActionJustPressed(InputAction::UpgradePath1)) applySelectedUpgrade(0);
+    if (m_input.isActionJustPressed(InputAction::UpgradePath2)) applySelectedUpgrade(1);
+    if (m_input.isActionJustPressed(InputAction::Sell) && m_selectedTowerId != 0) {
+        if (m_simulation.sellTower(m_selectedTowerId)) {
+            m_selectedTowerId = 0;
+            m_hasPlacement = false;
+        }
+    }
     if (m_input.isActionJustPressed(InputAction::Cancel)) { cancelPlacement(); m_selectedTowerId = 0; }
     if (m_input.isActionJustPressed(InputAction::Pause)) {
         if (m_simulation.state() == GameStateType::Paused) m_simulation.resume();
@@ -216,6 +260,36 @@ void Engine::frame(int windowWidth, int windowHeight) {
         for (const auto& proj : m_simulation.projectilePool().allProjectiles()) if (proj.active) AssetManager::instance().drawProjectile(m_renderer, proj);
         AssetManager::instance().drawHUD(m_renderer, m_simulation.economy(), m_simulation.currentRound(),
             m_simulation.completedRounds() + (m_simulation.roundActive() ? 1 : 0), m_clock.fps(), m_placementType, m_hasPlacement);
+        if (Tower* selectedTower = m_simulation.findTower(m_selectedTowerId)) {
+            const auto towerLabel = [](TowerType type) {
+                switch (type) {
+                    case TowerType::DartMonkey: return std::string("DART MONKEY");
+                    case TowerType::TackShooter: return std::string("TACK SHOOTER");
+                    case TowerType::SniperMonkey: return std::string("SNIPER");
+                    case TowerType::BoomerangThrower: return std::string("BOOMERANG");
+                    case TowerType::BombTower: return std::string("BOMB TOWER");
+                    case TowerType::SuperMonkey: return std::string("SUPER MONKEY");
+                    default: return std::string("TOWER");
+                }
+            };
+            m_renderer.drawRect(4.0f, 26.0f, 392.0f, 48.0f, {0, 0, 0, 215}, true);
+            m_renderer.drawRect(4.0f, 26.0f, 392.0f, 48.0f, Color::cyan(), false);
+            m_renderer.drawText(towerLabel(selectedTower->type()), 10.0f, 30.0f, 1.0f, Color::white());
+            for (uint8_t path = 0; path < 2; ++path) {
+                const uint8_t nextTier = static_cast<uint8_t>(selectedTower->upgradeTier(path) + 1);
+                const UpgradeDefinition* upgrade = findUpgrade(m_upgrades, selectedTower->type(), path, nextTier);
+                const float x = path == 0 ? 10.0f : 204.0f;
+                const std::string key = path == 0 ? "Q " : "E ";
+                if (!upgrade) {
+                    m_renderer.drawText(key + "MAX", x, 50.0f, 1.0f, {130,130,130,255});
+                } else {
+                    const bool affordable = m_simulation.economy().canAfford(upgrade->effect.cost);
+                    const Color color = affordable ? Color::yellow() : Color::red();
+                    m_renderer.drawText(key + upgrade->displayName, x, 50.0f, 1.0f, color);
+                    m_renderer.drawText("$" + std::to_string(upgrade->effect.cost), x + 150.0f, 50.0f, 1.0f, color);
+                }
+            }
+        }
         if (m_frontendProfile != FrontendProfile::FlashDesktop) m_renderer.drawRect(ptr.logicalX - 4.0f, ptr.logicalY - 4.0f, 8.0f, 8.0f, Color::white(), false);
         if (!m_simulation.roundActive() && m_simulation.state() == GameStateType::Playing) {
             m_renderer.drawRect(108.0f, 228.0f, 184.0f, 30.0f, {0, 0, 0, 185}, true);
