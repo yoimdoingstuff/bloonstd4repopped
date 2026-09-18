@@ -278,6 +278,7 @@ BuilderUI::BuilderUI() {
 
 void BuilderUI::initialize() {
     m_mapEditor.initialize();
+    m_roundEditor.initialize();
     const fs::path projectRoot = findProjectRoot();
     if (!projectRoot.empty()) {
         const fs::path projectFile = projectRoot / "project.btd4proj";
@@ -344,7 +345,10 @@ void BuilderUI::render() {
         ImGui::Spacing();
         renderPlatformSection();
         ImGui::Spacing();
-        m_mapEditor.render(findProjectRoot().string());
+        const fs::path projectRoot = findProjectRoot();
+        m_mapEditor.render(projectRoot.string());
+        ImGui::Spacing();
+        m_roundEditor.render(projectRoot.string(), m_mapEditor.map());
         ImGui::Spacing();
         renderActionButtons();
 
