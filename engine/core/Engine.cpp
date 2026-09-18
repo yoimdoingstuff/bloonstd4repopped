@@ -296,40 +296,40 @@ void Engine::frame(int windowWidth, int windowHeight) {
     if (m_input.isActionJustPressed(InputAction::StartRound)) startNextRound();
 
     if (m_input.isActionJustPressed(InputAction::Confirm)) {
-        if (ptr.logicalX >= 108.0f && ptr.logicalX <= 292.0f &&
-            ptr.logicalY >= 228.0f && ptr.logicalY <= 258.0f &&
+        if (ptr.logicalX >= 8.0f && ptr.logicalX <= 158.0f &&
+            ptr.logicalY >= 236.0f && ptr.logicalY <= 266.0f &&
             !m_simulation.roundActive()) {
             startNextRound();
-        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY < 22.0f) {
+        } else if (ptr.logicalX >= 368.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 224.0f && ptr.logicalY < 244.0f) {
             if (!m_simulation.roundActive()) {
                 m_trackEditor.open(m_simulation.map());
             } else {
                 BTD4_LOG_INFO("Track Editor can only be opened between rounds.");
             }
-        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY >= 22.0f && ptr.logicalY < 202.0f) {
-            const int idx = static_cast<int>((ptr.logicalY - 22.0f) / 36.0f);
+        } else if (ptr.logicalX >= 368.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 50.0f && ptr.logicalY < 225.0f) {
+            const int idx = static_cast<int>((ptr.logicalY - 50.0f) / 35.0f);
             if (idx >= 0 && idx < 5) {
                 static const TowerType tts[] = {TowerType::DartMonkey, TowerType::TackShooter, TowerType::BombTower,
                     TowerType::BoomerangThrower, TowerType::SuperMonkey};
                 selectTowerType(tts[idx]);
             }
-        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY >= 202.0f && ptr.logicalY < 222.0f) {
+        } else if (ptr.logicalX >= 368.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 224.0f && ptr.logicalY < 244.0f) {
             if (m_selectedTowerId != 0) {
                 if (Tower* tower = m_simulation.findTower(m_selectedTowerId)) {
                     tower->cycleTargetingMode();
                 }
             }
-        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY >= 222.0f && ptr.logicalY < 242.0f) {
+        } else if (ptr.logicalX >= 368.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 247.0f) {
             if (m_selectedTowerId != 0 && m_simulation.sellTower(m_selectedTowerId)) {
                 m_selectedTowerId = 0;
                 m_hasPlacement = false;
             }
-        } else if (ptr.logicalX >= 404.0f && ptr.logicalX <= 476.0f && ptr.logicalY >= 242.0f) {
+        } else if (ptr.logicalX >= 8.0f && ptr.logicalX <= 158.0f && ptr.logicalY >= 236.0f) {
             if (m_simulation.state() == GameStateType::Paused) m_simulation.resume();
             else if (m_simulation.state() == GameStateType::Playing) m_simulation.pause();
-        } else if (m_selectedTowerId != 0 && ptr.logicalX < 400.0f &&
-                   ptr.logicalY >= 48.0f && ptr.logicalY < 76.0f) {
-            applySelectedUpgrade(ptr.logicalX < 200.0f ? 0 : 1);
+        } else if (m_selectedTowerId != 0 && ptr.logicalX >= 168.0f && ptr.logicalX < 362.0f &&
+                   ptr.logicalY >= 236.0f && ptr.logicalY < 266.0f) {
+            applySelectedUpgrade(ptr.logicalX < 265.0f ? 0 : 1);
         } else if (ptr.logicalX < 400.0f) {
             if (m_hasPlacement) {
                 if (m_simulation.placeTower(m_placementType, ptr.logicalX, ptr.logicalY)) cancelPlacement();
@@ -412,27 +412,27 @@ void Engine::frame(int windowWidth, int windowHeight) {
                     default: return std::string("TOWER");
                 }
             };
-            m_renderer.drawRect(4.0f, 26.0f, 392.0f, 48.0f, {0, 0, 0, 215}, true);
-            m_renderer.drawRect(4.0f, 26.0f, 392.0f, 48.0f, Color::cyan(), false);
-            m_renderer.drawText(towerLabel(selectedTower->type()), 10.0f, 30.0f, 1.0f, Color::white());
+            m_renderer.drawRect(4.0f, 32.0f, 356.0f, 38.0f, {0, 0, 0, 215}, true);
+            m_renderer.drawRect(4.0f, 32.0f, 356.0f, 38.0f, Color::cyan(), false);
+            m_renderer.drawText(towerLabel(selectedTower->type()), 10.0f, 37.0f, 1.0f, Color::white());
             const char* targetingLabel = selectedTower->targetingMode() == TargetingMode::First ? "FIRST"
                 : (selectedTower->targetingMode() == TargetingMode::Last ? "LAST"
                 : (selectedTower->targetingMode() == TargetingMode::Close ? "CLOSE" : "STRONG"));
-            m_renderer.drawText("TARGET: " + std::string(targetingLabel), 260.0f, 30.0f, 1.0f, Color::cyan());
+            m_renderer.drawText("TARGET: " + std::string(targetingLabel), 220.0f, 37.0f, 1.0f, Color::cyan());
             for (uint8_t path = 0; path < 2; ++path) {
                 const uint8_t nextTier = static_cast<uint8_t>(selectedTower->upgradeTier(path) + 1);
                 const UpgradeDefinition* upgrade = findUpgrade(m_upgrades, selectedTower->type(), path, nextTier);
-                const float x = path == 0 ? 10.0f : 204.0f;
+                const float x = path == 0 ? 174.0f : 271.0f;
                 const float buttonX = path == 0 ? 4.0f : 200.0f;
-                m_renderer.drawRect(buttonX, 48.0f, 192.0f, 24.0f, {35, 45, 55, 255}, true);
-                m_renderer.drawRect(buttonX, 48.0f, 192.0f, 24.0f, {80, 80, 80, 255}, false);
+                m_renderer.drawRect(buttonX == 4.0f ? 168.0f : 265.0f, 236.0f, 92.0f, 30.0f, {35, 45, 55, 255}, true);
+                m_renderer.drawRect(buttonX == 4.0f ? 168.0f : 265.0f, 236.0f, 92.0f, 30.0f, {80, 80, 80, 255}, false);
                 if (!upgrade) {
-                    m_renderer.drawText("UPGRADE " + std::to_string(path + 1) + ": MAX", x, 53.0f, 1.0f, {130,130,130,255});
+                    m_renderer.drawText("UPG " + std::to_string(path + 1) + ": MAX", x, 245.0f, 0.8f, {130,130,130,255});
                 } else {
                     const bool affordable = m_simulation.economy().canAfford(upgrade->effect.cost);
                     const Color color = affordable ? Color::yellow() : Color::red();
-                    m_renderer.drawText("UPGRADE " + std::to_string(path + 1), x, 53.0f, 1.0f, color);
-                    m_renderer.drawText("$" + std::to_string(upgrade->effect.cost), x + 130.0f, 53.0f, 1.0f, color);
+                    m_renderer.drawText("UPG " + std::to_string(path + 1), x, 245.0f, 0.8f, color);
+                    m_renderer.drawText("$" + std::to_string(upgrade->effect.cost), x + 45.0f, 245.0f, 0.8f, color);
                 }
             }
         }
