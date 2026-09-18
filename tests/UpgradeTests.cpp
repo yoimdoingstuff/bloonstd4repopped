@@ -124,3 +124,32 @@ TEST_CASE(TowerDefinitionsOverrideBuiltinStats) {
     TEST_ASSERT_EQ(btd4::getTowerBaseStats(btd4::TowerType::DartMonkey).cost, 999);
     btd4::configureTowerDefinitions(btd4::TowerSet{});
 }
+
+
+TEST_CASE(UpgradeSerializationRoundTripsEditorData) {
+    btd4::UpgradeSet source;
+    btd4::UpgradeDefinition upgrade;
+    upgrade.id = "custom_shots";
+    upgrade.tower = btd4::TowerType::DartMonkey;
+    upgrade.path = 1;
+    upgrade.tier = 2;
+    upgrade.displayName = "Custom Shots";
+    upgrade.effect.cost = 333;
+    upgrade.effect.rangeAdd = 12.5f;
+    upgrade.effect.cooldownMultiplier = 0.75f;
+    upgrade.effect.damageAdd = 2;
+    upgrade.effect.pierceAdd = 3;
+    upgrade.effect.projectileSpeedMultiplier = 1.25f;
+    upgrade.effect.explosionRadiusAdd = 4.0f;
+    source.upgrades.push_back(upgrade);
+
+    const std::string json = btd4::serializeUpgrades(source);
+    btd4::UpgradeSet loaded;
+    std::string error;
+    TEST_ASSERT(btd4::parseUpgrades(json, loaded, error));
+    TEST_ASSERT(error.empty());
+    TEST_ASSERT_EQ(loaded.upgrades.size(), size_t(1));
+    TEST_ASSERT_EQ(loaded.upgrades[0].displayName, "Custom Shots");
+    TEST_ASSERT_EQ(loaded.upgrades[0].path, static_cast<uint8_t>(1));
+    TEST_ASSERT_EQ(loaded.upgrades[0].effect.cost, 333);
+}
