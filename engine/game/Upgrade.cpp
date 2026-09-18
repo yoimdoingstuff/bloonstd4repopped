@@ -208,8 +208,7 @@ const UpgradeDefinition* findUpgrade(const UpgradeSet& upgrades,
     return nullptr;
 }
 
-} // namespace btd4
-
+namespace btd4 {
 
 std::string serializeUpgrades(const UpgradeSet& upgrades) {
     std::ostringstream out;
