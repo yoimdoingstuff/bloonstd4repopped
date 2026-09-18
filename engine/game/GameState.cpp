@@ -6,17 +6,27 @@ namespace btd4 {
 
 GameSimulation::GameSimulation()
     : m_state(GameStateType::MainMenu) {
+    for (size_t i = 0; i < m_players.size(); ++i)
+        m_players[i] = Player(static_cast<uint8_t>(i), "Player " + std::to_string(i + 1));
+    m_players[0].setActive(true);
+    for (size_t i = 1; i < m_players.size(); ++i) m_players[i].setActive(false);
 }
 
 GameSimulation::GameSimulation(Map map)
     : m_state(GameStateType::Playing), m_map(std::move(map)) {
+    for (size_t i = 0; i < m_players.size(); ++i)
+        m_players[i] = Player(static_cast<uint8_t>(i), "Player " + std::to_string(i + 1));
+    for (size_t i = 1; i < m_players.size(); ++i) m_players[i].setActive(false);
 }
 
 void GameSimulation::reset() {
     m_bloonPool.clear();
     m_projectilePool.clear();
     m_towers.clear();
-    m_economy.reset();
+    for (size_t i = 0; i < m_players.size(); ++i) {
+        m_players[i].reset();
+        m_players[i].setActive(i == 0);
+    }
     m_rounds.reset();
     m_state = GameStateType::Playing;
     m_nextTowerId = 1;
