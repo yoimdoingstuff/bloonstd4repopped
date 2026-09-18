@@ -152,6 +152,17 @@ BuildResult WindowsPlatform::package(const std::string& gameEdition){
         r.outputLogs.push_back("[Windows Error] "+r.message);return r;
     }
 
+    const fs::path fallbackAssets = packageDir / "assets" / "placeholder";
+    const fs::path sourceFallbackAssets = root / "assets" / "placeholder";
+    if(fs::exists(sourceFallbackAssets, ec)){
+        fs::create_directories(fallbackAssets, ec);
+        if(ec){r.message="Could not create fallback asset directory: "+ec.message();return r;}
+        fs::copy(sourceFallbackAssets, fallbackAssets,
+                 fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+        if(ec){r.message="Could not package fallback assets: "+ec.message();return r;}
+        r.outputLogs.push_back("[Windows] Packaged placeholder rounds/upgrades for runtime fallback.");
+    }
+
     const fs::path possibleDlls[]={root/"SDL2.dll",cmakeDir/"SDL2.dll",cmakeDir/"Release"/"SDL2.dll",cmakeDir/"Debug"/"SDL2.dll"};
     for(const auto& dll:possibleDlls)if(fs::exists(dll,ec)){fs::copy_file(dll,packageDir/dll.filename(),fs::copy_options::overwrite_existing,ec);if(!ec){r.outputLogs.push_back("[Windows] Packaged "+dll.filename().string());break;}}
     r.success=true;
