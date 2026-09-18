@@ -85,12 +85,12 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
     }
 
     if (!loadedImportedMap && !runtimeDataDir.empty()) {
-        namespace fs = std::filesystem;
+        namespace stdfs = std::filesystem;
         std::error_code mapEc;
-        const fs::path customMapDir = fs::path(runtimeDataDir) / "maps";
-        if (fs::is_directory(customMapDir, mapEc)) {
-            std::vector<fs::path> customMaps;
-            for (fs::directory_iterator it(customMapDir, fs::directory_options::skip_permission_denied, mapEc), end;
+        const stdfs::path customMapDir = stdfs::path(runtimeDataDir) / "maps";
+        if (stdfs::is_directory(customMapDir, mapEc)) {
+            std::vector<stdfs::path> customMaps;
+            for (stdfs::directory_iterator it(customMapDir, stdfs::directory_options::skip_permission_denied, mapEc), end;
                  it != end && !mapEc; it.increment(mapEc)) {
                 if (it->is_regular_file(mapEc) && it->path().extension() == ".json") {
                     customMaps.push_back(it->path());
