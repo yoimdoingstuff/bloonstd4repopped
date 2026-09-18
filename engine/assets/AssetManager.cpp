@@ -167,3 +167,5 @@ void AssetManager::drawHUD(IRenderer& renderer,const Economy& economy,int curren
     renderer.drawRect(404,242,72,28,Color::green(),false);
     renderer.drawText("PAUSE",424,249,1,Color::white());
 }
+
+} // namespace btd4

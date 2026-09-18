@@ -207,39 +207,48 @@ bool Project::discoverSourceAssets(const std::string& directory) {
     m_config.sourceHdIpa.clear();
     m_config.sourceMobileIpa.clear();
 
-    // Prefer the non-expansion SWF as the base game. A plain lexical sort can
-    // put "Expansion" before the normal BTD4 SWF.
     for (const auto& candidate : swfCandidates) {
-        if (!nameContains(candidate, {"expansion", "exp"})) {
-            addSourceFile(candidate.string());
-            if (!m_config.sourceSwf.empty()) break;
+        if (!nameContains(candidate, {"expansion", "_exp", "-exp"})) {
+            std::error_code absoluteEc;
+            const fs::path absolute = fs::absolute(candidate, absoluteEc);
+            m_config.sourceSwf = (absoluteEc ? candidate : absolute).lexically_normal().string();
+            break;
         }
     }
     for (const auto& candidate : swfCandidates) {
-        if (nameContains(candidate, {"expansion", "exp"})) {
-            addSourceFile(candidate.string());
-            if (!m_config.sourceExpansionSwf.empty()) break;
+        if (nameContains(candidate, {"expansion", "_exp", "-exp"})) {
+            std::error_code absoluteEc;
+            const fs::path absolute = fs::absolute(candidate, absoluteEc);
+            m_config.sourceExpansionSwf = (absoluteEc ? candidate : absolute).lexically_normal().string();
+            break;
         }
-    }
-    for (const auto& candidate : swfCandidates) {
-        addSourceFile(candidate.string());
     }
 
-    // Use filename hints for mobile packages when available. Otherwise keep
-    // the first generic IPA as the legacy/primary mobile source.
     for (const auto& candidate : ipaCandidates) {
-        if (nameContains(candidate, {"hd", "ipad", "tablet"})) addSourceFile(candidate.string());
+        if (nameContains(candidate, {"hd", "ipad", "tablet"}) && m_config.sourceHdIpa.empty()) {
+            std::error_code absoluteEc;
+            const fs::path absolute = fs::absolute(candidate, absoluteEc);
+            m_config.sourceHdIpa = (absoluteEc ? candidate : absolute).lexically_normal().string();
+        }
     }
     for (const auto& candidate : ipaCandidates) {
-        if (nameContains(candidate, {"mobile", "phone", "iphone"})) addSourceFile(candidate.string());
+        if (nameContains(candidate, {"mobile", "phone", "iphone"}) && m_config.sourceMobileIpa.empty()) {
+            std::error_code absoluteEc;
+            const fs::path absolute = fs::absolute(candidate, absoluteEc);
+            m_config.sourceMobileIpa = (absoluteEc ? candidate : absolute).lexically_normal().string();
+        }
     }
     for (const auto& candidate : ipaCandidates) {
-        if (!nameContains(candidate, {"hd", "ipad", "tablet", "mobile", "phone", "iphone"})) {
-            addSourceFile(candidate.string());
+        if (!nameContains(candidate, {"hd", "ipad", "tablet", "mobile", "phone", "iphone"}) &&
+            m_config.sourceIpa.empty()) {
+            std::error_code absoluteEc;
+            const fs::path absolute = fs::absolute(candidate, absoluteEc);
+            m_config.sourceIpa = (absoluteEc ? candidate : absolute).lexically_normal().string();
         }
     }
 
     return !m_config.sourceSwf.empty();
+
 }
 
 bool Project::addSourceFile(const std::string& filepath) {
@@ -251,7 +260,7 @@ bool Project::addSourceFile(const std::string& filepath) {
     const fs::path absolute = fs::absolute(path, ec);
     const std::string value = (ec ? path : absolute).lexically_normal().string();
     if (hasExtension(path, ".swf")) {
-        if (nameContains(path, {"expansion", "exp"}) && m_config.sourceExpansionSwf.empty()) {
+        if (nameContains(path, {"expansion", "_exp", "-exp"}) && m_config.sourceExpansionSwf.empty()) {
             m_config.sourceExpansionSwf = value;
         } else if (m_config.sourceSwf.empty()) {
             m_config.sourceSwf = value;

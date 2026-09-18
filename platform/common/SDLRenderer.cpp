@@ -148,6 +148,7 @@ bool SDLRenderer::initializeWithWindow(SDL_Window* window) {
     constexpr int imageFlags = IMG_INIT_JPG | IMG_INIT_PNG;
     if ((IMG_Init(imageFlags) & imageFlags) != imageFlags) {
         BTD4_LOG_ERROR(std::string("SDL_image initialization failed: ") + IMG_GetError());
+        IMG_Quit();
         SDL_DestroyRenderer(m_renderer);
         m_renderer = nullptr;
         if (!m_ownsWindow) {

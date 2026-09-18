@@ -7,7 +7,7 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
     - name: Checkout repository
@@ -26,14 +26,14 @@ jobs:
         ctest --test-dir build -C Release --output-on-failure --timeout 60 --verbose
 
     - name: Package Artifacts
-      if: ${{ always() }}
+      if: ${{ success() }}
       shell: bash
       run: |
         mkdir -p package/bin/assets/placeholder/rounds package/bin/assets/placeholder/upgrades package/bin/assets/placeholder/towers
         cp build/Release/btd4_game.exe package/bin/ || cp build/btd4_game.exe package/bin/
         cp build/Release/btd4_builder.exe package/bin/ || cp build/btd4_builder.exe package/bin/
         cp build/Release/btd4_importer.exe package/bin/ || cp build/btd4_importer.exe package/bin/
-        find build -type f -iname 'SDL2.dll' -exec cp -f {} package/bin/ \; 2>/dev/null || true
+        find build -type f \( -iname 'SDL2.dll' -o -iname 'SDL2_image*.dll' \) -exec cp -f {} package/bin/ \; 2>/dev/null || true
         cp build/Release/*.dll package/bin/ 2>/dev/null || true
         cp CMakeLists.txt package/bin/CMakeLists.txt
         cp assets/placeholder/rounds/default_rounds.json package/bin/assets/placeholder/rounds/default_rounds.json
@@ -42,9 +42,9 @@ jobs:
         7z a btd4-windows-x64.zip ./package/bin/*
 
     - name: Upload Windows Artifact
-      if: ${{ always() }}
+      if: ${{ success() }}
       uses: actions/upload-artifact@v4
       with:
         name: btd4-windows-x64
         path: btd4-windows-x64.zip
-        if-no-files-found: warn
+        if-no-files-found: error

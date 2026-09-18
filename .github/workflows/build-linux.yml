@@ -27,8 +27,11 @@ jobs:
         cmake --build build --config Release -j $(nproc)
 
     - name: Run Tests
+      env:
+        SDL_VIDEODRIVER: dummy
+        SDL_AUDIODRIVER: dummy
       run: |
-        ctest --test-dir build --output-on-failure
+        ctest --test-dir build --output-on-failure --timeout 60 --verbose
 
     - name: Package Artifacts
       run: |
