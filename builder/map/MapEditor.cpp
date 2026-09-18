@@ -26,6 +26,7 @@ void MapEditor::newMap() {
     m_selectedPath = -1;
     m_selectedWaypoint = -1;
     m_draggingRegion = false;
+    m_draggingWaypoint = false;
     m_lastSavedPath.clear();
     m_status = "New map created.";
     m_statusGood = true;
@@ -338,14 +339,49 @@ void MapEditor::render(const std::string& projectRoot) {
                 m_map.paths().push_back(Path{});
                 m_selectedPath = static_cast<int>(m_map.paths().size()) - 1;
             }
+
             auto& points = m_map.paths()[m_selectedPath].waypoints();
-            points.push_back(mapPoint);
-            m_map.paths()[m_selectedPath].recalculate();
-            m_selectedWaypoint = static_cast<int>(points.size()) - 1;
+            float bestDistanceSq = 11.0f * 11.0f;
+            int nearest = -1;
+            for (int i = 0; i < static_cast<int>(points.size()); ++i) {
+                const float dx = points[i].x - mapPoint.x;
+                const float dy = points[i].y - mapPoint.y;
+                const float distanceSq = dx * dx + dy * dy;
+                if (distanceSq < bestDistanceSq) {
+                    bestDistanceSq = distanceSq;
+                    nearest = i;
+                }
+            }
+
+            if (nearest >= 0) {
+                m_selectedWaypoint = nearest;
+                m_draggingWaypoint = true;
+            } else {
+                points.push_back(mapPoint);
+                m_map.paths()[m_selectedPath].recalculate();
+                m_selectedWaypoint = static_cast<int>(points.size()) - 1;
+            }
         } else {
             m_draggingRegion = true;
             m_dragStart = mapPoint;
             m_dragCurrent = mapPoint;
+        }
+    }
+
+    if (m_draggingWaypoint) {
+        if (m_tool == Tool::AddPath && inside &&
+            m_selectedPath >= 0 && m_selectedPath < static_cast<int>(m_map.paths().size()) &&
+            m_selectedWaypoint >= 0 &&
+            m_selectedWaypoint < static_cast<int>(m_map.paths()[m_selectedPath].waypoints().size())) {
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                auto& point = m_map.paths()[m_selectedPath].waypoints()[m_selectedWaypoint];
+                point.x = std::clamp(mapPoint.x, -1000.0f, 1480.0f);
+                point.y = std::clamp(mapPoint.y, -1000.0f, 1272.0f);
+                m_map.paths()[m_selectedPath].recalculate();
+            }
+        }
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+            m_draggingWaypoint = false;
         }
     }
 
