@@ -40,7 +40,7 @@ fs::path findProjectRoot() {
 
     auto searchUpward = [&](fs::path current) -> fs::path {
         current = current.lexically_normal();
-        for (int i = 0; i < 12 && !current.empty(); ++i) {
+        for (int i = 0; i < 32 && !current.empty(); ++i) {
             if (isProjectRoot(current)) return current;
             const fs::path parent = current.parent_path();
             if (parent == current) break;
@@ -75,6 +75,23 @@ fs::path findProjectRoot() {
         }
     }
     return {};
+}
+
+// The builder can also be distributed as a portable editor/importer bundle,
+// where the source checkout and CMakeLists.txt are intentionally absent.
+// Asset import and editor data still need a writable workspace in that mode.
+fs::path findWorkspaceRoot() {
+    if (const fs::path projectRoot = findProjectRoot(); !projectRoot.empty()) {
+        return projectRoot;
+    }
+
+    if (const char* builderRoot = std::getenv("BTD4_BUILDER_ROOT")) {
+        if (*builderRoot) return fs::path(builderRoot).lexically_normal();
+    }
+
+    std::error_code ec;
+    const fs::path current = fs::current_path(ec);
+    return ec ? fs::path{} : current.lexically_normal();
 }
 
 std::string fileFingerprint(const fs::path& path) {
@@ -281,7 +298,7 @@ void BuilderUI::initialize() {
     m_roundEditor.initialize();
     m_towerEditor.initialize();
     m_upgradeEditor.initialize();
-    const fs::path projectRoot = findProjectRoot();
+    const fs::path projectRoot = findWorkspaceRoot();
     if (!projectRoot.empty()) {
         const fs::path projectFile = projectRoot / "project.btd4proj";
         std::error_code ec;
@@ -347,7 +364,7 @@ void BuilderUI::render() {
         ImGui::Spacing();
         renderPlatformSection();
         ImGui::Spacing();
-        const fs::path projectRoot = findProjectRoot();
+        const fs::path projectRoot = findWorkspaceRoot();
         m_mapEditor.render(projectRoot.string());
         ImGui::Spacing();
         m_roundEditor.render(projectRoot.string(), m_mapEditor.map());
@@ -501,7 +518,7 @@ void BuilderUI::renderActionButtons() {
     if (ImGui::Button("Preview Build", ImVec2(120, 32))) previewBuild();
     ImGui::SameLine();
     if (ImGui::Button("Load Project", ImVec2(110, 32))) {
-        const fs::path projectRoot = findProjectRoot();
+        const fs::path projectRoot = findWorkspaceRoot();
         const fs::path loadPath = projectRoot.empty() ? fs::path("project.btd4proj") : (projectRoot / "project.btd4proj");
         if (m_project.loadFromFile(loadPath.string())) {
             std::strncpy(m_sourceDirectoryBuffer, m_project.config().sourceDirectory.c_str(), sizeof(m_sourceDirectoryBuffer) - 1);
@@ -523,7 +540,7 @@ void BuilderUI::renderActionButtons() {
     if (ImGui::Button("Build Game", ImVec2(120, 32))) triggerBuild();
     ImGui::SameLine();
     if (ImGui::Button("Save Project", ImVec2(110, 32))) {
-        const fs::path projectRoot = findProjectRoot();
+        const fs::path projectRoot = findWorkspaceRoot();
         const fs::path savePath = projectRoot.empty() ? fs::path("project.btd4proj") : (projectRoot / "project.btd4proj");
         if (m_project.saveToFile(savePath.string())) {
             appendLog("[Project] Saved configuration to " + savePath.string());
@@ -729,11 +746,15 @@ bool BuilderUI::triggerImport() {
         return true;
     }
 
-    const fs::path projectRoot = findProjectRoot();
+    const fs::path projectRoot = findWorkspaceRoot();
     if (projectRoot.empty()) {
-        appendLog("[Pipeline Error] Could not locate the project root containing CMakeLists.txt.");
+        appendLog("[Pipeline Error] Could not determine a writable builder workspace.");
+        appendLog("[Pipeline Error] Run the builder from its packaged folder or a project checkout.");
         appendLog("=========================================");
         return false;
+    }
+    if (!isProjectRoot(projectRoot)) {
+        appendLog("[Pipeline] No CMake project root was found; using the portable builder workspace for imported game_data.");
     }
 
     tools::ImportOptions options;
