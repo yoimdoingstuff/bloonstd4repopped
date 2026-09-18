@@ -139,6 +139,7 @@ bool AssetManifest::parseJson(const std::string& json, std::string& outError) {
 
     packageName = extractStringValue(json, "package_name");
     source = extractStringValue(json, "source");
+    targetPlatform = extractStringValue(json, "target_platform");
     roundsFile = extractStringValue(json, "rounds");
 
     textures.clear();
@@ -157,6 +158,7 @@ std::string AssetManifest::serialize() const {
     ss << "  \"version\": " << version << ",\n";
     ss << "  \"package_name\": \"" << escapeJsonString(packageName) << "\",\n";
     ss << "  \"source\": \"" << escapeJsonString(source) << "\",\n";
+    ss << "  \"target_platform\": \"" << escapeJsonString(targetPlatform) << "\",\n";
     ss << "  \"textures\": {\n";
     size_t i = 0;
     for (const auto& [k, v] : textures) {
