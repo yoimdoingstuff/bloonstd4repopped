@@ -122,4 +122,5 @@ TEST_CASE(TowerDefinitionsOverrideBuiltinStats) {
 
     btd4::configureTowerDefinitions(definitions);
     TEST_ASSERT_EQ(btd4::getTowerBaseStats(btd4::TowerType::DartMonkey).cost, 999);
+    btd4::configureTowerDefinitions(btd4::TowerSet{});
 }
