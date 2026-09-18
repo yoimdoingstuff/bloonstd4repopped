@@ -171,10 +171,13 @@ void TowerEditor::render(const std::string& projectRoot) {
     if (ImGui::DragFloat("Projectile Speed", &stats.projectileSpeed, 1.0f, 0.0f, 100000.0f)) {}
     if (ImGui::DragFloat("Explosion Radius", &stats.explosionRadius, 1.0f, 0.0f, 1000.0f)) {}
 
-    const char* projectiles[] = {"Dart","Tack","Bomb","Boomerang","SniperShot","Laser","Plasma"};
+    const char* projectiles[] = {"Dart","Tack","Bomb","Boomerang","Laser","Plasma"};
     int projectileIndex = static_cast<int>(stats.projectileType);
-    if (ImGui::Combo("Projectile Type", &projectileIndex, projectiles, 7))
-        stats.projectileType = static_cast<ProjectileType>(std::clamp(projectileIndex, 0, 6));
+    // SniperShot remains in the enum for backward-compatible project files,
+    // but the BTD4 Flash-facing editor does not expose it.
+    if (projectileIndex == static_cast<int>(ProjectileType::SniperShot)) projectileIndex = static_cast<int>(ProjectileType::Dart);
+    if (ImGui::Combo("Projectile Type", &projectileIndex, projectiles, 6))
+        stats.projectileType = static_cast<ProjectileType>(std::clamp(projectileIndex, 0, 5));
 
     const char* damages[] = {"Sharp","Explosive","Energy","All"};
     int damageIndex = static_cast<int>(stats.damageType);
