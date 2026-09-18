@@ -5,22 +5,47 @@
 namespace btd4 {
 namespace fs = std::filesystem;
 namespace {
+bool isProjectRoot(const fs::path& candidate){
+    std::error_code ec;
+    return fs::is_regular_file(candidate/"CMakeLists.txt",ec) &&
+           fs::is_regular_file(candidate/"engine"/"core"/"Engine.cpp",ec) &&
+           fs::is_regular_file(candidate/"platform"/"common"/"PlatformRegistry.cpp",ec);
+}
+
 fs::path findSourceRoot(){
     std::error_code ec;
-    if (const char* portableRoot = std::getenv("BTD4_BUILDER_ROOT")) {
-        if (*portableRoot) {
-            const fs::path root(portableRoot);
-            if (fs::exists(root, ec)) return root;
+
+    auto searchUpward = [&](fs::path current) -> fs::path {
+        current=current.lexically_normal();
+        for(int i=0;i<12&&!current.empty();++i){
+            if(isProjectRoot(current)) return current;
+            const fs::path parent=current.parent_path();
+            if(parent==current)break;
+            current=parent;
+        }
+        return {};
+    };
+
+    if (const char* configuredRoot = std::getenv("BTD4_SOURCE_ROOT")) {
+        if (*configuredRoot) {
+            const fs::path root(configuredRoot);
+            if (isProjectRoot(root)) return root;
         }
     }
 
     fs::path current=fs::current_path(ec);
-    for(int i=0;i<8&&!current.empty();++i){
-        if(fs::exists(current/"CMakeLists.txt",ec))return current;
-        const fs::path parent=current.parent_path();
-        if(parent==current)break;
-        current=parent;
+    if(!ec){
+        const fs::path found=searchUpward(current);
+        if(!found.empty()) return found;
     }
+
+    if (const char* builderRoot = std::getenv("BTD4_BUILDER_ROOT")) {
+        if (*builderRoot) {
+            const fs::path found=searchUpward(fs::path(builderRoot));
+            if(!found.empty()) return found;
+        }
+    }
+
     return {};
 }
 std::string quote(const fs::path& p){return "\""+p.string()+"\"";}
