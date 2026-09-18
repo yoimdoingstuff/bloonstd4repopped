@@ -70,6 +70,9 @@ std::string Project::serialize() const {
     ss << "  \"source_directory\": \"" << m_config.sourceDirectory << "\",\n";
     ss << "  \"source_swf\": \"" << m_config.sourceSwf << "\",\n";
     ss << "  \"source_ipa\": \"" << m_config.sourceIpa << "\",\n";
+    ss << "  \"source_expansion_swf\": \"" << m_config.sourceExpansionSwf << "\",\n";
+    ss << "  \"source_hd_ipa\": \"" << m_config.sourceHdIpa << "\",\n";
+    ss << "  \"source_mobile_ipa\": \"" << m_config.sourceMobileIpa << "\",\n";
     ss << "  \"game_edition\": \"" << m_config.gameEdition << "\",\n";
     ss << "  \"enable_mobile_content\": " << (m_config.enableMobileContent ? "true" : "false") << ",\n";
     ss << "  \"target_platform\": \"" << m_config.targetPlatform << "\",\n";
@@ -85,6 +88,9 @@ bool Project::deserialize(const std::string& json) {
     std::string sourceDirectory = extractJsonString(json, "source_directory"); if (!sourceDirectory.empty()) m_config.sourceDirectory = sourceDirectory;
     m_config.sourceSwf = extractJsonString(json, "source_swf");
     m_config.sourceIpa = extractJsonString(json, "source_ipa");
+    m_config.sourceExpansionSwf = extractJsonString(json, "source_expansion_swf");
+    m_config.sourceHdIpa = extractJsonString(json, "source_hd_ipa");
+    m_config.sourceMobileIpa = extractJsonString(json, "source_mobile_ipa");
     std::string edition = extractJsonString(json, "game_edition"); if (!edition.empty()) m_config.gameEdition = edition;
     m_config.enableMobileContent = extractJsonBool(json, "enable_mobile_content", false);
     std::string plat = extractJsonString(json, "target_platform"); if (!plat.empty()) m_config.targetPlatform = plat;
@@ -143,6 +149,8 @@ bool Project::addSourceFile(const std::string& filepath) {
     }
     if (hasExtension(path, ".ipa")) {
         if (m_config.sourceIpa.empty()) m_config.sourceIpa = value;
+        else if (m_config.sourceHdIpa.empty()) m_config.sourceHdIpa = value;
+        else if (m_config.sourceMobileIpa.empty()) m_config.sourceMobileIpa = value;
         return true;
     }
     return false;
