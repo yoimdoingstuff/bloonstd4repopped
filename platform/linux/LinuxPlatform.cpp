@@ -184,6 +184,23 @@ BuildResult LinuxPlatform::package(const std::string& gameEdition) {
         result.outputLogs.push_back("[Linux Warning] No imported game_data/Linux directory was found; packaged game will use runtime fallbacks.");
     }
 
+    const fs::path fallbackAssets = packageDir / "assets" / "placeholder";
+    const fs::path sourceFallbackAssets = root / "assets" / "placeholder";
+    if (fs::exists(sourceFallbackAssets, ec)) {
+        fs::create_directories(fallbackAssets, ec);
+        if (ec) {
+            result.message = "Could not create fallback asset directory: " + ec.message();
+            return result;
+        }
+        fs::copy(sourceFallbackAssets, fallbackAssets,
+                 fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+        if (ec) {
+            result.message = "Could not package fallback assets: " + ec.message();
+            return result;
+        }
+        result.outputLogs.push_back("[Linux] Packaged placeholder rounds/upgrades for runtime fallback.");
+    }
+
     fs::permissions(packageDir / "btd4_game",
                     fs::perms::owner_exec | fs::perms::group_exec | fs::perms::others_exec,
                     fs::perm_options::add, ec);
