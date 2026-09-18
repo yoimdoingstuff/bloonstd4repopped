@@ -275,8 +275,8 @@ void SDLRenderer::drawRect(float x, float y, float w, float h, const Color& colo
     const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
     const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
     SDL_Rect r{
-        m_currentViewport.x + static_cast<int>(std::round(x * sx)),
-        m_currentViewport.y + static_cast<int>(std::round(y * sy)),
+        static_cast<int>(std::round(x * sx)),
+        static_cast<int>(std::round(y * sy)),
         static_cast<int>(std::round(w * sx)),
         static_cast<int>(std::round(h * sy))
     };
@@ -295,10 +295,10 @@ void SDLRenderer::drawLine(float x1, float y1, float x2, float y2, const Color& 
     const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
     const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
     SDL_RenderDrawLine(m_renderer,
-        m_currentViewport.x + static_cast<int>(std::round(x1 * sx)),
-        m_currentViewport.y + static_cast<int>(std::round(y1 * sy)),
-        m_currentViewport.x + static_cast<int>(std::round(x2 * sx)),
-        m_currentViewport.y + static_cast<int>(std::round(y2 * sy))
+        static_cast<int>(std::round(x1 * sx)),
+        static_cast<int>(std::round(y1 * sy)),
+        static_cast<int>(std::round(x2 * sx)),
+        static_cast<int>(std::round(y2 * sy))
     );
 }
 
@@ -310,8 +310,8 @@ void SDLRenderer::drawCircle(float cx, float cy, float radius, const Color& colo
     const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
     const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
     const float sr = (sx + sy) * 0.5f;
-    int icx = m_currentViewport.x + static_cast<int>(std::round(cx * sx));
-    int icy = m_currentViewport.y + static_cast<int>(std::round(cy * sy));
+    int icx = static_cast<int>(std::round(cx * sx));
+    int icy = static_cast<int>(std::round(cy * sy));
     int ir = static_cast<int>(std::round(radius * sr));
 
     if (filled) {
