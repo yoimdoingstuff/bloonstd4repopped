@@ -89,7 +89,7 @@ std::string readTextFile(const fs::path& path) {
 std::string shellQuote(const std::string& value) {
     std::string result = "'";
     for (char c : value) {
-        if (c == '\\'') result += "'\\''";
+        if (c == '\'') result += "'\\''";
         else result += c;
     }
     result += "'";
@@ -99,31 +99,35 @@ std::string shellQuote(const std::string& value) {
 #ifdef _WIN32
 std::wstring utf8ToWide(const std::string& value) {
     if (value.empty()) return {};
-    const int size = MultiByteToWideChar(CP_UTF8, 0, value.data(), static_cast<int>(value.size()), nullptr, 0);
+    const int size = MultiByteToWideChar(
+        CP_UTF8, 0, value.data(), static_cast<int>(value.size()), nullptr, 0);
     if (size <= 0) return {};
-    std::wstring result(static_cast<size_t>(size), L'\\0');
-    MultiByteToWideChar(CP_UTF8, 0, value.data(), static_cast<int>(value.size()), result.data(), size);
+    std::wstring result(static_cast<size_t>(size), L'\0');
+    MultiByteToWideChar(
+        CP_UTF8, 0, value.data(), static_cast<int>(value.size()), result.data(), size);
     return result;
 }
 
 std::wstring quoteWindowsArg(const std::wstring& value) {
-    std::wstring result = L"\\\"";
+    std::wstring result = L"\"";
     size_t backslashes = 0;
     for (wchar_t c : value) {
-        if (c == L'\\\\') {
+        if (c == L'\\') {
             ++backslashes;
-        } else if (c == L'\\\"') {
-            result.append(backslashes * 2 + 1, L'\\\\');
-            result += L'\\\"';
-            backslashes = 0;
-        } else {
-            result.append(backslashes, L'\\\\');
-            result += c;
-            backslashes = 0;
+            continue;
         }
+        if (c == L'"') {
+            result.append(backslashes * 2 + 1, L'\\');
+            result += L'"';
+            backslashes = 0;
+            continue;
+        }
+        result.append(backslashes, L'\\');
+        result += c;
+        backslashes = 0;
     }
-    result.append(backslashes * 2, L'\\\\');
-    result += L'\\\"';
+    result.append(backslashes * 2, L'\\');
+    result += L'"';
     return result;
 }
 #endif
@@ -133,6 +137,7 @@ int runStandaloneImporter(const fs::path& importer,
                            const fs::path& sourceIpa,
                            const fs::path& outputDir,
                            const fs::path& projectRoot,
+                           const std::string& targetPlatform,
                            std::string& outputLog) {
     const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
     const fs::path logPath = fs::temp_directory_path() /
