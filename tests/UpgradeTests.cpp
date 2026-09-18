@@ -224,3 +224,17 @@ TEST_CASE(TowerOwnershipUsesPlayerEconomies) {
     TEST_ASSERT(simulation.sellTower(static_cast<uint8_t>(1), simulation.towers()[0].id()));
     TEST_ASSERT_EQ(simulation.player(1).economy().cash(), before1 - 50);
 }
+
+
+TEST_CASE(MultiplayerControllerAssignments) {
+    btd4::MultiplayerSession session;
+    std::string error;
+    TEST_ASSERT(session.configure(2, btd4::MultiplayerEconomyMode::Split, error));
+    TEST_ASSERT(session.assignController(0, 7, error));
+    TEST_ASSERT_EQ(session.playerForController(7), 0);
+    TEST_ASSERT(!session.assignController(1, 7, error));
+    TEST_ASSERT_EQ(session.playerForController(7), 0);
+    TEST_ASSERT(session.assignController(1, 8, error));
+    session.unassignController(7);
+    TEST_ASSERT_EQ(session.playerForController(7), -1);
+}
