@@ -145,6 +145,18 @@ bool SDLRenderer::initializeWithWindow(SDL_Window* window) {
         return false;
     }
 
+    constexpr int imageFlags = IMG_INIT_JPG | IMG_INIT_PNG;
+    if ((IMG_Init(imageFlags) & imageFlags) != imageFlags) {
+        BTD4_LOG_ERROR(std::string("SDL_image initialization failed: ") + IMG_GetError());
+        SDL_DestroyRenderer(m_renderer);
+        m_renderer = nullptr;
+        if (!m_ownsWindow) {
+            m_window = nullptr;
+        }
+        return false;
+    }
+    m_imageSubsystemInitialized = true;
+
     SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
     return true;
 }
@@ -202,6 +214,10 @@ void SDLRenderer::shutdown() {
     if (m_renderer) {
         SDL_DestroyRenderer(m_renderer);
         m_renderer = nullptr;
+    }
+    if (m_imageSubsystemInitialized) {
+        IMG_Quit();
+        m_imageSubsystemInitialized = false;
     }
     if (m_window && m_ownsWindow) {
         SDL_DestroyWindow(m_window);
@@ -356,7 +372,7 @@ bool SDLRenderer::loadTexture(const std::string& key, const std::string& filePat
     }
     SDL_Surface* surface = IMG_Load(filePath.c_str());
     if (!surface) {
-        BTD4_LOG_WARN("Failed to load image at " + filePath + ": " + SDL_GetError());
+        BTD4_LOG_WARN("Failed to load image at " + filePath + ": " + IMG_GetError());
         return false;
     }
     SDL_Texture* tex = SDL_CreateTextureFromSurface(m_renderer, surface);
