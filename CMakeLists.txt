@@ -165,6 +165,7 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
             builder/ui/BuilderUI.hpp builder/ui/BuilderUI.cpp
             builder/map/MapEditor.hpp builder/map/MapEditor.cpp
             builder/round/RoundEditor.hpp builder/round/RoundEditor.cpp
+            builder/tower/TowerEditor.hpp builder/tower/TowerEditor.cpp
             builder/platform/FileDialog.hpp builder/platform/FileDialog.cpp)
     endif()
     target_include_directories(btd4_builder PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/builder ${CMAKE_CURRENT_SOURCE_DIR}/tools
