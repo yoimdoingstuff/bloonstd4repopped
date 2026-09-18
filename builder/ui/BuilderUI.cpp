@@ -481,6 +481,21 @@ void BuilderUI::renderPlatformSection() {
 void BuilderUI::renderActionButtons() {
     ImGui::Separator();
 
+    if (ImGui::Button("New Project", ImVec2(110, 32))) {
+        m_project = Project();
+        m_mapEditor.initialize();
+        m_roundEditor.initialize();
+        m_towerEditor.initialize();
+        m_upgradeEditor.initialize();
+        m_lastSuccessfulImportKey.clear();
+        std::strncpy(m_sourceDirectoryBuffer, m_project.config().sourceDirectory.c_str(), sizeof(m_sourceDirectoryBuffer) - 1);
+        m_sourceDirectoryBuffer[sizeof(m_sourceDirectoryBuffer) - 1] = '\0';
+        m_swfPathBuffer[0] = '\0';
+        m_ipaPathBuffer[0] = '\0';
+        appendLog("[Project] Created a new empty project.");
+    }
+    ImGui::SameLine();
+
     if (ImGui::Button("Validate Project", ImVec2(120, 32))) validateProject();
     ImGui::SameLine();
     if (ImGui::Button("Load Project", ImVec2(110, 32))) {
