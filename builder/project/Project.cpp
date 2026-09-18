@@ -180,11 +180,6 @@ bool Project::discoverSourceAssets() { return discoverSourceAssets(m_config.sour
 
 bool Project::discoverSourceAssets(const std::string& directory) {
     m_config.sourceDirectory = directory;
-    m_config.sourceSwf.clear();
-    m_config.sourceIpa.clear();
-    m_config.sourceExpansionSwf.clear();
-    m_config.sourceHdIpa.clear();
-    m_config.sourceMobileIpa.clear();
     if (directory.empty()) return false;
 
     std::error_code ec;
@@ -201,6 +196,16 @@ bool Project::discoverSourceAssets(const std::string& directory) {
     }
     std::sort(swfCandidates.begin(), swfCandidates.end());
     std::sort(ipaCandidates.begin(), ipaCandidates.end());
+
+    if (swfCandidates.empty() && ipaCandidates.empty()) {
+        return false;
+    }
+
+    m_config.sourceSwf.clear();
+    m_config.sourceIpa.clear();
+    m_config.sourceExpansionSwf.clear();
+    m_config.sourceHdIpa.clear();
+    m_config.sourceMobileIpa.clear();
 
     // Prefer the non-expansion SWF as the base game. A plain lexical sort can
     // put "Expansion" before the normal BTD4 SWF.
