@@ -3,6 +3,7 @@
 #include "../project/Project.hpp"
 #include "../map/MapEditor.hpp"
 #include "../round/RoundEditor.hpp"
+#include "../tower/TowerEditor.hpp"
 #include "../../platform/common/PlatformRegistry.hpp"
 #include <vector>
 #include <string>
@@ -26,6 +27,7 @@ private:
     Project m_project;
     MapEditor m_mapEditor;
     RoundEditor m_roundEditor;
+    TowerEditor m_towerEditor;
     std::vector<std::string> m_logs;
     bool m_autoScrollLogs{true};
     std::string m_lastSuccessfulImportKey;
