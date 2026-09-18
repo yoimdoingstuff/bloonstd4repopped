@@ -1,6 +1,7 @@
 #include "GameState.hpp"
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 namespace btd4 {
 
