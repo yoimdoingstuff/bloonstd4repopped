@@ -3,6 +3,8 @@
 #include "../platform/FileDialog.hpp"
 #include <imgui.h>
 #include <cstring>
+#include <algorithm>
+#include <cstddef>
 #include <filesystem>
 #include <exception>
 
