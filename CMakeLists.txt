@@ -188,6 +188,17 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
                     "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:btd4_builder>"
                 COMMENT "Deploying SDL2 runtime for btd4_builder")
         endif()
+        if(TARGET btd4_importer)
+            add_custom_command(TARGET btd4_builder POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<TARGET_FILE:btd4_importer>" "$<TARGET_FILE_DIR:btd4_builder>"
+                COMMENT "Deploying standalone asset importer next to btd4_builder")
+        endif()
+    elseif(TARGET btd4_importer)
+        add_custom_command(TARGET btd4_builder POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:btd4_importer>" "$<TARGET_FILE_DIR:btd4_builder>"
+            COMMENT "Deploying standalone asset importer next to btd4_builder")
     endif()
 endif()
 
