@@ -43,8 +43,8 @@ TowerBaseStats getTowerBaseStats(TowerType type) {
     return stats;
 }
 
-Tower::Tower(uint32_t id, TowerType type, float x, float y)
-    : m_id(id), m_type(type), m_x(x), m_y(y) {
+Tower::Tower(uint32_t id, TowerType type, float x, float y, uint8_t ownerId)
+    : m_id(id), m_ownerId(ownerId), m_type(type), m_x(x), m_y(y) {
     m_stats = getTowerBaseStats(type);
     m_range = m_stats.range;
     m_attackCooldown = m_stats.attackCooldown;
