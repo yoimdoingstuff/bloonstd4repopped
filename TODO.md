@@ -593,7 +593,9 @@ MILESTONE 14: GAME BUILDER
 * [x]	Project validation
     Agent: builder
     Notes: Builder validates source files, edition, target platform, and build configuration before compilation.
-* [ ]	Map editor
+* [x]	Map editor
+    Agent: builder
+    Notes: Integrated visual map editor saves to the versioned internal map schema.
 * [ ]	Round editor
 * [ ]	Tower editor
 * [ ]	Upgrade editor
@@ -603,17 +605,26 @@ MILESTONE 14: GAME BUILDER
 
 MILESTONE 15: MAP EDITOR
 
-* [ ]	Map editor core
-* [ ]	Map canvas
-* [ ]	Waypoint editing
-* [ ]	Path editing
+* [x]	Map editor core
+    Agent: builder
+* [x]	Map canvas
+    Agent: builder
+* [x]	Waypoint editing
+    Agent: builder
+* [x]	Path editing
+    Agent: builder
 * [ ]	Spawn editing
 * [ ]	Exit editing
-* [ ]	Buildable region editing
-* [ ]	Blocked region editing
-* [ ]	Map validation UI
-* [ ]	Map preview
-* [ ]	Map save/load
+* [x]	Buildable region editing
+    Agent: builder
+* [x]	Blocked region editing
+    Agent: builder
+* [x]	Map validation UI
+    Agent: builder
+* [x]	Map preview
+    Agent: builder
+* [x]	Map save/load
+    Agent: builder
 * [ ]	Custom map packaging
 
 ⸻
