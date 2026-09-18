@@ -240,7 +240,7 @@ std::string detectSourceFamily(const swf::SwfParser& parser,bool& isBtd4,std::ve
 }
 
 ImportReport AssetImporter::run(const ImportOptions& options,LogCallback logCallback,ProgressCallback progressCallback){ImportReport report;report.sourceFile=options.sourceSwf;report.targetPlatform=options.targetPlatform;auto emitLog=[&](const std::string& msg){report.logMessages.push_back(msg);if(logCallback)logCallback(msg);};emitLog("[Importer] Initializing BTD4 Asset Import Pipeline...");emitLog("[Importer] Target platform: "+options.targetPlatform);if(options.sourceSwf.empty()){report.errorMessage="No source SWF file specified";emitLog("[Importer Error] "+report.errorMessage);return report;}if(!fs::exists(options.sourceSwf)){report.errorMessage="Source file does not exist: "+options.sourceSwf;emitLog("[Importer Error] "+report.errorMessage);return report;}emitLog("[Importer] Inspecting source: "+options.sourceSwf);swf::SwfParser parser;std::string parseError;auto swfProgress=[&](float p,const std::string& status){if(progressCallback)progressCallback(p*.5f,status);};if(!parser.parseFile(options.sourceSwf,parseError,swfProgress)){report.errorMessage="SWF parsing failed: "+parseError;emitLog("[Importer Error] "+report.errorMessage);return report;}report.swfVersion=parser.header().version;report.symbolsMapped=(uint32_t)parser.symbols().size();report.warnings=parser.warnings();emitLog("[Importer] SWF Header parsed successfully (Version: "+std::to_string(report.swfVersion)+", Size: "+std::to_string(parser.header().frameSize.widthPixels())+"x"+std::to_string(parser.header().frameSize.heightPixels())+");");emitLog("[Importer] Found "+std::to_string(parser.images().size())+" images, "+std::to_string(parser.sounds().size())+" audio streams, "+std::to_string(report.symbolsMapped)+" exported symbols.");report.sourceFamily=detectSourceFamily(parser,report.btd4Detected,report.detectedFeatures);if(report.btd4Detected)emitLog("[Importer] BTD4-like Flash content detected from exported gameplay symbols/assets.");else emitLog("[Importer] No confident BTD4 Flash signature was detected; continuing in generic SWF mode.");if(options.targetPlatform=="PSP"){addFeature(report,"PSP asset profile");emitLog("[Importer] PSP profile enabled: preserving source textures while keeping the runtime at 480x272 logical coordinates.");}else if(options.targetPlatform=="Windows"||options.targetPlatform=="Linux"){addFeature(report,"Desktop asset profile");emitLog("[Importer] Desktop profile enabled: using source-resolution assets with logical-resolution scaling in the runtime.");}else if(options.targetPlatform=="Xbox 360"){addFeature(report,"Xbox 360 asset profile");emitLog("[Importer] Xbox 360 profile selected; platform packaging remains dependent on the available backend/toolchain.");}std::sort(report.detectedFeatures.begin(),report.detectedFeatures.end());report.detectedFeatures.erase(std::unique(report.detectedFeatures.begin(),report.detectedFeatures.end()),report.detectedFeatures.end());fs::path outDir=options.outputDir,texturesDir=outDir/"textures",audioDir=outDir/"audio",mapsDir=outDir/"maps",roundsDir=outDir/"rounds";try{fs::create_directories(texturesDir);fs::create_directories(audioDir);fs::create_directories(mapsDir);fs::create_directories(roundsDir);}catch(const std::exception& e){report.errorMessage=std::string("Failed to create output directory: ")+e.what();emitLog("[Importer Error] "+report.errorMessage);return report;}inspectIpa(options.sourceIpa,outDir,"phone",report,emitLog);
-    inspectIpa(options.sourceMobileIpa,outDir,"phone",report,emitLog);
+    inspectIpa(options.sourceMobileIpa,outDir,"mobile",report,emitLog);
     inspectIpa(options.sourceHdIpa,outDir,"hd",report,emitLog);std::vector<std::string> textureManifestEntries;std::unordered_set<std::string> textureIds;
     auto importAdditionalSwfLayer = [&](const std::string& sourcePath, const std::string& layerName) {
         if (sourcePath.empty() || !fs::is_regular_file(sourcePath)) return;
@@ -276,7 +276,8 @@ ImportReport AssetImporter::run(const ImportOptions& options,LogCallback logCall
     importAdditionalSwfLayer(options.sourceSwf, "flash");
 
     auto indexIpaImages = [&](const std::string& layer) {
-        const fs::path root = outDir / "mobile" / layer / "Payload";
+        // IPA producers may vary the case of the Payload directory, so scan the extracted layer itself.
+        const fs::path root = outDir / "mobile" / layer;
         std::error_code ec;
         if (!fs::is_directory(root, ec)) return;
         for (fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied, ec), end;
@@ -291,6 +292,7 @@ ImportReport AssetImporter::run(const ImportOptions& options,LogCallback logCall
     };
 
     indexIpaImages("phone");
+    indexIpaImages("mobile");
     indexIpaImages("hd");
 
     // Definitive Edition uses the highest-quality compatible duplicate for the target.
