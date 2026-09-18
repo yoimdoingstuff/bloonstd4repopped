@@ -93,7 +93,8 @@ else()
         platform/common/NullAudio.hpp platform/common/NullAudio.cpp platform/linux/LinuxPlatform.hpp
         platform/linux/LinuxPlatform.cpp platform/windows/WindowsPlatform.hpp platform/windows/WindowsPlatform.cpp
         platform/psp/PSPBackend.hpp platform/psp/PSPBackend.cpp platform/xbox360/Xbox360Backend.hpp
-        platform/xbox360/Xbox360Backend.cpp platform/common/NativeFileSystem.hpp platform/common/NativeFileSystem.cpp
+        platform/xbox360/Xbox360Backend.cpp platform/future/FuturePlatformBackend.hpp
+        platform/future/FuturePlatformBackend.cpp platform/common/NativeFileSystem.hpp platform/common/NativeFileSystem.cpp
         platform/common/SDLRenderer.hpp platform/common/SDLRenderer.cpp platform/common/SDLInput.hpp platform/common/SDLInput.cpp)
 endif()
 add_library(btd4_platform STATIC ${PLATFORM_SOURCES})
