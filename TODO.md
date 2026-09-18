@@ -569,7 +569,9 @@ IPA
 
 MILESTONE 14: GAME BUILDER
 
-* [ ]	Project creation
+* [x]	Project creation
+    Agent: builder
+    Notes: New Project resets project settings, editor state, and import fingerprints.
 * [x]	Project loading
     Agent: builder
     Notes: Builder automatically loads project.btd4proj on startup and exposes a Load Project action.
@@ -607,7 +609,9 @@ MILESTONE 14: GAME BUILDER
     Agent: builder
     Notes: Builder edits upgrade identity, path/tier, cost, and stat modifiers and saves custom_upgrades.json.
 
-* [ ]	Preview mode
+* [x]	Preview mode
+    Agent: builder
+    Notes: Builder can launch packaged Windows/Linux Playable builds directly.
 
 ⸻
 
