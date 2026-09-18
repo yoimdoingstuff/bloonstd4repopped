@@ -128,9 +128,12 @@ int runStandaloneImporter(const fs::path& importer,
         ("btd4_builder_import_" + std::to_string(stamp) + ".log");
 
 #ifdef _WIN32
+    SECURITY_ATTRIBUTES securityAttributes{};
+    securityAttributes.nLength = sizeof(securityAttributes);
+    securityAttributes.bInheritHandle = TRUE;
     HANDLE logHandle = CreateFileW(
         logPath.wstring().c_str(), GENERIC_WRITE | GENERIC_READ,
-        FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS,
+        FILE_SHARE_READ | FILE_SHARE_WRITE, &securityAttributes, CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL, nullptr);
     if (logHandle == INVALID_HANDLE_VALUE) {
         outputLog = "Could not create temporary importer log.";
