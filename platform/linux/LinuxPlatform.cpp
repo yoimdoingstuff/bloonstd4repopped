@@ -184,6 +184,23 @@ BuildResult LinuxPlatform::package(const std::string& gameEdition) {
         result.outputLogs.push_back("[Linux Warning] No imported game_data/Linux directory was found; packaged game will use runtime fallbacks.");
     }
 
+    const fs::path customUpgrades = root / "upgrades";
+    if (fs::is_directory(customUpgrades, ec)) {
+        const fs::path packageUpgrades = packageDir / "game_data" / "upgrades";
+        fs::create_directories(packageUpgrades, ec);
+        if (ec) {
+            result.message = "Could not create packaged custom upgrade directory: " + ec.message();
+            return result;
+        }
+        fs::copy(customUpgrades, packageUpgrades,
+                 fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+        if (ec) {
+            result.message = "Could not package custom upgrades: " + ec.message();
+            return result;
+        }
+        result.outputLogs.push_back("[Linux] Packaged custom upgrades from " + customUpgrades.string());
+    }
+
     const fs::path customTowers = root / "towers";
     if (fs::is_directory(customTowers, ec)) {
         const fs::path packageTowers = packageDir / "game_data" / "towers";
