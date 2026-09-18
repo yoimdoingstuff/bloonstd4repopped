@@ -174,7 +174,7 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
     endif()
     target_include_directories(btd4_builder PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/builder ${CMAKE_CURRENT_SOURCE_DIR}/tools
         ${CMAKE_CURRENT_SOURCE_DIR}/platform/common ${CMAKE_CURRENT_SOURCE_DIR}/engine)
-    target_link_libraries(btd4_builder PRIVATE btd4_platform btd4_engine btd4_importer_lib imgui)
+    target_link_libraries(btd4_builder PRIVATE btd4_platform btd4_engine imgui)
     if(TARGET SDL2::SDL2)
         target_link_libraries(btd4_builder PRIVATE SDL2::SDL2)
     elseif(SDL2_LIBRARIES)
