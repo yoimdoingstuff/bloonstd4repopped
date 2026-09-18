@@ -122,10 +122,13 @@ std::string fileFingerprint(const fs::path& path) {
 
 std::string makeImportKey(const Project& project) {
     std::string key;
-    key.reserve(project.config().sourceSwf.size() + project.config().sourceIpa.size() + 128);
+    key.reserve(project.config().sourceSwf.size() + project.config().sourceIpa.size() + project.config().sourceExpansionSwf.size() + project.config().sourceHdIpa.size() + project.config().sourceMobileIpa.size() + 256);
     key += fileFingerprint(project.config().sourceSwf);
     key += '\n';
     if (!project.config().sourceIpa.empty()) key += fileFingerprint(project.config().sourceIpa);
+    key += '\n' + fileFingerprint(project.config().sourceExpansionSwf);
+    key += '\n' + fileFingerprint(project.config().sourceHdIpa);
+    key += '\n' + fileFingerprint(project.config().sourceMobileIpa);
     key += '\n';
     key += project.config().gameEdition;
     key += '\n';
@@ -243,9 +246,10 @@ int runStandaloneImporter(const fs::path& importer,
     commandLine += L" " + quoteWindowsArg(utf8ToWide(sourceSwf.string()));
     commandLine += L" --out " + quoteWindowsArg(utf8ToWide(outputDir.string()));
     commandLine += L" --platform " + quoteWindowsArg(utf8ToWide(targetPlatform));
-    if (!sourceIpa.empty()) {
-        commandLine += L" --ipa " + quoteWindowsArg(utf8ToWide(sourceIpa.string()));
-    }
+    if (!sourceIpa.empty()) commandLine += L" --ipa " + quoteWindowsArg(utf8ToWide(sourceIpa.string()));
+    if (!sourceExpansionSwf.empty()) commandLine += L" --expansion-swf " + quoteWindowsArg(utf8ToWide(sourceExpansionSwf.string()));
+    if (!sourceHdIpa.empty()) commandLine += L" --hd-ipa " + quoteWindowsArg(utf8ToWide(sourceHdIpa.string()));
+    if (!sourceMobileIpa.empty()) commandLine += L" --mobile-ipa " + quoteWindowsArg(utf8ToWide(sourceMobileIpa.string()));
 
     std::vector<wchar_t> mutableCommand(commandLine.begin(), commandLine.end());
     mutableCommand.push_back(L'\0');
@@ -287,6 +291,9 @@ int runStandaloneImporter(const fs::path& importer,
         " --out " + shellQuote(outputDir.string()) +
         " --platform " + shellQuote(targetPlatform) +
         (sourceIpa.empty() ? std::string{} : " --ipa " + shellQuote(sourceIpa.string())) +
+        (sourceExpansionSwf.empty() ? std::string{} : " --expansion-swf " + shellQuote(sourceExpansionSwf.string())) +
+        (sourceHdIpa.empty() ? std::string{} : " --hd-ipa " + shellQuote(sourceHdIpa.string())) +
+        (sourceMobileIpa.empty() ? std::string{} : " --mobile-ipa " + shellQuote(sourceMobileIpa.string())) +
         " > " + shellQuote(logPath.string()) + " 2>&1";
 
     const int status = std::system(command.c_str());
@@ -323,6 +330,9 @@ void BuilderUI::initialize() {
     std::strncpy(m_swfPathBuffer, m_project.config().sourceSwf.c_str(), sizeof(m_swfPathBuffer) - 1);
     m_swfPathBuffer[sizeof(m_swfPathBuffer) - 1] = '\0';
     std::strncpy(m_ipaPathBuffer, m_project.config().sourceIpa.c_str(), sizeof(m_ipaPathBuffer) - 1);
+    std::strncpy(m_expansionSwfPathBuffer, m_project.config().sourceExpansionSwf.c_str(), sizeof(m_expansionSwfPathBuffer) - 1);
+    std::strncpy(m_hdIpaPathBuffer, m_project.config().sourceHdIpa.c_str(), sizeof(m_hdIpaPathBuffer) - 1);
+    std::strncpy(m_mobileIpaPathBuffer, m_project.config().sourceMobileIpa.c_str(), sizeof(m_mobileIpaPathBuffer) - 1);
     m_ipaPathBuffer[sizeof(m_ipaPathBuffer) - 1] = '\0';
     discoverAssets();
 }
@@ -402,12 +412,12 @@ void BuilderUI::renderSourceFilesSection() {
     ImGui::Spacing();
 
     ImGui::Text("Game Edition:");
-    const char* editions[] = { "BTD4 Flash", "BTD4 Expansion", "BTD4 HD (iPad)" };
+    const char* editions[] = { "BTD4 Flash", "BTD4 Expansion", "BTD4 HD (iPad)", "Definitive Edition" };
     int editionIndex = 0;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 4; ++i) {
         if (m_project.config().gameEdition == editions[i]) editionIndex = i;
     }
-    if (ImGui::Combo("##GameEdition", &editionIndex, editions, 3)) {
+    if (ImGui::Combo("##GameEdition", &editionIndex, editions, 4)) {
         m_project.config().gameEdition = editions[editionIndex];
         if (editionIndex == 2) m_project.config().enableMobileContent = true;
         appendLog("[Project] Game edition: " + m_project.config().gameEdition);
@@ -416,6 +426,7 @@ void BuilderUI::renderSourceFilesSection() {
     if (editionIndex == 0) ImGui::TextDisabled("Original Flash release. Source-specific maps/content are kept separate.");
     if (editionIndex == 1) ImGui::TextDisabled("Expansion release. Exclusive expansion content is treated as its own source set.");
     if (editionIndex == 2) ImGui::TextDisabled("iPad HD release. Mobile-only maps/assets can be imported without replacing Flash content.");
+    if (editionIndex == 3) ImGui::TextDisabled("Definitive Edition: merges Flash, Expansion, phone/mobile and HD sources with target-aware quality selection.");
 
     ImGui::Spacing();
     ImGui::Text("Source Asset Folder:");
@@ -437,8 +448,14 @@ void BuilderUI::renderSourceFilesSection() {
     ImGui::Spacing();
     ImGui::Text("SWF File:");
     ImGui::InputText("##SWFPath", m_swfPathBuffer, sizeof(m_swfPathBuffer), ImGuiInputTextFlags_ReadOnly);
-    ImGui::Text("IPA File (Optional):");
+    ImGui::Text("Primary IPA / Phone File (Optional):");
     ImGui::InputText("##IPAPath", m_ipaPathBuffer, sizeof(m_ipaPathBuffer), ImGuiInputTextFlags_ReadOnly);
+    ImGui::Text("Expansion SWF (Optional):");
+    ImGui::InputText("##ExpansionSWFPath", m_expansionSwfPathBuffer, sizeof(m_expansionSwfPathBuffer), ImGuiInputTextFlags_ReadOnly);
+    ImGui::Text("HD iPad IPA (Optional):");
+    ImGui::InputText("##HDIPAPath", m_hdIpaPathBuffer, sizeof(m_hdIpaPathBuffer), ImGuiInputTextFlags_ReadOnly);
+    ImGui::Text("Phone/Mobile IPA (Optional):");
+    ImGui::InputText("##MobileIPAPath", m_mobileIpaPathBuffer, sizeof(m_mobileIpaPathBuffer), ImGuiInputTextFlags_ReadOnly);
 
     if (m_project.hasValidSwf()) {
         ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[OK] Base SWF found.");
@@ -451,7 +468,7 @@ void BuilderUI::renderSourceFilesSection() {
 
     ImGui::Spacing();
     ImGui::BeginChild("DropZone", ImVec2(0, 64), true);
-    const char* text = "Drop .SWF / .IPA files here";
+    const char* text = "Drop .SWF / .IPA files here (multiple sources supported)";
     ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(text).x) * 0.5f);
     ImGui::SetCursorPosY(20.0f);
     ImGui::TextDisabled("%s", text);
@@ -521,6 +538,9 @@ void BuilderUI::renderActionButtons() {
         m_sourceDirectoryBuffer[sizeof(m_sourceDirectoryBuffer) - 1] = '\0';
         m_swfPathBuffer[0] = '\0';
         m_ipaPathBuffer[0] = '\0';
+        m_expansionSwfPathBuffer[0] = '\0';
+        m_hdIpaPathBuffer[0] = '\0';
+        m_mobileIpaPathBuffer[0] = '\0';
         appendLog("[Project] Created a new empty project.");
     }
     ImGui::SameLine();
@@ -539,6 +559,9 @@ void BuilderUI::renderActionButtons() {
             m_swfPathBuffer[sizeof(m_swfPathBuffer) - 1] = '\0';
             std::strncpy(m_ipaPathBuffer, m_project.config().sourceIpa.c_str(), sizeof(m_ipaPathBuffer) - 1);
             m_ipaPathBuffer[sizeof(m_ipaPathBuffer) - 1] = '\0';
+            std::strncpy(m_expansionSwfPathBuffer, m_project.config().sourceExpansionSwf.c_str(), sizeof(m_expansionSwfPathBuffer) - 1);
+            std::strncpy(m_hdIpaPathBuffer, m_project.config().sourceHdIpa.c_str(), sizeof(m_hdIpaPathBuffer) - 1);
+            std::strncpy(m_mobileIpaPathBuffer, m_project.config().sourceMobileIpa.c_str(), sizeof(m_mobileIpaPathBuffer) - 1);
             m_lastSuccessfulImportKey.clear();
             appendLog("[Project] Loaded configuration from " + loadPath.string());
             discoverAssets();
@@ -578,6 +601,9 @@ void BuilderUI::discoverAssets() {
     if (found) {
         appendLog("[Assets] Source SWF ready: " + m_project.config().sourceSwf);
         if (m_project.hasValidIpa()) appendLog("[Assets] Optional IPA ready: " + m_project.config().sourceIpa);
+        if (!m_project.config().sourceExpansionSwf.empty()) appendLog("[Assets] Expansion SWF ready: " + m_project.config().sourceExpansionSwf);
+        if (!m_project.config().sourceHdIpa.empty()) appendLog("[Assets] HD iPad IPA ready: " + m_project.config().sourceHdIpa);
+        if (!m_project.config().sourceMobileIpa.empty()) appendLog("[Assets] Phone/mobile IPA ready: " + m_project.config().sourceMobileIpa);
     } else {
         appendLog("[Assets] No SWF found in " + m_project.config().sourceDirectory + ".");
     }
@@ -609,7 +635,7 @@ bool BuilderUI::validateProject() {
         }
     }
 
-    static const char* editions[] = {"BTD4 Flash", "BTD4 Expansion", "BTD4 HD (iPad)"};
+    static const char* editions[] = {"BTD4 Flash", "BTD4 Expansion", "BTD4 HD (iPad)", "Definitive Edition"};
     bool knownEdition = false;
     for (const char* edition : editions) {
         if (config.gameEdition == edition) {
@@ -773,6 +799,10 @@ bool BuilderUI::triggerImport() {
     tools::ImportOptions options;
     options.sourceSwf = m_project.config().sourceSwf;
     options.sourceIpa = m_project.config().sourceIpa;
+    options.sourceExpansionSwf = m_project.config().sourceExpansionSwf;
+    options.sourceHdIpa = m_project.config().sourceHdIpa;
+    options.sourceMobileIpa = m_project.config().sourceMobileIpa;
+    options.gameEdition = m_project.config().gameEdition;
     options.outputDir = (projectRoot / "game_data" / m_project.config().targetPlatform / m_project.config().gameEdition).string();
     options.targetPlatform = m_project.config().targetPlatform;
 
@@ -803,6 +833,9 @@ bool BuilderUI::triggerImport() {
         importerExecutable,
         fs::path(options.sourceSwf),
         fs::path(options.sourceIpa),
+        fs::path(options.sourceExpansionSwf),
+        fs::path(options.sourceHdIpa),
+        fs::path(options.sourceMobileIpa),
         fs::path(options.outputDir),
         projectRoot,
         options.targetPlatform,
