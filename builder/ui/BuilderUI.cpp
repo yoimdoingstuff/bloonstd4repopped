@@ -843,9 +843,9 @@ bool BuilderUI::triggerImport() {
         fs::path(options.sourceHdIpa),
         fs::path(options.sourceMobileIpa),
         fs::path(options.outputDir),
-        options.gameEdition,
         projectRoot,
         options.targetPlatform,
+        options.gameEdition,
         importerOutput);
 
     if (!importerOutput.empty()) {
