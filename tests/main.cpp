@@ -212,17 +212,10 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
     btd4::SDLInput input;
     const btd4::Viewport viewport{0, 0, 480, 272};
 
+    // A click/keypress that begins and ends between two game frames must still
+    // generate a just-pressed edge. The event loop can drain both SDL events
+    // before Engine::frame() runs.
     input.beginFrame();
-    SDL_Event keyDown{};
-    keyDown.type = SDL_KEYDOWN;
-    keyDown.key.keysym.sym = SDLK_SPACE;
-    input.processEvent(keyDown, viewport);
-    TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
-    TEST_ASSERT(input.isActionJustPressed(btd4::InputAction::Confirm));
-
-    input.beginFrame();
-    TEST_ASSERT(!input.isActionJustPressed(btd4::InputAction::Confirm));
-
     SDL_Event mouseDown{};
     mouseDown.type = SDL_MOUSEBUTTONDOWN;
     mouseDown.button.button = SDL_BUTTON_LEFT;
@@ -230,41 +223,69 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
     mouseDown.button.y = 136;
     input.processEvent(mouseDown, viewport);
 
-    SDL_Event keyUp{};
-    keyUp.type = SDL_KEYUP;
-    keyUp.key.keysym.sym = SDLK_SPACE;
-    input.processEvent(keyUp, viewport);
-    TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
-
-    input.beginFrame();
     SDL_Event mouseUp{};
     mouseUp.type = SDL_MOUSEBUTTONUP;
     mouseUp.button.button = SDL_BUTTON_LEFT;
     mouseUp.button.x = 240;
     mouseUp.button.y = 136;
     input.processEvent(mouseUp, viewport);
+
+    TEST_ASSERT(input.isActionJustPressed(btd4::InputAction::Confirm));
     TEST_ASSERT(input.isActionJustReleased(btd4::InputAction::Confirm));
     TEST_ASSERT(!input.isActionDown(btd4::InputAction::Confirm));
 
+    // Keyboard and mouse are separate sources, so releasing one must not cancel
+    // an action that remains physically held by the other source.
+    input.beginFrame();
+    SDL_Event keyDown{};
+    keyDown.type = SDL_KEYDOWN;
+    keyDown.key.keysym.sym = SDLK_SPACE;
+    keyDown.key.keysym.scancode = SDL_SCANCODE_SPACE;
+    input.processEvent(keyDown, viewport);
+    TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
+    TEST_ASSERT(input.isActionJustPressed(btd4::InputAction::Confirm));
+
+    input.beginFrame();
+    input.processEvent(mouseDown, viewport);
+    input.processEvent(mouseUp, viewport);
+    TEST_ASSERT(input.isActionJustPressed(btd4::InputAction::Confirm));
+    TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
+
+    SDL_Event keyUp{};
+    keyUp.type = SDL_KEYUP;
+    keyUp.key.keysym.sym = SDLK_SPACE;
+    keyUp.key.keysym.scancode = SDL_SCANCODE_SPACE;
+    input.processEvent(keyUp, viewport);
+    TEST_ASSERT(input.isActionJustReleased(btd4::InputAction::Confirm));
+    TEST_ASSERT(!input.isActionDown(btd4::InputAction::Confirm));
+
+    // Two physical keys sharing Confirm must be reference-counted.
     input.beginFrame();
     keyDown.key.keysym.sym = SDLK_SPACE;
     keyDown.key.keysym.scancode = SDL_SCANCODE_SPACE;
     input.processEvent(keyDown, viewport);
-    input.beginFrame();
-    keyDown.key.keysym.sym = SDLK_RETURN;
-    keyDown.key.keysym.scancode = SDL_SCANCODE_RETURN;
-    input.processEvent(keyDown, viewport);
-    keyUp.key.keysym.sym = SDLK_SPACE;
-    keyUp.key.keysym.scancode = SDL_SCANCODE_SPACE;
-    input.processEvent(keyUp, viewport);
+
+    SDL_Event returnDown{};
+    returnDown.type = SDL_KEYDOWN;
+    returnDown.key.keysym.sym = SDLK_RETURN;
+    returnDown.key.keysym.scancode = SDL_SCANCODE_RETURN;
+    input.processEvent(returnDown, viewport);
+
     TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
 
     input.beginFrame();
-    keyUp.key.keysym.sym = SDLK_RETURN;
-    keyUp.key.keysym.scancode = SDL_SCANCODE_RETURN;
     input.processEvent(keyUp, viewport);
-    TEST_ASSERT(input.isActionJustReleased(btd4::InputAction::Confirm));
+    TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
+    TEST_ASSERT(!input.isActionJustReleased(btd4::InputAction::Confirm));
+
+    SDL_Event returnUp{};
+    returnUp.type = SDL_KEYUP;
+    returnUp.key.keysym.sym = SDLK_RETURN;
+    returnUp.key.keysym.scancode = SDL_SCANCODE_RETURN;
+    input.processEvent(returnUp, viewport);
+
     TEST_ASSERT(!input.isActionDown(btd4::InputAction::Confirm));
+    TEST_ASSERT(input.isActionJustReleased(btd4::InputAction::Confirm));
 }
 
 // -----------------------------------------------------------------------------
