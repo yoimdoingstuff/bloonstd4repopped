@@ -74,16 +74,17 @@ void Tower::cycleTargetingModeBackward() {
 }
 
 uint8_t Tower::upgradeTier(uint8_t path) const {
-    return path < 2 ? m_upgradeTiers[path] : 0;
+    return path == 0 ? m_upgradeLevel : 0;
 }
 
 bool Tower::hasUpgrade(uint8_t path, uint8_t tier) const {
-    return path < 2 && tier > 0 && tier <= m_upgradeTiers[path];
+    return path == 0 && tier > 0 && tier <= m_upgradeLevel;
 }
 
 bool Tower::applyUpgrade(const UpgradeEffect& effect, uint8_t path, uint8_t tier) {
-    if (path >= 2 || tier == 0 || tier > 4) return false;
-    if (tier != static_cast<uint8_t>(m_upgradeTiers[path] + 1)) return false;
+    // BTD4 has a single sequential upgrade chain, not BTD3/5-style crosspaths.
+    if (path != 0 || tier == 0 || tier > 4) return false;
+    if (tier != static_cast<uint8_t>(m_upgradeLevel + 1)) return false;
 
     if (!std::isfinite(effect.rangeAdd) || !std::isfinite(effect.cooldownMultiplier) ||
         !std::isfinite(effect.projectileSpeedMultiplier) || !std::isfinite(effect.explosionRadiusAdd) ||
@@ -98,7 +99,7 @@ bool Tower::applyUpgrade(const UpgradeEffect& effect, uint8_t path, uint8_t tier
     m_projectileSpeed = std::max(0.0f, m_projectileSpeed * effect.projectileSpeedMultiplier);
     m_explosionRadius = std::max(0.0f, m_explosionRadius + effect.explosionRadiusAdd);
     m_totalInvestedCost += effect.cost;
-    m_upgradeTiers[path] = tier;
+    m_upgradeLevel = tier;
     m_cooldownTimer = std::min(m_cooldownTimer, m_attackCooldown);
     return true;
 }
