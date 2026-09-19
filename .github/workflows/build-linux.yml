@@ -1,5 +1,8 @@
 name: Build Linux
 
+permissions:
+  contents: read
+
 on:
   workflow_call:
   workflow_dispatch:
@@ -11,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Install dependencies
       run: |
@@ -35,17 +38,56 @@ jobs:
 
     - name: Package Artifacts
       run: |
-        mkdir -p package/bin/assets/placeholder/rounds package/bin/assets/placeholder/upgrades package/bin/assets/placeholder/towers
+        set -euo pipefail
+        mkdir -p package/bin/assets/placeholder/rounds package/bin/assets/placeholder/upgrades package/bin/assets/placeholder/towers package/bin/lib
+
         cp build/btd4_game package/bin/
         cp build/btd4_builder package/bin/
         cp build/btd4_importer package/bin/
+
+        # Bundle SDL runtime libraries supplied by the CI image.
+        for pattern in \
+          "/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.*" \
+          "/usr/lib/x86_64-linux-gnu/libSDL2_image-2.0.so.*"; do
+          for lib in $pattern; do
+            if [ -f "$lib" ]; then cp -L "$lib" package/bin/lib/; fi
+          done
+        done
+
+        cat > package/bin/run-btd4-game.sh <<'EOF'
+        #!/usr/bin/env bash
+        set -e
+        DIR="$(cd "$(dirname "$0")" && pwd)"
+        export LD_LIBRARY_PATH="$DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+        exec "$DIR/btd4_game" "$@"
+        EOF
+        chmod +x package/bin/run-btd4-game.sh
+
+        cat > package/bin/run-btd4-builder.sh <<'EOF'
+        #!/usr/bin/env bash
+        set -e
+        DIR="$(cd "$(dirname "$0")" && pwd)"
+        export LD_LIBRARY_PATH="$DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+        exec "$DIR/btd4_builder" "$@"
+        EOF
+        chmod +x package/bin/run-btd4-builder.sh
+
         cp assets/placeholder/rounds/default_rounds.json package/bin/assets/placeholder/rounds/default_rounds.json
         cp assets/placeholder/upgrades/default_upgrades.json package/bin/assets/placeholder/upgrades/default_upgrades.json
         cp assets/placeholder/towers/default_towers.json package/bin/assets/placeholder/towers/default_towers.json
+
+        test -x package/bin/btd4_game
+        test -x package/bin/btd4_builder
+        test -x package/bin/btd4_importer
+        test -x package/bin/run-btd4-game.sh
+        test -x package/bin/run-btd4-builder.sh
+        test -n "$(find package/bin/lib -maxdepth 1 -type f -name 'libSDL2*.so*' -print -quit)"
+
         tar -czf btd4-linux-x86_64.tar.gz -C package bin
 
     - name: Upload Linux Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: btd4-linux-x86_64
         path: btd4-linux-x86_64.tar.gz
+        if-no-files-found: error
