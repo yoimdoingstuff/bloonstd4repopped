@@ -86,7 +86,7 @@ AssetManager::AssetManager() { setupFallbackColors(); }
 
 namespace {
 std::string xmlAttr(const std::string& line, const char* key) {
-    const std::string needle = std::string(key) + "="";
+    const std::string needle = std::string(key) + "=\"";
     const size_t start = line.find(needle);
     if (start == std::string::npos) return {};
     const size_t valueStart = start + needle.size();
