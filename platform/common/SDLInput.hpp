@@ -33,11 +33,14 @@ private:
     FrontendProfile m_profile{FrontendProfile::FlashDesktop};
     uint32_t m_currentActions{0};
     uint32_t m_previousActions{0};
+    uint32_t m_pressedActions{0};
+    uint32_t m_releasedActions{0};
     uint32_t m_keyboardActions{0};
     uint32_t m_pointerActions{0};
     uint32_t m_controllerActions{0};
     std::array<bool, SDL_NUM_SCANCODES> m_keyDown{};
     std::array<uint16_t, 32> m_keyActionCounts{};
+    std::array<uint16_t, 32> m_controllerActionCounts{};
 
     PointerState m_pointer;
     SDL_GameController* m_controller{nullptr};
