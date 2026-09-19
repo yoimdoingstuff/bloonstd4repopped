@@ -1,11 +1,11 @@
-#define SDL_MAIN_HANDLED
 #include "../engine/core/Engine.hpp"
 #include "../engine/core/Logger.hpp"
 #include "../engine/input/FrontendProfile.hpp"
 #include "../platform/common/SDLRenderer.hpp"
 #include "../platform/common/SDLInput.hpp"
 #include "../platform/common/SDLAudio.hpp"
-#include <SDL.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -43,13 +43,10 @@ int main(int argc, char* argv[]) {
     (void)argv;
     BTD4_LOG_INFO("Starting Bloons TD 4 Repopped...");
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
         std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return 1;
     }
-
-    SDL_ShowCursor(SDL_ENABLE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
 
     const std::string baseDir = executableDirectory();
     std::error_code ec;
@@ -60,11 +57,9 @@ int main(int argc, char* argv[]) {
     int windowHeight = 544;
     SDL_Window* window = SDL_CreateWindow(
         "Bloons TD 4 Repopped",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
         windowWidth,
         windowHeight,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+        SDL_WINDOW_RESIZABLE
     );
 
     if (!window) {
@@ -108,10 +103,9 @@ int main(int argc, char* argv[]) {
     while (running && engine.isRunning()) {
         input.beginFrame();
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) running = false;
-            else if (event.type == SDL_WINDOWEVENT &&
-                     (event.window.event == SDL_WINDOWEVENT_RESIZED ||
-                      event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)) {
+            if (event.type == SDL_EVENT_QUIT) {
+                running = false;
+            } else if (event.type == SDL_EVENT_WINDOW_RESIZED) {
                 windowWidth = event.window.data1;
                 windowHeight = event.window.data2;
                 engine.onResize(windowWidth, windowHeight);

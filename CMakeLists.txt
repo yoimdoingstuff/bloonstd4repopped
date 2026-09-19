@@ -27,99 +27,79 @@ endif()
 include(FetchContent)
 
 if(NOT TARGET_PSP)
-    find_package(SDL2 QUIET)
-    if(NOT SDL2_FOUND)
-        find_package(PkgConfig QUIET)
-        if(PKG_CONFIG_FOUND)
-            pkg_check_modules(SDL2 QUIET sdl2)
-        endif()
-    endif()
-    if(NOT SDL2_FOUND AND NOT TARGET SDL2::SDL2)
-        message(STATUS "SDL2 not found on host. Fetching SDL2 via FetchContent...")
-        FetchContent_Declare(SDL2 GIT_REPOSITORY https://github.com/libsdl-org/SDL.git GIT_TAG release-2.30.8 GIT_SHALLOW TRUE)
-        set(SDL_TEST OFF CACHE BOOL "" FORCE)
-        set(SDL_SHARED ON CACHE BOOL "" FORCE)
-        set(SDL_STATIC OFF CACHE BOOL "" FORCE)
-        FetchContent_MakeAvailable(SDL2)
-        if(TARGET SDL2-shared)
-            add_library(SDL2::SDL2 ALIAS SDL2-shared)
-        endif()
-    endif()
+    FetchContent_Declare(SDL3
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+        GIT_TAG release-3.4.16
+        GIT_SHALLOW TRUE)
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+    set(SDL_SHARED ON CACHE BOOL "" FORCE)
+    set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+    set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+    set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+    set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(SDL3)
 
-    find_package(SDL2_image QUIET)
-    if(NOT SDL2_image_FOUND AND NOT TARGET SDL2_image::SDL2_image AND NOT TARGET SDL2_image)
-        message(STATUS "SDL2_image not found on host. Fetching SDL2_image via FetchContent...")
-        FetchContent_Declare(SDL2_image
-            GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-            GIT_TAG release-2.8.12
-            GIT_SHALLOW TRUE)
-        set(SDL2IMAGE_VENDORED ON CACHE BOOL "" FORCE)
-        set(SDL2IMAGE_SAMPLES OFF CACHE BOOL "" FORCE)
-        set(SDL2IMAGE_TESTS OFF CACHE BOOL "" FORCE)
-        set(SDL2IMAGE_INSTALL OFF CACHE BOOL "" FORCE)
-        set(SDL2IMAGE_BACKEND_STB ON CACHE BOOL "" FORCE)
-        set(SDL2IMAGE_AVIF OFF CACHE BOOL "" FORCE)
-        set(SDL2IMAGE_JXL OFF CACHE BOOL "" FORCE)
-        set(SDL2IMAGE_TIF OFF CACHE BOOL "" FORCE)
-        set(SDL2IMAGE_WEBP OFF CACHE BOOL "" FORCE)
-        FetchContent_MakeAvailable(SDL2_image)
-        if(NOT TARGET SDL2_image::SDL2_image AND TARGET SDL2_image)
-            add_library(SDL2_image::SDL2_image ALIAS SDL2_image)
-        endif()
-    elseif(TARGET SDL2_image AND NOT TARGET SDL2_image::SDL2_image)
-        add_library(SDL2_image::SDL2_image ALIAS SDL2_image)
-    endif()
+    FetchContent_Declare(SDL3_image
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+        GIT_TAG release-3.4.4
+        GIT_SHALLOW TRUE)
+    set(SDLIMAGE_VENDORED ON CACHE BOOL "" FORCE)
+    set(SDLIMAGE_INSTALL OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_SAMPLES OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_TESTS OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_BACKEND_STB ON CACHE BOOL "" FORCE)
+    set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_GIF OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_JXL OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_LBM OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_PCX OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_PNM OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_QOI OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_SVG OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_TGA OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_TIF OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_WEBP OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_XCF OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_XPM OFF CACHE BOOL "" FORCE)
+    set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(SDL3_image)
 
-    find_package(SDL2_mixer QUIET)
-    if(NOT SDL2_mixer_FOUND AND NOT TARGET SDL2_mixer::SDL2_mixer AND NOT TARGET SDL2_mixer)
-        message(STATUS "SDL2_mixer not found on host. Fetching SDL2_mixer via FetchContent...")
-        FetchContent_Declare(SDL2_mixer
-            GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
-            GIT_TAG release-2.8.0
-            GIT_SHALLOW TRUE)
-        # SDL_mixer 2.8.0 derives its shared/static mode from BUILD_SHARED_LIBS.
-        # Keep the project on shared SDL2 and deploy the mixer DLL alongside
-        # desktop executables rather than forcing an incompatible static setup.
-        set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-        set(SDL2MIXER_VENDORED ON CACHE BOOL "" FORCE)
-        set(SDL2MIXER_INSTALL OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_SAMPLES OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_CMD OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_FLAC OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_GME OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_MOD OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_MP3 ON CACHE BOOL "" FORCE)
-        set(SDL2MIXER_MP3_MINIMP3 ON CACHE BOOL "" FORCE)
-        set(SDL2MIXER_MP3_MPG123 OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_MIDI OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_OPUS OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_VORBIS "" CACHE STRING "" FORCE)
-        set(SDL2MIXER_WAVE OFF CACHE BOOL "" FORCE)
-        set(SDL2MIXER_WAVPACK OFF CACHE BOOL "" FORCE)
-        FetchContent_MakeAvailable(SDL2_mixer)
-        if(NOT TARGET SDL2_mixer::SDL2_mixer AND TARGET SDL2_mixer)
-            add_library(SDL2_mixer::SDL2_mixer ALIAS SDL2_mixer)
-        endif()
-    elseif(TARGET SDL2_mixer AND NOT TARGET SDL2_mixer::SDL2_mixer)
-        add_library(SDL2_mixer::SDL2_mixer ALIAS SDL2_mixer)
-    endif()
+    FetchContent_Declare(SDL3_mixer
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
+        GIT_TAG release-3.2.4
+        GIT_SHALLOW TRUE)
+    set(SDLMIXER_VENDORED ON CACHE BOOL "" FORCE)
+    set(SDLMIXER_INSTALL OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_TESTS OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_FLAC OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_GME OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_MOD OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_MIDI OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_MP3 ON CACHE BOOL "" FORCE)
+    set(SDLMIXER_MP3_DRMP3 ON CACHE BOOL "" FORCE)
+    set(SDLMIXER_MP3_MPG123 OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_OPUS OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_VORBIS_STB OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_VORBIS_VORBISFILE OFF CACHE BOOL "" FORCE)
+    set(SDLMIXER_WAVPACK OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(SDL3_mixer)
 
     if(BUILD_BUILDER)
-        FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git GIT_TAG v1.91.5 GIT_SHALLOW TRUE)
+        FetchContent_Declare(imgui
+            GIT_REPOSITORY https://github.com/ocornut/imgui.git
+            GIT_TAG v1.92.9b
+            GIT_SHALLOW TRUE)
         FetchContent_MakeAvailable(imgui)
         add_library(imgui STATIC
             ${imgui_SOURCE_DIR}/imgui.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
             ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
             ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-            ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
-            ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer2.cpp)
+            ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+            ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp)
         target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
-        if(TARGET SDL2::SDL2)
-            target_link_libraries(imgui PUBLIC SDL2::SDL2)
-        elseif(SDL2_LIBRARIES)
-            target_link_libraries(imgui PUBLIC ${SDL2_LIBRARIES})
-            target_include_directories(imgui PUBLIC ${SDL2_INCLUDE_DIRS})
-        endif()
+        target_link_libraries(imgui PUBLIC SDL3::SDL3)
     endif()
 endif()
 
@@ -162,45 +142,22 @@ target_include_directories(btd4_platform PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/plat
     ${CMAKE_CURRENT_SOURCE_DIR}/platform/xbox360 ${CMAKE_CURRENT_SOURCE_DIR}/engine)
 target_link_libraries(btd4_platform PUBLIC btd4_engine)
 if(NOT TARGET_PSP)
-    if(TARGET SDL2::SDL2)
-        target_link_libraries(btd4_platform PUBLIC SDL2::SDL2)
-    elseif(SDL2_LIBRARIES)
-        target_link_libraries(btd4_platform PUBLIC ${SDL2_LIBRARIES})
-        target_include_directories(btd4_platform PUBLIC ${SDL2_INCLUDE_DIRS})
-    endif()
-    if(TARGET SDL2_image::SDL2_image)
-        target_link_libraries(btd4_platform PUBLIC SDL2_image::SDL2_image)
-    elseif(TARGET SDL2_image)
-        target_link_libraries(btd4_platform PUBLIC SDL2_image)
-    endif()
-    if(TARGET SDL2_mixer::SDL2_mixer)
-        target_link_libraries(btd4_platform PUBLIC SDL2_mixer::SDL2_mixer)
-    elseif(TARGET SDL2_mixer)
-        target_link_libraries(btd4_platform PUBLIC SDL2_mixer)
-    endif()
+    target_link_libraries(btd4_platform PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_mixer::SDL3_mixer)
 endif()
 
 if(BUILD_GAME)
     if(NOT TARGET_PSP)
         add_executable(btd4_game app/main.cpp)
-        target_link_libraries(btd4_game PRIVATE btd4_engine btd4_platform)
-        if(TARGET SDL2::SDL2)
-            target_link_libraries(btd4_game PRIVATE SDL2::SDL2)
-        elseif(SDL2_LIBRARIES)
-            target_link_libraries(btd4_game PRIVATE ${SDL2_LIBRARIES})
-            target_include_directories(btd4_game PRIVATE ${SDL2_INCLUDE_DIRS})
-        endif()
-        if(WIN32 AND TARGET SDL2::SDL2)
+        target_link_libraries(btd4_game PRIVATE btd4_engine btd4_platform SDL3::SDL3)
+        if(WIN32)
             add_custom_command(TARGET btd4_game POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:btd4_game>"
-                COMMENT "Deploying SDL2 runtime for btd4_game")
-        endif()
-        if(WIN32 AND TARGET SDL2_mixer::SDL2_mixer)
-            add_custom_command(TARGET btd4_game POST_BUILD
+                    "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:btd4_game>"
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "$<TARGET_FILE:SDL2_mixer::SDL2_mixer>" "$<TARGET_FILE_DIR:btd4_game>"
-                COMMENT "Deploying SDL2_mixer runtime for btd4_game")
+                    "$<TARGET_FILE:SDL3_image::SDL3_image>" "$<TARGET_FILE_DIR:btd4_game>"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<TARGET_FILE:SDL3_mixer::SDL3_mixer>" "$<TARGET_FILE_DIR:btd4_game>"
+                COMMENT "Deploying SDL3 desktop runtimes for btd4_game")
         endif()
     else()
         if(NOT COMMAND create_pbp_file)
@@ -250,21 +207,17 @@ if(BUILD_BUILDER AND NOT TARGET_PSP)
     endif()
     target_include_directories(btd4_builder PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/builder ${CMAKE_CURRENT_SOURCE_DIR}/tools
         ${CMAKE_CURRENT_SOURCE_DIR}/platform/common ${CMAKE_CURRENT_SOURCE_DIR}/engine)
-    target_link_libraries(btd4_builder PRIVATE btd4_platform btd4_engine imgui)
-    if(TARGET SDL2::SDL2)
-        target_link_libraries(btd4_builder PRIVATE SDL2::SDL2)
-    elseif(SDL2_LIBRARIES)
-        target_link_libraries(btd4_builder PRIVATE ${SDL2_LIBRARIES})
-        target_include_directories(btd4_builder PRIVATE ${SDL2_INCLUDE_DIRS})
-    endif()
+    target_link_libraries(btd4_builder PRIVATE btd4_platform btd4_engine imgui SDL3::SDL3)
     if(WIN32)
         target_link_libraries(btd4_builder PRIVATE comdlg32)
-        if(TARGET SDL2::SDL2)
-            add_custom_command(TARGET btd4_builder POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:btd4_builder>"
-                COMMENT "Deploying SDL2 runtime for btd4_builder")
-        endif()
+        add_custom_command(TARGET btd4_builder POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:btd4_builder>"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:SDL3_image::SDL3_image>" "$<TARGET_FILE_DIR:btd4_builder>"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:SDL3_mixer::SDL3_mixer>" "$<TARGET_FILE_DIR:btd4_builder>"
+            COMMENT "Deploying SDL3 desktop runtimes for btd4_builder")
         if(TARGET btd4_importer)
             add_custom_command(TARGET btd4_builder POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -286,16 +239,17 @@ if(BUILD_TESTS AND NOT TARGET_PSP)
         builder/project/Project.hpp builder/project/Project.cpp)
     target_include_directories(btd4_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests ${CMAKE_CURRENT_SOURCE_DIR}/builder
         ${CMAKE_CURRENT_SOURCE_DIR}/tools ${CMAKE_CURRENT_SOURCE_DIR}/engine ${CMAKE_CURRENT_SOURCE_DIR}/platform/common)
-    target_link_libraries(btd4_tests PRIVATE btd4_engine btd4_platform btd4_importer_lib)
-    target_compile_definitions(btd4_tests PRIVATE SDL_MAIN_HANDLED)
-    if(TARGET SDL2::SDL2)
-        target_link_libraries(btd4_tests PRIVATE SDL2::SDL2)
-    elseif(SDL2_LIBRARIES)
-        target_link_libraries(btd4_tests PRIVATE ${SDL2_LIBRARIES})
-        target_include_directories(btd4_tests PRIVATE ${SDL2_INCLUDE_DIRS})
-    endif()
+    target_link_libraries(btd4_tests PRIVATE btd4_engine btd4_platform btd4_importer_lib SDL3::SDL3)
     if(WIN32)
         target_link_options(btd4_tests PRIVATE "/SUBSYSTEM:CONSOLE")
+        add_custom_command(TARGET btd4_tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:btd4_tests>"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:SDL3_image::SDL3_image>" "$<TARGET_FILE_DIR:btd4_tests>"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:SDL3_mixer::SDL3_mixer>" "$<TARGET_FILE_DIR:btd4_tests>"
+            COMMENT "Deploying SDL3 runtimes for btd4_tests")
     endif()
     add_test(NAME btd4_unit_tests COMMAND btd4_tests)
     set_tests_properties(btd4_unit_tests PROPERTIES WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")

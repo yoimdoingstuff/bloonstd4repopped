@@ -36,7 +36,7 @@ jobs:
         cp build/Release/btd4_game.exe package/bin/ || cp build/btd4_game.exe package/bin/
         cp build/Release/btd4_builder.exe package/bin/ || cp build/btd4_builder.exe package/bin/
         cp build/Release/btd4_importer.exe package/bin/ || cp build/btd4_importer.exe package/bin/
-        find build -type f \( -iname 'SDL2.dll' -o -iname 'SDL2_image*.dll' -o -iname 'SDL2_mixer*.dll' \) -exec cp -f {} package/bin/ \; 2>/dev/null || true
+        find build -type f \( -iname 'SDL3.dll' -o -iname 'SDL3_image*.dll' -o -iname 'SDL3_mixer*.dll' \) -exec cp -f {} package/bin/ \; 2>/dev/null || true
         cp build/Release/*.dll package/bin/ 2>/dev/null || true
         cp CMakeLists.txt package/bin/CMakeLists.txt
         cp assets/placeholder/rounds/default_rounds.json package/bin/assets/placeholder/rounds/default_rounds.json
@@ -45,6 +45,9 @@ jobs:
         test -f package/bin/btd4_game.exe
         test -f package/bin/btd4_builder.exe
         test -f package/bin/btd4_importer.exe
+        test -n "$(find package/bin -maxdepth 1 -type f -iname 'SDL3*.dll' -print -quit)"
+        test -n "$(find package/bin -maxdepth 1 -type f -iname 'SDL3_image*.dll' -print -quit)"
+        test -n "$(find package/bin -maxdepth 1 -type f -iname 'SDL3_mixer*.dll' -print -quit)"
         7z a btd4-windows-x64.zip ./package/bin/*
 
     - name: Upload Windows Artifact

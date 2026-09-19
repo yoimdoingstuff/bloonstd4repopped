@@ -19,7 +19,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential cmake libsdl2-dev libsdl2-image-dev libgl1-mesa-dev ninja-build
+        sudo apt-get install -y build-essential cmake libgl1-mesa-dev libx11-dev libxext-dev libxrandr-dev libxfixes-dev libxi-dev libxss-dev libwayland-dev libxkbcommon-dev libgbm-dev ninja-build
 
     - name: Configure CMake
       run: |
@@ -31,8 +31,8 @@ jobs:
 
     - name: Run Tests
       env:
-        SDL_VIDEODRIVER: dummy
-        SDL_AUDIODRIVER: dummy
+        SDL_VIDEO_DRIVER: dummy
+        SDL_AUDIO_DRIVER: dummy
       run: |
         ctest --test-dir build --output-on-failure --timeout 60 --verbose
 
@@ -45,20 +45,10 @@ jobs:
         cp build/btd4_builder package/bin/
         cp build/btd4_importer package/bin/
 
-        # Bundle SDL runtime libraries supplied by the CI image.
-        for pattern in \
-          "/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.*" \
-          "/usr/lib/x86_64-linux-gnu/libSDL2_image-2.0.so.*"; do
-          for lib in $pattern; do
-            if [ -f "$lib" ]; then cp -L "$lib" package/bin/lib/; fi
-          done
-        done
-
-        # SDL_mixer is fetched and built by this project, so bundle its shared
-        # runtime from the CMake build tree as well.
+        # SDL3, SDL3_image, and SDL3_mixer are fetched and built by this project.
         while IFS= read -r lib; do
           cp -L "$lib" package/bin/lib/
-        done < <(find build -type f -name 'libSDL2_mixer*.so*' -print)
+        done < <(find build -type f -name 'libSDL3*.so*' -print)
 
         cat > package/bin/run-btd4-game.sh <<'EOF'
         #!/usr/bin/env bash
@@ -87,8 +77,8 @@ jobs:
         test -x package/bin/btd4_importer
         test -x package/bin/run-btd4-game.sh
         test -x package/bin/run-btd4-builder.sh
-        test -n "$(find package/bin/lib -maxdepth 1 -type f -name 'libSDL2*.so*' -print -quit)"
-        test -n "$(find package/bin/lib -maxdepth 1 -type f -name 'libSDL2_mixer*.so*' -print -quit)"
+        test -n "$(find package/bin/lib -maxdepth 1 -type f -name 'libSDL3*.so*' -print -quit)"
+        test -n "$(find package/bin/lib -maxdepth 1 -type f -name 'libSDL3_mixer*.so* -print -quit)"
 
         tar -czf btd4-linux-x86_64.tar.gz -C package bin
 

@@ -1,9 +1,11 @@
 #pragma once
 
 #include "../../engine/audio/IAudio.hpp"
-#include <SDL_mixer.h>
+#include <SDL3_mixer/SDL_mixer.h>
+#include <cstddef>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace btd4 {
 
@@ -32,8 +34,14 @@ private:
     bool m_initialized{false};
     float m_masterVolume{1.0f};
     float m_musicVolume{1.0f};
-    Mix_Music* m_music{nullptr};
-    std::unordered_map<std::string, Mix_Chunk*> m_sounds;
+
+    MIX_Mixer* m_mixer{nullptr};
+    MIX_Audio* m_music{nullptr};
+    MIX_Track* m_musicTrack{nullptr};
+
+    std::unordered_map<std::string, MIX_Audio*> m_sounds;
+    std::vector<MIX_Track*> m_soundTracks;
+    std::size_t m_nextSoundTrack{0};
 };
 
 } // namespace btd4

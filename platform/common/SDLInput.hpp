@@ -3,7 +3,7 @@
 #include "../../engine/input/IInput.hpp"
 #include "../../engine/input/FrontendProfile.hpp"
 #include "../../engine/rendering/LogicalResolution.hpp"
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -38,15 +38,15 @@ private:
     uint32_t m_keyboardActions{0};
     uint32_t m_pointerActions{0};
     uint32_t m_controllerActions{0};
-    std::array<bool, SDL_NUM_SCANCODES> m_keyDown{};
+    std::array<bool, SDL_SCANCODE_COUNT> m_keyDown{};
     std::array<uint16_t, 32> m_keyActionCounts{};
     std::array<uint16_t, 32> m_controllerActionCounts{};
 
     PointerState m_pointer;
-    SDL_GameController* m_controller{nullptr};
+    SDL_Gamepad* m_controller{nullptr};
 
     void mapKey(SDL_Keycode key, SDL_Scancode scancode, bool isDown);
-    void mapControllerButton(SDL_GameControllerButton button, bool isDown);
+    void mapControllerButton(SDL_GamepadButton button, bool isDown);
     void updateControllerDevice(const SDL_Event& event);
     void updateCurrentActions();
 };

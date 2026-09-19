@@ -1,9 +1,7 @@
 #include "SDLAudio.hpp"
 
 #include "../../engine/assets/AssetManager.hpp"
-#include <SDL.h>
 #include <algorithm>
-#include <cmath>
 
 namespace btd4 {
 
@@ -13,38 +11,74 @@ SDLAudio::~SDLAudio() {
 
 bool SDLAudio::initialize() {
     if (m_initialized) return true;
-    if (Mix_Init(MIX_INIT_MP3) & MIX_INIT_MP3) {
-        // MP3 support is supplied by the vendored minimp3 decoder in CI.
-    } else {
-        Mix_Init(0);
-    }
 
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) < 0) {
-        Mix_Quit();
+    if (!MIX_Init()) {
         return false;
     }
 
-    Mix_AllocateChannels(16);
+    m_mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+    if (!m_mixer) {
+        MIX_Quit();
+        return false;
+    }
+
+    if (!MIX_SetMixerGain(m_mixer, m_masterVolume)) {
+        shutdown();
+        return false;
+    }
+
+    m_soundTracks.reserve(16);
+    for (int i = 0; i < 16; ++i) {
+        MIX_Track* track = MIX_CreateTrack(m_mixer);
+        if (!track) {
+            shutdown();
+            return false;
+        }
+        m_soundTracks.push_back(track);
+    }
+
+    m_musicTrack = MIX_CreateTrack(m_mixer);
+    if (!m_musicTrack) {
+        shutdown();
+        return false;
+    }
+
     m_initialized = true;
-    Mix_VolumeMusic(static_cast<int>(std::lround(m_masterVolume * m_musicVolume * MIX_MAX_VOLUME)));
     return true;
 }
 
 void SDLAudio::shutdown() {
-    if (!m_initialized) return;
+    if (!m_mixer) {
+        MIX_Quit();
+        m_initialized = false;
+        return;
+    }
 
     stopAllSounds();
     stopMusic();
 
-    for (auto& [id, chunk] : m_sounds) {
+    for (MIX_Track* track : m_soundTracks) {
+        if (track) MIX_DestroyTrack(track);
+    }
+    m_soundTracks.clear();
+
+    if (m_musicTrack) {
+        MIX_DestroyTrack(m_musicTrack);
+        m_musicTrack = nullptr;
+    }
+
+    for (auto& [id, audio] : m_sounds) {
         (void)id;
-        if (chunk) Mix_FreeChunk(chunk);
+        if (audio) MIX_DestroyAudio(audio);
     }
     m_sounds.clear();
 
-    Mix_CloseAudio();
-    Mix_Quit();
+    MIX_DestroyMixer(m_mixer);
+    m_mixer = nullptr;
+
     m_initialized = false;
+    m_nextSoundTrack = 0;
+    MIX_Quit();
 }
 
 bool SDLAudio::isInitialized() const {
@@ -52,61 +86,69 @@ bool SDLAudio::isInitialized() const {
 }
 
 void SDLAudio::playSound(std::string_view soundId, float gain) {
-    if (!m_initialized || soundId.empty()) return;
+    if (!m_initialized || !m_mixer || soundId.empty() || m_soundTracks.empty()) return;
 
     const std::string id(soundId);
-    Mix_Chunk*& chunk = m_sounds[id];
-    if (!chunk) {
+    MIX_Audio*& audio = m_sounds[id];
+    if (!audio) {
         const std::string path = AssetManager::instance().resolveAudioPath(id);
         if (path.empty()) {
             m_sounds.erase(id);
             return;
         }
-        chunk = Mix_LoadWAV(path.c_str());
-        if (!chunk) {
+        audio = MIX_LoadAudio(m_mixer, path.c_str(), true);
+        if (!audio) {
             m_sounds.erase(id);
             return;
         }
     }
 
-    const float volume = std::clamp(gain, 0.0f, 1.0f) * m_masterVolume;
-    Mix_VolumeChunk(chunk, static_cast<int>(std::lround(volume * MIX_MAX_VOLUME)));
-    Mix_PlayChannel(-1, chunk, 0);
+    MIX_Track* track = m_soundTracks[m_nextSoundTrack];
+    m_nextSoundTrack = (m_nextSoundTrack + 1) % m_soundTracks.size();
+    MIX_SetTrackAudio(track, audio);
+    MIX_SetTrackGain(track, std::clamp(gain, 0.0f, 1.0f) * m_masterVolume);
+    MIX_SetTrackLoops(track, 0);
+    MIX_PlayTrack(track, 0);
 }
 
 void SDLAudio::stopAllSounds() {
-    if (m_initialized) Mix_HaltChannel(-1);
+    for (MIX_Track* track : m_soundTracks) {
+        if (track) MIX_StopTrack(track, 0);
+    }
 }
 
 void SDLAudio::playMusic(std::string_view musicId, bool loop) {
-    if (!m_initialized || musicId.empty()) return;
+    if (!m_initialized || !m_mixer || !m_musicTrack || musicId.empty()) return;
 
     const std::string path = AssetManager::instance().resolveAudioPath(std::string(musicId));
     if (path.empty()) return;
 
-    if (m_music) {
-        Mix_FreeMusic(m_music);
-        m_music = nullptr;
-    }
+    stopMusic();
 
-    m_music = Mix_LoadMUS(path.c_str());
+    m_music = MIX_LoadAudio(m_mixer, path.c_str(), false);
     if (!m_music) return;
 
-    Mix_VolumeMusic(static_cast<int>(std::lround(m_masterVolume * m_musicVolume * MIX_MAX_VOLUME)));
-    Mix_PlayMusic(m_music, loop ? -1 : 1);
+    MIX_SetTrackAudio(m_musicTrack, m_music);
+    MIX_SetTrackGain(m_musicTrack, m_masterVolume * m_musicVolume);
+    MIX_SetTrackLoops(m_musicTrack, loop ? -1 : 0);
+    if (!MIX_PlayTrack(m_musicTrack, 0)) {
+        MIX_DestroyAudio(m_music);
+        m_music = nullptr;
+    }
 }
 
 void SDLAudio::stopMusic() {
-    if (!m_music) return;
-    Mix_HaltMusic();
-    Mix_FreeMusic(m_music);
-    m_music = nullptr;
+    if (m_musicTrack) MIX_StopTrack(m_musicTrack, 0);
+    if (m_music) {
+        MIX_DestroyAudio(m_music);
+        m_music = nullptr;
+    }
 }
 
 void SDLAudio::setMasterVolume(float volume) {
     m_masterVolume = clampVolume(volume);
-    if (m_initialized)
-        Mix_VolumeMusic(static_cast<int>(std::lround(m_masterVolume * m_musicVolume * MIX_MAX_VOLUME)));
+    if (m_mixer) MIX_SetMixerGain(m_mixer, m_masterVolume);
+    if (m_musicTrack) MIX_SetTrackGain(m_musicTrack, m_masterVolume * m_musicVolume);
 }
 
 float SDLAudio::masterVolume() const {
@@ -115,8 +157,7 @@ float SDLAudio::masterVolume() const {
 
 void SDLAudio::setMusicVolume(float volume) {
     m_musicVolume = clampVolume(volume);
-    if (m_initialized)
-        Mix_VolumeMusic(static_cast<int>(std::lround(m_masterVolume * m_musicVolume * MIX_MAX_VOLUME)));
+    if (m_musicTrack) MIX_SetTrackGain(m_musicTrack, m_masterVolume * m_musicVolume);
 }
 
 float SDLAudio::musicVolume() const {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../engine/rendering/IRenderer.hpp"
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <unordered_map>
 
 namespace btd4 {

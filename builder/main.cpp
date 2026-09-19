@@ -1,9 +1,9 @@
-#define SDL_MAIN_HANDLED
 #include "ui/BuilderUI.hpp"
-#include <SDL.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <imgui.h>
-#include <imgui_impl_sdl2.h>
-#include <imgui_impl_sdlrenderer2.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
 #include <iostream>
 #include <filesystem>
 #include <cstdlib>
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
     (void)argc;
     (void)argv;
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
         std::cerr << "Error: " << SDL_GetError() << std::endl;
         return -1;
     }
@@ -80,34 +80,34 @@ int main(int argc, char* argv[]) {
 
     int windowWidth = 1024;
     int windowHeight = 640;
-    SDL_WindowFlags windowFlags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Window* window = SDL_CreateWindow(
-        "Bloons TD 4 Repopped - Game Builder", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        windowWidth, windowHeight, windowFlags);
+        "Bloons TD 4 Repopped - Game Builder",
+        windowWidth,
+        windowHeight,
+        SDL_WINDOW_RESIZABLE
+    );
     if (!window) {
         std::cerr << "Failed to create window: " << SDL_GetError() << std::endl;
         SDL_Quit();
         return -1;
     }
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-    if (!renderer) renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
         std::cerr << "Error creating SDL_Renderer: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
         SDL_Quit();
         return -1;
     }
-
-    SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+    SDL_SetRenderVSync(renderer, 1);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsDark();
-    ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
-    ImGui_ImplSDLRenderer2_Init(renderer);
+    ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer3_Init(renderer);
 
     btd4::BuilderUI builderUI;
     builderUI.initialize();
@@ -116,41 +116,35 @@ int main(int argc, char* argv[]) {
     while (running) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT) running = false;
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
+            ImGui_ImplSDL3_ProcessEvent(&event);
+            if (event.type == SDL_EVENT_QUIT) running = false;
+            if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
                 event.window.windowID == SDL_GetWindowID(window)) running = false;
 
-            if (event.type == SDL_DROPFILE) {
-                if (event.drop.file) {
-                    builderUI.addSourceFile(event.drop.file);
-                    SDL_free(event.drop.file);
+            if (event.type == SDL_EVENT_DROP_FILE) {
+                if (event.drop.data) {
+                    builderUI.addSourceFile(event.drop.data);
+                    SDL_free(event.drop.data);
                 }
             }
         }
 
-        ImGui_ImplSDLRenderer2_NewFrame();
-        ImGui_ImplSDL2_NewFrame();
+        ImGui_ImplSDLRenderer3_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
         builderUI.render();
         ImGui::Render();
         SDL_SetRenderDrawColor(renderer, 30, 30, 35, 255);
         SDL_RenderClear(renderer);
-        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
+        ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
         SDL_RenderPresent(renderer);
     }
 
-    ImGui_ImplSDLRenderer2_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
 }
-
-#ifdef _WIN32
-int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
-    return main(__argc, __argv);
-}
-#endif

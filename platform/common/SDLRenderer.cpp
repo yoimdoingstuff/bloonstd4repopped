@@ -1,6 +1,6 @@
 #include "SDLRenderer.hpp"
 #include "../../engine/core/Logger.hpp"
-#include <SDL_image.h>
+#include <SDL3_image/SDL_image.h>
 #include <algorithm>
 #include <cmath>
 
@@ -131,10 +131,10 @@ bool SDLRenderer::initializeWithWindow(SDL_Window* window) {
 
     m_window = window;
 
-    m_renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    m_renderer = SDL_CreateRenderer(window, nullptr);
     if (!m_renderer) {
         // Fallback to software renderer
-        m_renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+        m_renderer = SDL_CreateRenderer(window, "software");
     }
 
     if (!m_renderer) {
@@ -159,6 +159,7 @@ bool SDLRenderer::initializeWithWindow(SDL_Window* window) {
     m_imageSubsystemInitialized = true;
 
     SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderVSync(m_renderer, 1);
     return true;
 }
 
@@ -168,7 +169,7 @@ bool SDLRenderer::initialize(int windowWidth, int windowHeight) {
     }
 
     if ((SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) == 0) {
-        if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+        if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
             BTD4_LOG_ERROR(std::string("SDL video initialization failed: ") + SDL_GetError());
             return false;
         }
@@ -181,11 +182,9 @@ bool SDLRenderer::initialize(int windowWidth, int windowHeight) {
 
     m_window = SDL_CreateWindow(
         "Bloons TD 4 Repopped - Engine Test",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
         windowWidth,
         windowHeight,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+        SDL_WINDOW_RESIZABLE
     );
 
     if (!m_window) {
@@ -236,7 +235,7 @@ void SDLRenderer::beginFrame() {
         return;
     }
     // Reset viewport to full window to clear letterbox/pillarbox margins
-    SDL_RenderSetViewport(m_renderer, nullptr);
+    SDL_SetRenderViewport(m_renderer, nullptr);
 }
 
 void SDLRenderer::endFrame() {
@@ -251,8 +250,8 @@ void SDLRenderer::setViewport(const Viewport& viewport) {
         return;
     }
     m_currentViewport = viewport;
-    SDL_Rect r{viewport.x, viewport.y, viewport.width, viewport.height};
-    SDL_RenderSetViewport(m_renderer, &r);
+    SDL_FRect r{viewport.x, viewport.y, viewport.width, viewport.height};
+    SDL_SetRenderViewport(m_renderer, &r);
     // Do not use SDL_RenderSetLogicalSize here. Desktop builds must render at the
     // actual drawable resolution instead of rasterizing the entire game at 480x272.
     // Game coordinates remain in the existing 480x272 world space and are scaled
@@ -274,7 +273,7 @@ void SDLRenderer::drawRect(float x, float y, float w, float h, const Color& colo
     SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
     const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
     const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
-    SDL_Rect r{
+    SDL_FRect r{
         static_cast<int>(std::round(x * sx)),
         static_cast<int>(std::round(y * sy)),
         static_cast<int>(std::round(w * sx)),
@@ -283,7 +282,7 @@ void SDLRenderer::drawRect(float x, float y, float w, float h, const Color& colo
     if (filled) {
         SDL_RenderFillRect(m_renderer, &r);
     } else {
-        SDL_RenderDrawRect(m_renderer, &r);
+        SDL_RenderRect(m_renderer, &r);
     }
 }
 
@@ -294,7 +293,7 @@ void SDLRenderer::drawLine(float x1, float y1, float x2, float y2, const Color& 
     SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
     const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
     const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
-    SDL_RenderDrawLine(m_renderer,
+    SDL_RenderLine(m_renderer,
         static_cast<int>(std::round(x1 * sx)),
         static_cast<int>(std::round(y1 * sy)),
         static_cast<int>(std::round(x2 * sx)),
@@ -317,7 +316,7 @@ void SDLRenderer::drawCircle(float cx, float cy, float radius, const Color& colo
     if (filled) {
         for (int dy = -ir; dy <= ir; ++dy) {
             int dx = static_cast<int>(std::round(std::sqrt(std::max(0.0, static_cast<double>(ir * ir - dy * dy)))));
-            SDL_RenderDrawLine(m_renderer, icx - dx, icy + dy, icx + dx, icy + dy);
+            SDL_RenderLine(m_renderer, icx - dx, icy + dy, icx + dx, icy + dy);
         }
     } else {
         int x = ir;
@@ -325,14 +324,14 @@ void SDLRenderer::drawCircle(float cx, float cy, float radius, const Color& colo
         int err = 0;
 
         while (x >= y) {
-            SDL_RenderDrawPoint(m_renderer, icx + x, icy + y);
-            SDL_RenderDrawPoint(m_renderer, icx + y, icy + x);
-            SDL_RenderDrawPoint(m_renderer, icx - y, icy + x);
-            SDL_RenderDrawPoint(m_renderer, icx - x, icy + y);
-            SDL_RenderDrawPoint(m_renderer, icx - x, icy - y);
-            SDL_RenderDrawPoint(m_renderer, icx - y, icy - x);
-            SDL_RenderDrawPoint(m_renderer, icx + y, icy - x);
-            SDL_RenderDrawPoint(m_renderer, icx + x, icy - y);
+            SDL_RenderPoint(m_renderer, icx + x, icy + y);
+            SDL_RenderPoint(m_renderer, icx + y, icy + x);
+            SDL_RenderPoint(m_renderer, icx - y, icy + x);
+            SDL_RenderPoint(m_renderer, icx - x, icy + y);
+            SDL_RenderPoint(m_renderer, icx - x, icy - y);
+            SDL_RenderPoint(m_renderer, icx - y, icy - x);
+            SDL_RenderPoint(m_renderer, icx + y, icy - x);
+            SDL_RenderPoint(m_renderer, icx + x, icy - y);
 
             if (err <= 0) {
                 y += 1;
@@ -368,7 +367,7 @@ void SDLRenderer::drawText(const std::string& text, float x, float y, float scal
             uint8_t line = glyph[col];
             for (int row = 0; row < 7; ++row) {
                 if (line & (1 << row)) {
-                    SDL_Rect pixel{curX + col * s, curY + static_cast<int>(std::round(row * sy / ((sx + sy) * 0.5f))) * s, s, s};
+                    SDL_FRect pixel{curX + col * s, curY + static_cast<int>(std::round(row * sy / ((sx + sy) * 0.5f))) * s, s, s};
                     SDL_RenderFillRect(m_renderer, &pixel);
                 }
             }
@@ -387,7 +386,7 @@ bool SDLRenderer::loadTexture(const std::string& key, const std::string& filePat
         return false;
     }
     SDL_Texture* tex = SDL_CreateTextureFromSurface(m_renderer, surface);
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
     if (!tex) {
         BTD4_LOG_WARN("Failed to create texture from " + filePath + ": " + SDL_GetError());
         return false;
@@ -397,6 +396,7 @@ bool SDLRenderer::loadTexture(const std::string& key, const std::string& filePat
     if (it != m_textures.end() && it->second) {
         SDL_DestroyTexture(it->second);
     }
+    SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
     m_textures[key] = tex;
     return true;
 }
@@ -420,7 +420,7 @@ void SDLRenderer::drawSprite(const std::string& textureKey, float x, float y, fl
 
     const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
     const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
-    SDL_Rect dstRect{
+    SDL_FRect dstRect{
         static_cast<int>(std::round(x * sx)),
         static_cast<int>(std::round(y * sy)),
         static_cast<int>(std::round(w * sx)),
@@ -428,9 +428,9 @@ void SDLRenderer::drawSprite(const std::string& textureKey, float x, float y, fl
     };
 
     if (std::abs(angleDegrees) < 0.001f) {
-        SDL_RenderCopy(m_renderer, tex, nullptr, &dstRect);
+        SDL_RenderTexture(m_renderer, tex, nullptr, &dstRect);
     } else {
-        SDL_RenderCopyEx(m_renderer, tex, nullptr, &dstRect, static_cast<double>(angleDegrees), nullptr, SDL_FLIP_NONE);
+        SDL_RenderTextureRotated(m_renderer, tex, nullptr, &dstRect, static_cast<double>(angleDegrees), nullptr, SDL_FLIP_NONE);
     }
 }
 
@@ -449,27 +449,27 @@ void SDLRenderer::drawSpriteRegion(const std::string& textureKey, const Rect& sr
 
     const float sx = static_cast<float>(m_currentViewport.width) / 480.0f;
     const float sy = static_cast<float>(m_currentViewport.height) / 272.0f;
-    SDL_Rect dstRect{
+    SDL_FRect dstRect{
         static_cast<int>(std::round(x * sx)),
         static_cast<int>(std::round(y * sy)),
         static_cast<int>(std::round(w * sx)),
         static_cast<int>(std::round(h * sy))
     };
 
-    SDL_Rect src;
-    SDL_Rect* pSrc = nullptr;
+    SDL_FRect src;
+    SDL_FRect* pSrc = nullptr;
     if (srcRect.w > 0.0f && srcRect.h > 0.0f) {
-        src.x = static_cast<int>(std::round(srcRect.x));
-        src.y = static_cast<int>(std::round(srcRect.y));
-        src.w = static_cast<int>(std::round(srcRect.w));
-        src.h = static_cast<int>(std::round(srcRect.h));
+        src.x = srcRect.x;
+        src.y = srcRect.y;
+        src.w = srcRect.w;
+        src.h = srcRect.h;
         pSrc = &src;
     }
 
     if (std::abs(angleDegrees) < 0.001f) {
-        SDL_RenderCopy(m_renderer, tex, pSrc, &dstRect);
+        SDL_RenderTexture(m_renderer, tex, pSrc, &dstRect);
     } else {
-        SDL_RenderCopyEx(m_renderer, tex, pSrc, &dstRect, static_cast<double>(angleDegrees), nullptr, SDL_FLIP_NONE);
+        SDL_RenderTextureRotated(m_renderer, tex, pSrc, &dstRect, static_cast<double>(angleDegrees), nullptr, SDL_FLIP_NONE);
     }
 }
 
