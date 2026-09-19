@@ -230,7 +230,7 @@ void AssetManager::drawMainMenu(IRenderer& renderer, float pointerX, float point
     const bool exitHot = pointerX >= buttonX && pointerX <= buttonX + buttonW &&
                          pointerY >= 219.0f && pointerY <= 249.0f;
 
-    const auto drawButton = [&renderer](float y, const char* label, bool hot, bool destructive) {
+    const auto drawButton = [&renderer, buttonX, buttonW, buttonH](float y, const char* label, bool hot, bool destructive) {
         const Color fill = hot
             ? (destructive ? Color{145, 58, 58, 235} : Color{65, 135, 85, 245})
             : (destructive ? Color{82, 40, 40, 225} : Color{30, 70, 42, 235});
