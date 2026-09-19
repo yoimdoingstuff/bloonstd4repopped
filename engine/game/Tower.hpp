@@ -74,6 +74,10 @@ public:
     void addInvestedCost(int cost) { m_totalInvestedCost += cost; }
     int sellValue() const { return static_cast<int>(m_totalInvestedCost * 0.75f); }
 
+    // BTD4 uses one sequential four-level upgrade track. The legacy path
+    // parameter remains in the API so older tools/projects can still load,
+    // but the runtime only accepts path 0.
+    uint8_t upgradeLevel() const { return m_upgradeLevel; }
     uint8_t upgradeTier(uint8_t path) const;
     bool hasUpgrade(uint8_t path, uint8_t tier) const;
     bool applyUpgrade(const UpgradeEffect& effect, uint8_t path, uint8_t tier);
@@ -100,7 +104,7 @@ private:
     int m_projectilePierce{1};
     float m_projectileSpeed{240.0f};
     float m_explosionRadius{0.0f};
-    uint8_t m_upgradeTiers[2]{0, 0};
+    uint8_t m_upgradeLevel{0};
     TowerBaseStats m_stats;
 };
 
