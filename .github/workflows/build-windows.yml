@@ -1,5 +1,8 @@
 name: Build Windows
 
+permissions:
+  contents: read
+
 on:
   workflow_call:
   workflow_dispatch:
@@ -11,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Configure CMake
       run: |
@@ -39,11 +42,14 @@ jobs:
         cp assets/placeholder/rounds/default_rounds.json package/bin/assets/placeholder/rounds/default_rounds.json
         cp assets/placeholder/upgrades/default_upgrades.json package/bin/assets/placeholder/upgrades/default_upgrades.json
         cp assets/placeholder/towers/default_towers.json package/bin/assets/placeholder/towers/default_towers.json
+        test -f package/bin/btd4_game.exe
+        test -f package/bin/btd4_builder.exe
+        test -f package/bin/btd4_importer.exe
         7z a btd4-windows-x64.zip ./package/bin/*
 
     - name: Upload Windows Artifact
       if: ${{ success() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: btd4-windows-x64
         path: btd4-windows-x64.zip
