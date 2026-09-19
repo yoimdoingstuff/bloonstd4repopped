@@ -499,7 +499,6 @@ void Engine::frame(int windowWidth, int windowHeight) {
                 switch (type) {
                     case TowerType::DartMonkey: return std::string("DART MONKEY");
                     case TowerType::TackShooter: return std::string("TACK SHOOTER");
-                    case TowerType::SniperMonkey: return std::string("SNIPER");
                     case TowerType::BoomerangThrower: return std::string("BOOMERANG");
                     case TowerType::BombTower: return std::string("BOMB TOWER");
                     case TowerType::SuperMonkey: return std::string("SUPER MONKEY");
@@ -507,8 +506,7 @@ void Engine::frame(int windowWidth, int windowHeight) {
                 }
             };
 
-            // BTD4's upgrade model is one four-level sequence. Show the
-            // purchased levels and the next level as a compact progression strip.
+            // Render the original BTD4 upgrade-box and upgrade-icon art.
             m_renderer.drawRect(4.0f, 225.0f, 150.0f, 43.0f, {5, 18, 9, 235}, true);
             m_renderer.drawRect(4.0f, 225.0f, 150.0f, 43.0f, {105, 180, 115, 230}, false);
             m_renderer.drawText(towerLabel(selectedTower->type()), 12.0f, 230.0f, 0.82f, Color::white());
@@ -521,6 +519,23 @@ void Engine::frame(int windowWidth, int windowHeight) {
             m_renderer.drawText("LEVEL " + std::to_string(selectedTower->upgradeLevel()) + "/4",
                 75.0f, 247.0f, 0.62f, {255, 225, 90, 255});
 
+            const auto upgradeIconFor = [](TowerType type, uint8_t level) -> const char* {
+                static const char* dart[] = {"piercing_darts.png","long_range_darts.png","spike_o_pult.png","triple_shot.png"};
+                static const char* tack[] = {"faster_shooting.png","extra_range.png","blade_shooter.png","ring_of_fire.png"};
+                static const char* boom[] = {"multi_target.png","sonic_boom.png","glaive_thrower.png","lightsabre_thrower.png"};
+                static const char* bomb[] = {"bigger_bombs.png","extra_range.png","missile_launcher.png","moab_mauler.png"};
+                static const char* super[] = {"super_range.png","laser_vision.png","plasma_vision.png","sun_god.png"};
+                if (level < 1 || level > 4) return nullptr;
+                switch (type) {
+                    case TowerType::DartMonkey: return dart[level - 1];
+                    case TowerType::TackShooter: return tack[level - 1];
+                    case TowerType::BoomerangThrower: return boom[level - 1];
+                    case TowerType::BombTower: return bomb[level - 1];
+                    case TowerType::SuperMonkey: return super[level - 1];
+                    default: return nullptr;
+                }
+            };
+
             for (uint8_t level = 1; level <= 4; ++level) {
                 const float boxX = 160.0f + (level - 1) * 45.0f;
                 const bool purchased = selectedTower->upgradeLevel() >= level;
@@ -528,28 +543,25 @@ void Engine::frame(int windowWidth, int windowHeight) {
                 const UpgradeDefinition* upgrade = findUpgrade(m_upgrades, selectedTower->type(), 0, level);
                 const bool affordable = upgrade && m_simulation.economy().canAfford(upgrade->effect.cost);
 
-                Color fill = purchased ? Color{48, 92, 55, 250} : Color{18, 40, 26, 245};
-                if (next) fill = affordable ? Color{64, 118, 66, 255} : Color{62, 44, 36, 245};
-                const Color outline = purchased ? Color{145, 215, 140, 255}
-                    : (next ? (affordable ? Color{255, 225, 90, 255} : Color{190, 105, 80, 255})
-                            : Color{70, 80, 74, 220});
-
-                m_renderer.drawRect(boxX, 233.0f, 40.0f, 35.0f, fill, true);
-                m_renderer.drawRect(boxX, 233.0f, 40.0f, 35.0f, outline, false);
-                m_renderer.drawText(std::to_string(level), boxX + 4.0f, 238.0f, 0.66f, Color::white());
-
-                if (upgrade) {
-                    const float nameScale = upgrade->displayName.size() > 12 ? 0.43f : 0.5f;
-                    m_renderer.drawText(upgrade->displayName, boxX + 4.0f, 248.0f, nameScale,
-                        purchased ? Color{180, 230, 175, 255} : Color::white());
-                    if (!purchased) {
-                        m_renderer.drawText("$" + std::to_string(upgrade->effect.cost),
-                            boxX + 4.0f, 259.0f, 0.43f,
-                            affordable ? Color{255, 225, 90, 255} : Color{185, 95, 95, 255});
-                    }
+                if (purchased) {
+                    AssetManager::instance().drawGameUiRegion(m_renderer, "green_upgrade_box.png", boxX, 233.0f, 40.0f, 35.0f);
+                } else if (next) {
+                    AssetManager::instance().drawGameUiRegion(m_renderer,
+                        affordable ? "blue_upgrade_box.png" : "red_upgrade_box.png", boxX, 233.0f, 40.0f, 35.0f);
+                } else {
+                    m_renderer.drawRect(boxX, 233.0f, 40.0f, 35.0f, {18, 26, 20, 235}, true);
                 }
-            }
-        }
+
+                m_renderer.drawText(std::to_string(level), boxX + 3.0f, 235.0f, 0.62f, Color::white());
+                if (const char* icon = upgradeIconFor(selectedTower->type(), level)) {
+                    AssetManager::instance().drawGameUiRegion(m_renderer, icon, boxX + 12.0f, 239.0f, 22.0f, 15.0f);
+                }
+                if (upgrade && !purchased) {
+                    m_renderer.drawText("$" + std::to_string(upgrade->effect.cost),
+                        boxX + 3.0f, 255.0f, 0.43f,
+                        affordable ? Color{255, 225, 90, 255} : Color{185, 95, 95, 255});
+                }
+            }        }
         if (m_frontendProfile != FrontendProfile::FlashDesktop) m_renderer.drawRect(ptr.logicalX - 4.0f, ptr.logicalY - 4.0f, 8.0f, 8.0f, Color::white(), false);
         if (m_simulation.state() == GameStateType::Paused) {
             m_renderer.drawRect(90.0f, 100.0f, 220.0f, 72.0f, {0, 0, 0, 210}, true);
