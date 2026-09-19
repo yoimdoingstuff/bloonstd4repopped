@@ -150,7 +150,7 @@ void SDLInput::mapControllerButton(SDL_GamepadButton button, bool isDown) {
                 case SDL_GAMEPAD_BUTTON_EAST: action = InputAction::Cancel; break;
                 case SDL_GAMEPAD_BUTTON_WEST: action = InputAction::Sell; break;
                 case SDL_GAMEPAD_BUTTON_NORTH: action = InputAction::Upgrade; break;
-                case SDL_GAMEPAD_BUTTON_EASTACK: action = InputAction::Pause; break;
+                case SDL_GAMEPAD_BUTTON_BACK: action = InputAction::Pause; break;
                 case SDL_GAMEPAD_BUTTON_START: action = InputAction::StartRound; break;
                 case SDL_GAMEPAD_BUTTON_DPAD_UP: action = InputAction::MoveUp; break;
                 case SDL_GAMEPAD_BUTTON_DPAD_DOWN: action = InputAction::MoveDown; break;
@@ -169,7 +169,7 @@ void SDLInput::mapControllerButton(SDL_GamepadButton button, bool isDown) {
                 case SDL_GAMEPAD_BUTTON_WEST: action = InputAction::Sell; break;
                 case SDL_GAMEPAD_BUTTON_NORTH: action = InputAction::Upgrade; break;
                 case SDL_GAMEPAD_BUTTON_START: action = InputAction::Pause; break;
-                case SDL_GAMEPAD_BUTTON_EASTACK: action = InputAction::Cancel; break;
+                case SDL_GAMEPAD_BUTTON_BACK: action = InputAction::Cancel; break;
                 case SDL_GAMEPAD_BUTTON_DPAD_UP: action = InputAction::MoveUp; break;
                 case SDL_GAMEPAD_BUTTON_DPAD_DOWN: action = InputAction::MoveDown; break;
                 case SDL_GAMEPAD_BUTTON_DPAD_LEFT: action = InputAction::PrevTarget; break;
@@ -257,7 +257,7 @@ void SDLInput::updateCurrentActions() {
 void SDLInput::processEvent(const SDL_Event& event, const Viewport& viewport) {
     updateControllerDevice(event);
 
-    if (event.type == SDL_EVENT_WINDOW_ && event.window.event == SDL_EVENT_WINDOW__FOCUS_LOST) {
+    if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) {
         m_keyboardActions = 0;
         m_pointerActions = 0;
         m_controllerActions = 0;
@@ -275,10 +275,10 @@ void SDLInput::processEvent(const SDL_Event& event, const Viewport& viewport) {
 
     if (event.type == SDL_EVENT_KEY_DOWN) {
         if (!event.key.repeat) {
-            mapKey(event.key.keysym.sym, event.key.keysym.scancode, true);
+            mapKey(event.key.key, event.key.scancode, true);
         }
     } else if (event.type == SDL_EVENT_KEY_UP) {
-        mapKey(event.key.keysym.sym, event.key.keysym.scancode, false);
+        mapKey(event.key.key, event.key.scancode, false);
     } else if (event.type == SDL_EVENT_MOUSE_MOTION) {
         LogicalResolution::screenToLogical(event.motion.x, event.motion.y, viewport, m_pointer.logicalX, m_pointer.logicalY);
     } else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
