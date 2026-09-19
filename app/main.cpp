@@ -4,6 +4,7 @@
 #include "../engine/input/FrontendProfile.hpp"
 #include "../platform/common/SDLRenderer.hpp"
 #include "../platform/common/SDLInput.hpp"
+#include "../platform/common/SDLAudio.hpp"
 #include <SDL.h>
 #include <filesystem>
 #include <iostream>
@@ -84,7 +85,8 @@ int main(int argc, char* argv[]) {
     // is selected only by the PSP entry point, so importing a PSP source asset
     // set cannot accidentally change Windows controls.
     btd4::SDLInput input(btd4::FrontendProfile::FlashDesktop);
-    btd4::Engine engine(renderer, input, btd4::FrontendProfile::FlashDesktop);
+    btd4::SDLAudio audio;
+    btd4::Engine engine(renderer, input, btd4::FrontendProfile::FlashDesktop, &audio);
 
     if (!engine.initialize(windowWidth, windowHeight)) {
         std::cerr << "Failed to initialize engine" << std::endl;
