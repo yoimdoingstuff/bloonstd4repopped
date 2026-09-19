@@ -238,8 +238,8 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
     input.beginFrame();
     SDL_Event keyDown{};
     keyDown.type = SDL_EVENT_KEY_DOWN;
-    keyDown.key.keysym.sym = SDLK_SPACE;
-    keyDown.key.keysym.scancode = SDL_SCANCODE_SPACE;
+    keyDown.key.key = SDLK_SPACE;
+    keyDown.key.scancode = SDL_SCANCODE_SPACE;
     input.processEvent(keyDown, viewport);
     TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
     TEST_ASSERT(input.isActionJustPressed(btd4::InputAction::Confirm));
@@ -252,22 +252,22 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
 
     SDL_Event keyUp{};
     keyUp.type = SDL_EVENT_KEY_UP;
-    keyUp.key.keysym.sym = SDLK_SPACE;
-    keyUp.key.keysym.scancode = SDL_SCANCODE_SPACE;
+    keyUp.key.key = SDLK_SPACE;
+    keyUp.key.scancode = SDL_SCANCODE_SPACE;
     input.processEvent(keyUp, viewport);
     TEST_ASSERT(input.isActionJustReleased(btd4::InputAction::Confirm));
     TEST_ASSERT(!input.isActionDown(btd4::InputAction::Confirm));
 
     // Two physical keys sharing Confirm must be reference-counted.
     input.beginFrame();
-    keyDown.key.keysym.sym = SDLK_SPACE;
-    keyDown.key.keysym.scancode = SDL_SCANCODE_SPACE;
+    keyDown.key.key = SDLK_SPACE;
+    keyDown.key.scancode = SDL_SCANCODE_SPACE;
     input.processEvent(keyDown, viewport);
 
     SDL_Event returnDown{};
     returnDown.type = SDL_EVENT_KEY_DOWN;
-    returnDown.key.keysym.sym = SDLK_RETURN;
-    returnDown.key.keysym.scancode = SDL_SCANCODE_RETURN;
+    returnDown.key.key = SDLK_RETURN;
+    returnDown.key.scancode = SDL_SCANCODE_RETURN;
     input.processEvent(returnDown, viewport);
 
     TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
@@ -279,8 +279,8 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
 
     SDL_Event returnUp{};
     returnUp.type = SDL_EVENT_KEY_UP;
-    returnUp.key.keysym.sym = SDLK_RETURN;
-    returnUp.key.keysym.scancode = SDL_SCANCODE_RETURN;
+    returnUp.key.key = SDLK_RETURN;
+    returnUp.key.scancode = SDL_SCANCODE_RETURN;
     input.processEvent(returnUp, viewport);
 
     TEST_ASSERT(!input.isActionDown(btd4::InputAction::Confirm));
