@@ -48,6 +48,7 @@ void SDLInput::setProfile(FrontendProfile profile) {
     m_keyDown.fill(false);
     m_keyActionCounts.fill(0);
     m_controllerActionCounts.fill(0);
+    m_currentActions = 0;
     m_pointer.primaryDown = false;
     m_pointer.secondaryDown = false;
     updateCurrentActions();
