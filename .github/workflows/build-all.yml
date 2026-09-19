@@ -11,15 +11,17 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-concurrency:
-  group: btd4-repopped-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-linux:
     name: Build Linux
     uses: ./.github/workflows/build-linux.yml
+    concurrency:
+      group: btd4-repopped-linux-${{ github.ref }}
+      cancel-in-progress: true
 
   build-windows:
     name: Build Windows
     uses: ./.github/workflows/build-windows.yml
+    concurrency:
+      group: btd4-repopped-windows-${{ github.ref }}
+      cancel-in-progress: true
