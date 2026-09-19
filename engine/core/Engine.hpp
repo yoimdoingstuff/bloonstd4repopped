@@ -17,6 +17,7 @@ namespace btd4 {
 
 class Engine {
 public:
+    enum class DesktopScreen { MainMenu, Gameplay };
     Engine(IRenderer& renderer, IInput& input,
            FrontendProfile frontendProfile = FrontendProfile::FlashDesktop);
     ~Engine();
@@ -56,6 +57,7 @@ private:
     Viewport m_viewport;
     bool m_running{false};
     bool m_gameMode{true};
+    DesktopScreen m_desktopScreen{DesktopScreen::MainMenu};
     bool m_hasPlacement{false};
     TowerType m_placementType{TowerType::DartMonkey};
     uint32_t m_selectedTowerId{0};
