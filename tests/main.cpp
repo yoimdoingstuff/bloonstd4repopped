@@ -14,7 +14,6 @@
 #include "../engine/game/Economy.hpp"
 #include "../engine/game/GameState.hpp"
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
 #include <filesystem>
 #include <thread>
 #include <chrono>

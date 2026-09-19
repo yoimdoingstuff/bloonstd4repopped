@@ -122,7 +122,6 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_EVENT_DROP_FILE) {
                 if (event.drop.data) {
                     builderUI.addSourceFile(event.drop.data);
-                    SDL_free(event.drop.data);
                 }
             }
         }
