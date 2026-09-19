@@ -484,27 +484,42 @@ void Engine::frame(int windowWidth, int windowHeight) {
                     default: return std::string("TOWER");
                 }
             };
-            m_renderer.drawRect(4.0f, 32.0f, 356.0f, 38.0f, {0, 0, 0, 215}, true);
-            m_renderer.drawRect(4.0f, 32.0f, 356.0f, 38.0f, Color::cyan(), false);
-            m_renderer.drawText(towerLabel(selectedTower->type()), 10.0f, 37.0f, 1.0f, Color::white());
+
+            // Keep selection information in the bottom command strip so the
+            // playfield itself is not obscured by a debug-looking banner.
+            m_renderer.drawRect(4.0f, 225.0f, 156.0f, 43.0f, {5, 18, 9, 235}, true);
+            m_renderer.drawRect(4.0f, 225.0f, 156.0f, 43.0f, {105, 180, 115, 230}, false);
+
+            m_renderer.drawText(towerLabel(selectedTower->type()), 12.0f, 230.0f, 0.82f, Color::white());
+
             const char* targetingLabel = selectedTower->targetingMode() == TargetingMode::First ? "FIRST"
                 : (selectedTower->targetingMode() == TargetingMode::Last ? "LAST"
                 : (selectedTower->targetingMode() == TargetingMode::Close ? "CLOSE" : "STRONG"));
-            m_renderer.drawText("TARGET: " + std::string(targetingLabel), 220.0f, 37.0f, 1.0f, Color::cyan());
+            m_renderer.drawText("TARGET " + std::string(targetingLabel), 12.0f, 247.0f, 0.72f,
+                {170, 225, 180, 255});
+
             for (uint8_t path = 0; path < 2; ++path) {
                 const uint8_t nextTier = static_cast<uint8_t>(selectedTower->upgradeTier(path) + 1);
                 const UpgradeDefinition* upgrade = findUpgrade(m_upgrades, selectedTower->type(), path, nextTier);
-                const float x = path == 0 ? 174.0f : 271.0f;
-                const float buttonX = path == 0 ? 4.0f : 200.0f;
-                m_renderer.drawRect(buttonX == 4.0f ? 168.0f : 265.0f, 236.0f, 92.0f, 30.0f, {35, 45, 55, 255}, true);
-                m_renderer.drawRect(buttonX == 4.0f ? 168.0f : 265.0f, 236.0f, 92.0f, 30.0f, {80, 80, 80, 255}, false);
+                const float boxX = path == 0 ? 168.0f : 265.0f;
+                m_renderer.drawRect(boxX, 236.0f, 92.0f, 30.0f, {18, 40, 26, 245}, true);
+                m_renderer.drawRect(boxX, 236.0f, 92.0f, 30.0f,
+                    upgrade ? Color{105, 165, 115, 230} : Color{70, 80, 74, 220}, false);
+
                 if (!upgrade) {
-                    m_renderer.drawText("UPG " + std::to_string(path + 1) + ": MAX", x, 245.0f, 0.8f, {130,130,130,255});
+                    m_renderer.drawText("PATH " + std::to_string(path + 1) + " MAX",
+                        boxX + 14.0f, 245.0f, 0.75f, {125, 135, 128, 255});
                 } else {
                     const bool affordable = m_simulation.economy().canAfford(upgrade->effect.cost);
-                    const Color color = affordable ? Color::yellow() : Color::red();
-                    m_renderer.drawText("UPG " + std::to_string(path + 1), x, 245.0f, 0.8f, color);
-                    m_renderer.drawText("$" + std::to_string(upgrade->effect.cost), x + 45.0f, 245.0f, 0.8f, color);
+                    const Color valueColor = affordable
+                        ? Color{255, 225, 90, 255}
+                        : Color{185, 95, 95, 255};
+                    m_renderer.drawText("PATH " + std::to_string(path + 1),
+                        boxX + 8.0f, 240.0f, 0.67f, Color::white());
+                    m_renderer.drawText(upgrade->displayName,
+                        boxX + 8.0f, 250.0f, 0.59f, Color::white());
+                    m_renderer.drawText("$" + std::to_string(upgrade->effect.cost),
+                        boxX + 58.0f, 240.0f, 0.65f, valueColor);
                 }
             }
         }
