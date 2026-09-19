@@ -232,13 +232,14 @@ void SDLInput::updateControllerDevice(const SDL_Event& event) {
     } else if (event.type == SDL_CONTROLLERDEVICEREMOVED && m_controller) {
         SDL_Joystick* joystick = SDL_GameControllerGetJoystick(m_controller);
         if (joystick && SDL_JoystickInstanceID(joystick) == event.cdevice.which) {
+            // A disconnected controller should simply disappear from the held
+            // action set. Do not manufacture gameplay release events while the
+            // hardware itself has vanished.
             SDL_GameControllerClose(m_controller);
             m_controller = nullptr;
             m_controllerActions = 0;
             m_controllerActionCounts.fill(0);
-            m_releasedActions &= ~m_controllerActions;
             m_currentActions = m_keyboardActions | m_pointerActions;
-        }
         }
     }
 }
