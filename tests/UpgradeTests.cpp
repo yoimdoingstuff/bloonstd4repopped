@@ -72,16 +72,18 @@ TEST_CASE(TowerRejectsSkippedUpgradeTier) {
     TEST_ASSERT_EQ(tower.upgradeTier(0), static_cast<uint8_t>(0));
 }
 
-TEST_CASE(TowerSupportsIndependentUpgradePaths) {
+TEST_CASE(TowerUsesSequentialBTD4UpgradeLevels) {
     Tower tower(3, TowerType::BombTower, 0.0f, 0.0f);
-    UpgradeEffect pathA; pathA.cost = 100; pathA.damageAdd = 1;
-    UpgradeEffect pathB; pathB.cost = 200; pathB.rangeAdd = 10.0f;
+    UpgradeEffect effect; effect.cost = 100; effect.damageAdd = 1;
 
-    TEST_ASSERT(tower.applyUpgrade(pathA, 0, 1));
-    TEST_ASSERT(tower.applyUpgrade(pathB, 1, 1));
-    TEST_ASSERT_EQ(tower.upgradeTier(0), static_cast<uint8_t>(1));
-    TEST_ASSERT_EQ(tower.upgradeTier(1), static_cast<uint8_t>(1));
-    TEST_ASSERT_EQ(tower.totalInvestedCost(), 550 + 100 + 200);
+    TEST_ASSERT(!tower.applyUpgrade(effect, 1, 1));
+    TEST_ASSERT(tower.applyUpgrade(effect, 0, 1));
+    TEST_ASSERT(tower.applyUpgrade(effect, 0, 2));
+    TEST_ASSERT(tower.applyUpgrade(effect, 0, 3));
+    TEST_ASSERT(tower.applyUpgrade(effect, 0, 4));
+    TEST_ASSERT(!tower.applyUpgrade(effect, 0, 5));
+    TEST_ASSERT_EQ(tower.upgradeLevel(), static_cast<uint8_t>(4));
+    TEST_ASSERT_EQ(tower.totalInvestedCost(), 700 + 400);
 }
 
 
@@ -135,7 +137,7 @@ TEST_CASE(UpgradeSerializationRoundTripsEditorData) {
     btd4::UpgradeDefinition upgrade;
     upgrade.id = "custom_shots";
     upgrade.tower = btd4::TowerType::DartMonkey;
-    upgrade.path = 1;
+    upgrade.path = 0;
     upgrade.tier = 2;
     upgrade.displayName = "Custom Shots";
     upgrade.effect.cost = 333;
@@ -154,7 +156,7 @@ TEST_CASE(UpgradeSerializationRoundTripsEditorData) {
     TEST_ASSERT(error.empty());
     TEST_ASSERT_EQ(loaded.upgrades.size(), size_t(1));
     TEST_ASSERT_EQ(loaded.upgrades[0].displayName, "Custom Shots");
-    TEST_ASSERT_EQ(loaded.upgrades[0].path, static_cast<uint8_t>(1));
+    TEST_ASSERT_EQ(loaded.upgrades[0].path, static_cast<uint8_t>(0));
     TEST_ASSERT_EQ(loaded.upgrades[0].effect.cost, 333);
 }
 
