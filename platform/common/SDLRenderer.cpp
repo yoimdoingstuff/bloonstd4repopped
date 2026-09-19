@@ -203,8 +203,6 @@ void SDLRenderer::shutdown() {
         SDL_DestroyRenderer(m_renderer);
         m_renderer = nullptr;
     }
-    if (m_imageSubsystemInitialized) {
-            }
     if (m_window && m_ownsWindow) {
         SDL_DestroyWindow(m_window);
     }
