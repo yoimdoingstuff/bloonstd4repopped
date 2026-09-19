@@ -47,6 +47,7 @@ public:
     void drawTower(IRenderer& renderer, const Tower& tower, bool isSelected = false) const;
     void drawProjectile(IRenderer& renderer, const Projectile& proj) const;
     void drawMap(IRenderer& renderer, const Map& map) const;
+    void drawMainMenu(IRenderer& renderer, float pointerX = -1.0f, float pointerY = -1.0f) const;
     void drawHUD(IRenderer& renderer, const Economy& economy, int currentRound, size_t totalRounds,
                  double fps, TowerType selectedPlacementType, bool hasPlacement) const;
 
