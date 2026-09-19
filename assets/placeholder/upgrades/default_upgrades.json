@@ -1,79 +1,30 @@
 {
-  "version": 1,
+  "version": 2,
+  "progression": "btd4_sequential",
   "upgrades": [
-    {
-      "id": "dart_sharp_shots",
-      "tower": "DartMonkey",
-      "path": 0,
-      "tier": 1,
-      "displayName": "Sharp Shots",
-      "cost": 100,
-      "pierceAdd": 1
-    },
-    {
-      "id": "dart_razor_sharp",
-      "tower": "DartMonkey",
-      "path": 0,
-      "tier": 2,
-      "displayName": "Razor Sharp Shots",
-      "cost": 200,
-      "pierceAdd": 1
-    },
-    {
-      "id": "dart_quick_shots",
-      "tower": "DartMonkey",
-      "path": 1,
-      "tier": 1,
-      "displayName": "Quick Shots",
-      "cost": 120,
-      "cooldownMultiplier": 0.85
-    },
-    {
-      "id": "dart_faster_shooting",
-      "tower": "DartMonkey",
-      "path": 1,
-      "tier": 2,
-      "displayName": "Faster Shooting",
-      "cost": 250,
-      "cooldownMultiplier": 0.80
-    },
-    {
-      "id": "tack_faster_firing",
-      "tower": "TackShooter",
-      "path": 0,
-      "tier": 1,
-      "displayName": "Faster Firing",
-      "cost": 150,
-      "cooldownMultiplier": 0.80
-    },
-    {
-      "id": "bomb_extra_radius",
-      "tower": "BombTower",
-      "path": 0,
-      "tier": 1,
-      "displayName": "Bigger Bombs",
-      "cost": 250,
-      "explosionRadiusAdd": 8,
-      "damageAdd": 1
-    },
-    {
-      "id": "sniper_full_metal",
-      "tower": "SniperMonkey",
-      "path": 0,
-      "tier": 1,
-      "displayName": "Full Metal Jacket",
-      "cost": 350,
-      "damageAdd": 2
-    },
-    {
-      "id": "super_laser_focus",
-      "tower": "SuperMonkey",
-      "path": 0,
-      "tier": 1,
-      "displayName": "Laser Focus",
-      "cost": 1000,
-      "rangeAdd": 15,
-      "projectileSpeedMultiplier": 1.20
-    }
+    {"id":"dart_piercing_darts","tower":"DartMonkey","path":0,"tier":1,"displayName":"Piercing Darts","cost":140,"pierceAdd":1},
+    {"id":"dart_long_range_darts","tower":"DartMonkey","path":0,"tier":2,"displayName":"Long Range Darts","cost":90,"rangeAdd":25},
+    {"id":"dart_spike_o_pult","tower":"DartMonkey","path":0,"tier":3,"displayName":"Spike-O-Pult","cost":300,"pierceAdd":16,"cooldownMultiplier":1.63,"projectileSpeedMultiplier":0.48},
+    {"id":"dart_triple_shot","tower":"DartMonkey","path":0,"tier":4,"displayName":"Triple Shot","cost":1100,"rangeAdd":25,"pierceAdd":30,"cooldownMultiplier":0.91,"projectileSpeedMultiplier":1.45},
+
+    {"id":"tack_faster_shooting","tower":"TackShooter","path":0,"tier":1,"displayName":"Faster Shooting","cost":210,"cooldownMultiplier":0.742},
+    {"id":"tack_extra_range","tower":"TackShooter","path":0,"tier":2,"displayName":"Extra Range Tacks","cost":100,"rangeAdd":10,"projectileSpeedMultiplier":1.2},
+    {"id":"tack_blade_shooter","tower":"TackShooter","path":0,"tier":3,"displayName":"Blade Shooter","cost":280,"cooldownMultiplier":0.884,"projectileSpeedMultiplier":1.25},
+    {"id":"tack_ring_of_fire","tower":"TackShooter","path":0,"tier":4,"displayName":"Ring of Fire","cost":2500,"rangeAdd":10,"pierceAdd":59,"cooldownMultiplier":0.684},
+
+    {"id":"boomerang_multi_target","tower":"BoomerangThrower","path":0,"tier":1,"displayName":"Multi-Target","cost":250,"pierceAdd":4},
+    {"id":"boomerang_sonic_boom","tower":"BoomerangThrower","path":0,"tier":2,"displayName":"Sonic Boom","cost":100},
+    {"id":"boomerang_glaive_thrower","tower":"BoomerangThrower","path":0,"tier":3,"displayName":"Glaive Thrower","cost":280,"pierceAdd":5,"cooldownMultiplier":0.94,"projectileSpeedMultiplier":1.15},
+    {"id":"boomerang_lightsabre_thrower","tower":"BoomerangThrower","path":0,"tier":4,"displayName":"Lightsabre Thrower","cost":1850,"pierceAdd":58,"cooldownMultiplier":0.94},
+
+    {"id":"bomb_bigger_bombs","tower":"BombTower","path":0,"tier":1,"displayName":"Bigger Bombs","cost":400,"pierceAdd":10,"explosionRadiusAdd":18},
+    {"id":"bomb_extra_range","tower":"BombTower","path":0,"tier":2,"displayName":"Extra Range","cost":200,"rangeAdd":20},
+    {"id":"bomb_missile_launcher","tower":"BombTower","path":0,"tier":3,"displayName":"Missile Launcher","cost":210,"rangeAdd":5,"pierceAdd":5,"cooldownMultiplier":0.85,"projectileSpeedMultiplier":1.9},
+    {"id":"bomb_moab_mauler","tower":"BombTower","path":0,"tier":4,"displayName":"MOAB Mauler","cost":900,"damageAdd":10,"pierceAdd":5,"cooldownMultiplier":0.89},
+
+    {"id":"super_super_range","tower":"SuperMonkey","path":0,"tier":1,"displayName":"Super Range","cost":1000,"rangeAdd":60},
+    {"id":"super_laser_vision","tower":"SuperMonkey","path":0,"tier":2,"displayName":"Laser Vision","cost":3500,"pierceAdd":1},
+    {"id":"super_plasma_vision","tower":"SuperMonkey","path":0,"tier":3,"displayName":"Plasma Vision","cost":4000,"pierceAdd":1,"cooldownMultiplier":0.5},
+    {"id":"super_sun_god","tower":"SuperMonkey","path":0,"tier":4,"displayName":"Sun God","cost":20000,"pierceAdd":10}
   ]
 }
