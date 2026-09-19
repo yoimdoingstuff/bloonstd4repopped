@@ -356,45 +356,45 @@ void Engine::frame(int windowWidth, int windowHeight) {
     if (m_input.isActionJustPressed(InputAction::StartRound)) startNextRound();
 
     if (m_input.isActionJustPressed(InputAction::Confirm)) {
-        if (ptr.logicalX >= 8.0f && ptr.logicalX <= 158.0f &&
-            ptr.logicalY >= 236.0f && ptr.logicalY <= 266.0f &&
-            !m_simulation.roundActive()) {
-            startNextRound();
-        } else if (ptr.logicalX >= 344.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 224.0f && ptr.logicalY < 244.0f) {
-            if (!m_simulation.roundActive()) {
-                startNextRound();
-            }
-        } else if (ptr.logicalX >= 344.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 51.0f && ptr.logicalY < 221.0f) {
+        // Desktop HUD layout:
+        //   x 344..480, y 51..221 -> tower shop
+        //   x 344..480, y 224..244 -> next round
+        //   x 344..412, y 247..267 -> track editor
+        //   x 417..480, y 247..267 -> sell
+        if (ptr.logicalX >= 344.0f && ptr.logicalX <= 480.0f &&
+            ptr.logicalY >= 51.0f && ptr.logicalY < 221.0f) {
             const int idx = static_cast<int>((ptr.logicalY - 51.0f) / 34.0f);
             if (idx >= 0 && idx < 5) {
-                static const TowerType tts[] = {TowerType::DartMonkey, TowerType::TackShooter, TowerType::BombTower,
-                    TowerType::BoomerangThrower, TowerType::SuperMonkey};
+                static const TowerType tts[] = {
+                    TowerType::DartMonkey,
+                    TowerType::TackShooter,
+                    TowerType::BombTower,
+                    TowerType::BoomerangThrower,
+                    TowerType::SuperMonkey
+                };
                 selectTowerType(tts[idx]);
             }
-        } else if (ptr.logicalX >= 368.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 224.0f && ptr.logicalY < 244.0f) {
-            if (m_selectedTowerId != 0) {
-                if (Tower* tower = m_simulation.findTower(m_selectedTowerId)) {
-                    tower->cycleTargetingMode();
-                }
-            }
-        } else if (ptr.logicalX >= 344.0f && ptr.logicalX < 412.0f && ptr.logicalY >= 247.0f) {
+        } else if (ptr.logicalX >= 344.0f && ptr.logicalX <= 480.0f &&
+                   ptr.logicalY >= 224.0f && ptr.logicalY < 244.0f) {
+            if (!m_simulation.roundActive()) startNextRound();
+        } else if (ptr.logicalX >= 344.0f && ptr.logicalX < 412.0f &&
+                   ptr.logicalY >= 247.0f && ptr.logicalY < 267.0f) {
             if (!m_simulation.roundActive()) {
                 m_trackEditor.open(m_simulation.map());
             } else {
                 BTD4_LOG_INFO("Track Editor can only be opened between rounds.");
             }
-        } else if (ptr.logicalX >= 417.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 247.0f) {
+        } else if (ptr.logicalX >= 417.0f && ptr.logicalX <= 480.0f &&
+                   ptr.logicalY >= 247.0f && ptr.logicalY < 267.0f) {
             if (m_selectedTowerId != 0 && m_simulation.sellTower(m_selectedTowerId)) {
                 m_selectedTowerId = 0;
                 m_hasPlacement = false;
             }
-        } else if (ptr.logicalX >= 8.0f && ptr.logicalX <= 158.0f && ptr.logicalY >= 236.0f) {
-            if (m_simulation.state() == GameStateType::Paused) m_simulation.resume();
-            else if (m_simulation.state() == GameStateType::Playing) m_simulation.pause();
-        } else if (m_selectedTowerId != 0 && ptr.logicalX >= 168.0f && ptr.logicalX < 362.0f &&
+        } else if (m_selectedTowerId != 0 &&
+                   ptr.logicalX >= 168.0f && ptr.logicalX < 362.0f &&
                    ptr.logicalY >= 236.0f && ptr.logicalY < 266.0f) {
             applySelectedUpgrade(ptr.logicalX < 265.0f ? 0 : 1);
-        } else if (ptr.logicalX < 400.0f) {
+        } else if (ptr.logicalX < 344.0f) {
             if (m_hasPlacement) {
                 if (m_simulation.placeTower(m_placementType, ptr.logicalX, ptr.logicalY)) cancelPlacement();
             } else {
