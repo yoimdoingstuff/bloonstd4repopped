@@ -181,61 +181,164 @@ void AssetManager::drawMap(IRenderer& renderer,const Map& map) const{
         }
     }
 }
-void AssetManager::drawHUD(IRenderer& renderer,const Economy& economy,int currentRound,size_t totalRounds,double fps,TowerType selectedPlacementType,bool hasPlacement) const{
-    // Desktop/HD-style HUD laid out in the existing 480x272 world space. The
-    // renderer now scales this layout to the actual desktop viewport, so it is
-    // no longer rasterized at PSP resolution.
-    renderer.drawRect(0,0,480,30,{18,24,30,245},true);
-    renderer.drawRect(0,29,480,1,{70,85,95,255},true);
-    renderer.drawText("LIVES",10,7,1.0f,{180,220,235,255});
-    renderer.drawText(std::to_string(economy.lives()),50,7,1.2f,Color::red());
-    renderer.drawText("CASH",92,7,1.0f,{180,220,235,255});
-    renderer.drawText("$"+std::to_string(economy.cash()),130,7,1.2f,Color::yellow());
-    renderer.drawText("ROUND",220,7,1.0f,{180,220,235,255});
-    renderer.drawText(std::to_string(currentRound)+"/"+std::to_string(totalRounds),265,7,1.2f,Color::white());
-    renderer.drawText("FPS "+std::to_string((int)std::round(fps)),385,7,1.0f,{150,170,180,255});
+void AssetManager::drawMainMenu(IRenderer& renderer, float pointerX, float pointerY) const {
+    // The definitive/mobile package contains real BTD4 menu artwork. Prefer the
+    // HD version for desktop and gracefully fall back to the phone/placeholder
+    // presentation when a build was made without the optional front-end assets.
+    const std::string backgroundCandidates[] = {
+        "main_menu_high_res@hd",
+        "main_menu@hd",
+        "main_menu_high_res@phone",
+        "main_menu@phone"
+    };
 
-    constexpr float panelX=368.0f;
-    renderer.drawRect(panelX,30,112,242,{24,30,36,250},true);
-    renderer.drawRect(panelX,30,1,242,{75,90,100,255},true);
-    renderer.drawText("TOWERS",378,36,1.0f,Color::white());
-
-    static const TowerType towers[]={TowerType::DartMonkey,TowerType::TackShooter,TowerType::BombTower,TowerType::BoomerangThrower,TowerType::SuperMonkey};
-    float y=50.0f;
-    for(TowerType tt:towers){
-        auto stats=getTowerBaseStats(tt);
-        bool sel=hasPlacement&&selectedPlacementType==tt;
-        bool afford=economy.canAfford(stats.cost);
-        Color bg=sel?Color{55,95,135,255}:(afford?Color{39,47,53,255}:Color{28,32,36,255});
-        renderer.drawRect(panelX+6,y,100,32,bg,true);
-        renderer.drawRect(panelX+6,y,100,32,sel?Color::cyan():Color{70,78,84,255},false);
-        const std::string logical=getTowerAssetId(tt);
-        const std::string id=findImportedTextureId(m_manifest,renderer,logical);
-        if(!id.empty()) renderer.drawSprite(id,panelX+10,y+2,28,28);
-        std::string n;
-        switch(tt){
-            case TowerType::DartMonkey:n="DART MONKEY";break;
-            case TowerType::TackShooter:n="TACK SHOOTER";break;
-            case TowerType::BombTower:n="BOMB TOWER";break;
-            case TowerType::BoomerangThrower:n="BOOMERANG";break;
-            case TowerType::SuperMonkey:n="SUPER MONKEY";break;
-            default:n="TOWER";break;
+    std::string backgroundId;
+    for (const auto& id : backgroundCandidates) {
+        if (renderer.hasTexture(id)) {
+            backgroundId = id;
+            break;
         }
-        renderer.drawText(n,panelX+41,y+5,0.8f,afford?Color::white():Color{115,120,125,255});
-        renderer.drawText("$"+std::to_string(stats.cost),panelX+41,y+18,0.9f,afford?Color::yellow():Color::red());
-        y+=35.0f;
     }
 
-    renderer.drawRect(panelX+6,224,100,20,{42,50,56,255},true);
-    renderer.drawRect(panelX+6,224,100,20,Color::cyan(),false);
-    renderer.drawText("TARGET",panelX+29,230,0.9f,Color::white());
-    renderer.drawRect(panelX+6,247,100,20,{65,42,42,255},true);
-    renderer.drawRect(panelX+6,247,100,20,Color::red(),false);
-    renderer.drawText("SELL",panelX+42,253,0.9f,Color::white());
+    if (!backgroundId.empty()) {
+        renderer.drawSprite(backgroundId, 0.0f, 0.0f, 480.0f, 272.0f);
+    } else {
+        renderer.drawRect(0.0f, 0.0f, 480.0f, 272.0f, {42, 92, 50, 255}, true);
+        renderer.drawRect(0.0f, 0.0f, 480.0f, 272.0f, {18, 42, 24, 255}, false);
+        renderer.drawText("BLOONS TD 4", 145.0f, 36.0f, 2.2f, Color::white());
+        renderer.drawText("REPPOPPED", 175.0f, 66.0f, 1.2f, {255, 220, 90, 255});
+    }
 
-    renderer.drawRect(8,236,150,30,{36,82,45,255},true);
-    renderer.drawRect(8,236,150,30,Color::green(),false);
-    renderer.drawText("START ROUND",24,245,1.0f,Color::white());
+    // Desktop presentation: keep the actual menu artwork visible and put the
+    // controls in a compact glass-style panel rather than covering the scene.
+    constexpr float panelX = 300.0f;
+    constexpr float panelY = 102.0f;
+    constexpr float panelW = 166.0f;
+    constexpr float buttonX = 312.0f;
+    constexpr float buttonW = 142.0f;
+    constexpr float buttonH = 30.0f;
+
+    renderer.drawRect(panelX, panelY, panelW, 148.0f, {8, 18, 12, 205}, true);
+    renderer.drawRect(panelX, panelY, panelW, 148.0f, {112, 190, 120, 220}, false);
+    renderer.drawText("DESKTOP", panelX + 16.0f, panelY + 10.0f, 0.9f, {185, 235, 190, 255});
+    renderer.drawText("BLOONS TD 4", panelX + 16.0f, panelY + 27.0f, 1.15f, Color::white());
+
+    const bool playHot = pointerX >= buttonX && pointerX <= buttonX + buttonW &&
+                         pointerY >= 145.0f && pointerY <= 175.0f;
+    const bool editorHot = pointerX >= buttonX && pointerX <= buttonX + buttonW &&
+                           pointerY >= 182.0f && pointerY <= 212.0f;
+    const bool exitHot = pointerX >= buttonX && pointerX <= buttonX + buttonW &&
+                         pointerY >= 219.0f && pointerY <= 249.0f;
+
+    const auto drawButton = [&renderer](float y, const char* label, bool hot, bool destructive) {
+        const Color fill = hot
+            ? (destructive ? Color{145, 58, 58, 235} : Color{65, 135, 85, 245})
+            : (destructive ? Color{82, 40, 40, 225} : Color{30, 70, 42, 235});
+        const Color outline = hot
+            ? Color::white()
+            : (destructive ? Color{170, 90, 90, 230} : Color{105, 165, 115, 230});
+        renderer.drawRect(buttonX, y, buttonW, buttonH, fill, true);
+        renderer.drawRect(buttonX, y, buttonW, buttonH, outline, false);
+        renderer.drawText(label, buttonX + 19.0f, y + 9.0f, 0.95f, Color::white());
+    };
+
+    drawButton(145.0f, "PLAY GAME", playHot, false);
+    drawButton(182.0f, "TRACK EDITOR", editorHot, false);
+    drawButton(219.0f, "EXIT", exitHot, true);
+
+    renderer.drawText("Mouse + keyboard", panelX + 17.0f, 257.0f, 0.68f, {175, 190, 180, 255});
 }
+
+void AssetManager::drawHUD(IRenderer& renderer,const Economy& economy,int currentRound,size_t totalRounds,double fps,TowerType selectedPlacementType,bool hasPlacement) const{
+    // Desktop/HD-style gameplay HUD. The renderer can scale this existing
+    // world-space layout to any native desktop resolution, while PSP/Xbox keep
+    // their own frontend profiles and controls.
+    constexpr float panelX = 344.0f;
+    constexpr float panelW = 136.0f;
+
+    renderer.drawRect(0.0f, 0.0f, 480.0f, 30.0f, {8, 20, 12, 238}, true);
+    renderer.drawRect(0.0f, 29.0f, 480.0f, 1.0f, {120, 190, 125, 255}, true);
+
+    renderer.drawText("LIVES", 10.0f, 7.0f, 0.9f, {190, 225, 195, 255});
+    renderer.drawText(std::to_string(economy.lives()), 48.0f, 6.0f, 1.35f, Color::red());
+    renderer.drawText("CASH", 92.0f, 7.0f, 0.9f, {190, 225, 195, 255});
+    renderer.drawText("$" + std::to_string(economy.cash()), 130.0f, 6.0f, 1.25f, {255, 225, 85, 255});
+    renderer.drawText("ROUND", 222.0f, 7.0f, 0.9f, {190, 225, 195, 255});
+    renderer.drawText(std::to_string(currentRound) + "/" + std::to_string(totalRounds), 270.0f, 6.0f, 1.15f, Color::white());
+
+    const float progress = totalRounds > 0
+        ? std::clamp(static_cast<float>(currentRound) / static_cast<float>(totalRounds), 0.0f, 1.0f)
+        : 0.0f;
+    renderer.drawRect(222.0f, 23.0f, 105.0f, 3.0f, {40, 70, 45, 255}, true);
+    if (progress > 0.0f)
+        renderer.drawRect(222.0f, 23.0f, 105.0f * progress, 3.0f, {120, 210, 130, 255}, true);
+
+    renderer.drawRect(panelX, 30.0f, panelW, 242.0f, {8, 18, 12, 244}, true);
+    renderer.drawRect(panelX, 30.0f, 1.0f, 242.0f, {110, 180, 120, 240}, true);
+    renderer.drawText("TOWERS", panelX + 12.0f, 36.0f, 1.0f, Color::white());
+
+    static const TowerType towers[] = {
+        TowerType::DartMonkey,
+        TowerType::TackShooter,
+        TowerType::BombTower,
+        TowerType::BoomerangThrower,
+        TowerType::SuperMonkey
+    };
+
+    const auto towerName = [](TowerType tt) -> const char* {
+        switch (tt) {
+            case TowerType::DartMonkey: return "DART MONKEY";
+            case TowerType::TackShooter: return "TACK SHOOTER";
+            case TowerType::BombTower: return "BOMB TOWER";
+            case TowerType::BoomerangThrower: return "BOOMERANG";
+            case TowerType::SuperMonkey: return "SUPER MONKEY";
+            default: return "TOWER";
+        }
+    };
+
+    float y = 51.0f;
+    for (TowerType tt : towers) {
+        const auto stats = getTowerBaseStats(tt);
+        const bool selected = hasPlacement && selectedPlacementType == tt;
+        const bool affordable = economy.canAfford(stats.cost);
+        const Color fill = selected
+            ? Color{54, 112, 76, 250}
+            : (affordable ? Color{24, 53, 32, 240} : Color{22, 28, 24, 225});
+        const Color outline = selected ? Color{190, 245, 180, 255} : Color{77, 120, 85, 235};
+
+        renderer.drawRect(panelX + 7.0f, y, panelW - 14.0f, 31.0f, fill, true);
+        renderer.drawRect(panelX + 7.0f, y, panelW - 14.0f, 31.0f, outline, false);
+
+        const std::string logical = getTowerAssetId(tt);
+        const std::string id = findImportedTextureId(m_manifest, renderer, logical);
+        if (!id.empty())
+            renderer.drawSprite(id, panelX + 10.0f, y + 2.0f, 27.0f, 27.0f);
+
+        renderer.drawText(towerName(tt), panelX + 42.0f, y + 4.0f, 0.72f,
+            affordable ? Color::white() : Color{115, 125, 118, 255});
+        renderer.drawText("$" + std::to_string(stats.cost), panelX + 42.0f, y + 18.0f, 0.85f,
+            affordable ? Color{255, 225, 90, 255} : Color{185, 95, 95, 255});
+        y += 34.0f;
+    }
+
+    // A real round-control cluster instead of the old debug "START ROUND"
+    // rectangle. It remains intentionally mouse-friendly at desktop sizes.
+    const bool canStart = !hasPlacement;
+    const Color startFill = canStart ? Color{43, 103, 58, 245} : Color{37, 48, 40, 220};
+    renderer.drawRect(panelX + 7.0f, 224.0f, panelW - 14.0f, 20.0f, startFill, true);
+    renderer.drawRect(panelX + 7.0f, 224.0f, panelW - 14.0f, 20.0f, {120, 195, 125, 230}, false);
+    renderer.drawText("NEXT ROUND", panelX + 29.0f, 230.0f, 0.78f, Color::white());
+
+    renderer.drawRect(panelX + 7.0f, 247.0f, 61.0f, 20.0f, {40, 66, 48, 235}, true);
+    renderer.drawRect(panelX + 7.0f, 247.0f, 61.0f, 20.0f, {100, 150, 105, 220}, false);
+    renderer.drawText("EDIT", panelX + 27.0f, 253.0f, 0.78f, Color::white());
+
+    renderer.drawRect(panelX + 73.0f, 247.0f, 57.0f, 20.0f, {70, 36, 36, 235}, true);
+    renderer.drawRect(panelX + 73.0f, 247.0f, 57.0f, 20.0f, {185, 92, 92, 230}, false);
+    renderer.drawText("SELL", panelX + 89.0f, 253.0f, 0.78f, Color::white());
+
+    (void)fps; // FPS is deliberately no longer presented as debug UI.
+}
+
 
 } // namespace btd4
