@@ -65,14 +65,17 @@ private:
     std::unordered_map<std::string, PlaceholderColor> m_fallbackColors;
     TextureAtlas m_towersAtlas;
     TextureAtlas m_gameUiAtlas;
+    TextureAtlas m_mainMenuAtlas;
     std::string m_towerSheetTextureId;
     std::string m_gameUiTextureId;
+    std::string m_mainMenuTextureId;
     void setupFallbackColors();
     void loadRuntimeAtlases(const IFileSystem& fs);
     bool drawAtlasRegion(IRenderer& renderer, const TextureAtlas& atlas, const std::string& region,
                          float x, float y, float w, float h) const;
     const TextureAtlas* towerAtlas() const { return m_towersAtlas.regionCount() ? &m_towersAtlas : nullptr; }
     const TextureAtlas* gameUiAtlas() const { return m_gameUiAtlas.regionCount() ? &m_gameUiAtlas : nullptr; }
+    const TextureAtlas* mainMenuAtlas() const { return m_mainMenuAtlas.regionCount() ? &m_mainMenuAtlas : nullptr; }
 };
 
 } // namespace btd4
