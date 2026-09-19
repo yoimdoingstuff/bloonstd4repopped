@@ -11,6 +11,7 @@
 #include "../game/GameState.hpp"
 #include "../game/Upgrade.hpp"
 #include "../assets/AssetManager.hpp"
+#include "../audio/IAudio.hpp"
 #include "../map/TrackEditor.hpp"
 
 namespace btd4 {
@@ -19,7 +20,8 @@ class Engine {
 public:
     enum class DesktopScreen { MainMenu, Gameplay };
     Engine(IRenderer& renderer, IInput& input,
-           FrontendProfile frontendProfile = FrontendProfile::FlashDesktop);
+           FrontendProfile frontendProfile = FrontendProfile::FlashDesktop,
+           IAudio* audio = nullptr);
     ~Engine();
 
     bool initialize(int windowWidth, int windowHeight);
@@ -48,6 +50,7 @@ private:
     IRenderer& m_renderer;
     IInput& m_input;
     FrontendProfile m_frontendProfile{FrontendProfile::FlashDesktop};
+    IAudio* m_audio{nullptr};
     Clock m_clock;
     TestScreen m_testScreen;
     GameSimulation m_simulation;
