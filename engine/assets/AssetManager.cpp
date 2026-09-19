@@ -319,44 +319,45 @@ void AssetManager::drawMainMenu(IRenderer& renderer, float pointerX, float point
         renderer.drawText("REPPOPPED", 175.0f, 66.0f, 1.2f, {255, 220, 90, 255});
     }
 
-    // Desktop presentation: keep the actual menu artwork visible and put the
-    // controls in a compact glass-style panel rather than covering the scene.
-    constexpr float panelX = 300.0f;
-    constexpr float panelY = 102.0f;
-    constexpr float panelW = 166.0f;
-    constexpr float buttonX = 312.0f;
-    constexpr float buttonW = 142.0f;
-    constexpr float buttonH = 30.0f;
-
-    renderer.drawRect(panelX, panelY, panelW, 148.0f, {8, 18, 12, 205}, true);
-    renderer.drawRect(panelX, panelY, panelW, 148.0f, {112, 190, 120, 220}, false);
-    renderer.drawText("DESKTOP", panelX + 16.0f, panelY + 10.0f, 0.9f, {185, 235, 190, 255});
-    renderer.drawText("BLOONS TD 4", panelX + 16.0f, panelY + 27.0f, 1.15f, Color::white());
+    // Prefer the original BTD4 menu button art from MainMenu_HighRes.
+    constexpr float buttonX = 314.0f;
+    constexpr float buttonW = 146.0f;
+    constexpr float buttonH = 42.0f;
 
     const bool playHot = pointerX >= buttonX && pointerX <= buttonX + buttonW &&
-                         pointerY >= 145.0f && pointerY <= 175.0f;
+                         pointerY >= 132.0f && pointerY <= 174.0f;
     const bool editorHot = pointerX >= buttonX && pointerX <= buttonX + buttonW &&
-                           pointerY >= 182.0f && pointerY <= 212.0f;
+                           pointerY >= 180.0f && pointerY <= 222.0f;
     const bool exitHot = pointerX >= buttonX && pointerX <= buttonX + buttonW &&
-                         pointerY >= 219.0f && pointerY <= 249.0f;
+                         pointerY >= 228.0f && pointerY <= 270.0f;
 
-    const auto drawButton = [&renderer, buttonX, buttonW, buttonH](float y, const char* label, bool hot, bool destructive) {
-        const Color fill = hot
-            ? (destructive ? Color{145, 58, 58, 235} : Color{65, 135, 85, 245})
-            : (destructive ? Color{82, 40, 40, 225} : Color{30, 70, 42, 235});
-        const Color outline = hot
-            ? Color::white()
-            : (destructive ? Color{170, 90, 90, 230} : Color{105, 165, 115, 230});
-        renderer.drawRect(buttonX, y, buttonW, buttonH, fill, true);
-        renderer.drawRect(buttonX, y, buttonW, buttonH, outline, false);
-        renderer.drawText(label, buttonX + 19.0f, y + 9.0f, 0.95f, Color::white());
+    auto drawMenuButton = [&](float y, const char* background, const char* labelRegion,
+                              const char* fallbackLabel, bool hot, bool destructive) {
+        if (mainMenuAtlas()) {
+            renderer.drawRect(buttonX + 2.0f, y + 3.0f, buttonW - 4.0f, buttonH, {0, 0, 0, 70}, true);
+            drawAtlasRegion(renderer, *mainMenuAtlas(), background, buttonX, y, buttonW, buttonH);
+            if (hot) {
+                drawAtlasRegion(renderer, *mainMenuAtlas(), "button_highlight.png",
+                                 buttonX + 2.0f, y + 2.0f, buttonW - 4.0f, buttonH - 4.0f);
+            }
+            if (!drawAtlasRegion(renderer, *mainMenuAtlas(), labelRegion,
+                                 buttonX + 22.0f, y + 7.0f, buttonW - 44.0f, buttonH - 14.0f)) {
+                renderer.drawText(fallbackLabel, buttonX + 17.0f, y + 12.0f, 0.8f, Color::white());
+            }
+        } else {
+            const Color fill = hot
+                ? (destructive ? Color{150, 60, 60, 240} : Color{65, 135, 85, 245})
+                : (destructive ? Color{82, 40, 40, 225} : Color{30, 70, 42, 235});
+            renderer.drawRect(buttonX, y, buttonW, buttonH, fill, true);
+            renderer.drawRect(buttonX, y, buttonW, buttonH, Color::white(), false);
+            renderer.drawText(fallbackLabel, buttonX + 17.0f, y + 12.0f, 0.8f, Color::white());
+        }
     };
 
-    drawButton(145.0f, "PLAY GAME", playHot, false);
-    drawButton(182.0f, "TRACK EDITOR", editorHot, false);
-    drawButton(219.0f, "EXIT", exitHot, true);
+    drawMenuButton(132.0f, "green_button.png", "play_game.png", "PLAY GAME", playHot, false);
+    drawMenuButton(180.0f, "orange_button.png", "new_game.png", "TRACK EDITOR", editorHot, false);
+    drawMenuButton(228.0f, "red_button.png", "main_menu.png", "EXIT", exitHot, true);
 
-    renderer.drawText("Mouse + keyboard", panelX + 17.0f, 257.0f, 0.68f, {175, 190, 180, 255});
 }
 
 bool AssetManager::drawGameUiRegion(IRenderer& renderer, const std::string& region,
