@@ -145,8 +145,7 @@ void AssetManager::loadRuntimeAtlases(const IFileSystem& fsBridge) {
         const std::string xml(bytes.begin(), bytes.end());
         size_t cursor = 0;
         while (cursor < xml.size()) {
-            const size_t end = xml.find('
-', cursor);
+            const size_t end = xml.find('\n', cursor);
             const std::string line = xml.substr(cursor, end == std::string::npos ? std::string::npos : end - cursor);
             std::string name;
             Rect rect;
