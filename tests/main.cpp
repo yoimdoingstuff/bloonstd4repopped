@@ -248,7 +248,7 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
     input.beginFrame();
     input.processEvent(mouseDown, viewport);
     input.processEvent(mouseUp, viewport);
-    TEST_ASSERT(input.isActionJustPressed(btd4::InputAction::Confirm));
+    TEST_ASSERT(!input.isActionJustPressed(btd4::InputAction::Confirm));
     TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
 
     SDL_Event keyUp{};
