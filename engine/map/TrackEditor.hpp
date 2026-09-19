@@ -32,7 +32,7 @@ public:
     void render(IRenderer& renderer) const;
 
 private:
-    static constexpr int kColumns = 24;
+    static constexpr int kColumns = 21;
     static constexpr int kRows = 14;
     static constexpr float kCellSize = 16.0f;
     static constexpr float kGridOriginX = 8.0f;
