@@ -77,10 +77,10 @@ if(NOT TARGET_PSP)
             GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
             GIT_TAG release-2.8.0
             GIT_SHALLOW TRUE)
-        # Keep the fetched SDL2 shared target visible as SDL2::SDL2. SDL_mixer
-        # itself remains static without forcing the project-wide BUILD_SHARED_LIBS off.
+        # SDL_mixer 2.8.0 derives its shared/static mode from BUILD_SHARED_LIBS.
+        # Keep the project on shared SDL2 and deploy the mixer DLL alongside
+        # desktop executables rather than forcing an incompatible static setup.
         set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-        set(SDL2MIXER_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
         set(SDL2MIXER_VENDORED ON CACHE BOOL "" FORCE)
         set(SDL2MIXER_INSTALL OFF CACHE BOOL "" FORCE)
         set(SDL2MIXER_SAMPLES OFF CACHE BOOL "" FORCE)
@@ -195,6 +195,12 @@ if(BUILD_GAME)
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:btd4_game>"
                 COMMENT "Deploying SDL2 runtime for btd4_game")
+        endif()
+        if(WIN32 AND TARGET SDL2_mixer::SDL2_mixer)
+            add_custom_command(TARGET btd4_game POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<TARGET_FILE:SDL2_mixer::SDL2_mixer>" "$<TARGET_FILE_DIR:btd4_game>"
+                COMMENT "Deploying SDL2_mixer runtime for btd4_game")
         endif()
     else()
         if(NOT COMMAND create_pbp_file)
