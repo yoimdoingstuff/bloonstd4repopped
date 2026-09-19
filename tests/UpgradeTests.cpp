@@ -75,6 +75,7 @@ TEST_CASE(TowerRejectsSkippedUpgradeTier) {
 TEST_CASE(TowerUsesSequentialBTD4UpgradeLevels) {
     Tower tower(3, TowerType::BombTower, 0.0f, 0.0f);
     UpgradeEffect effect; effect.cost = 100; effect.damageAdd = 1;
+    const int baseCost = tower.totalInvestedCost();
 
     TEST_ASSERT(!tower.applyUpgrade(effect, 1, 1));
     TEST_ASSERT(tower.applyUpgrade(effect, 0, 1));
@@ -83,7 +84,7 @@ TEST_CASE(TowerUsesSequentialBTD4UpgradeLevels) {
     TEST_ASSERT(tower.applyUpgrade(effect, 0, 4));
     TEST_ASSERT(!tower.applyUpgrade(effect, 0, 5));
     TEST_ASSERT_EQ(tower.upgradeLevel(), static_cast<uint8_t>(4));
-    TEST_ASSERT_EQ(tower.totalInvestedCost(), 700 + 400);
+    TEST_ASSERT_EQ(tower.totalInvestedCost(), baseCost + 400);
 }
 
 
