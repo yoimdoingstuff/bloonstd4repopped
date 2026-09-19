@@ -43,14 +43,14 @@ TEST_CASE(LogicalResolutionPillarbox) {
     TEST_ASSERT_EQ(vpExact.width, 960);
     TEST_ASSERT_EQ(vpExact.height, 544);
 
-    // Ultrawide window: 1920x800 -> Pillarboxed (bars on sides)
-    auto vpWide = btd4::LogicalResolution::calculateViewport(1920, 800);
+    // PSP-style aspect-preserved mode: ultrawide windows pillarbox.
+    auto vpWide = btd4::LogicalResolution::calculateViewport(1920, 800, true);
     TEST_ASSERT(vpWide.x > 0);
     TEST_ASSERT_EQ(vpWide.y, 0);
     TEST_ASSERT_EQ(vpWide.height, 800);
 
-    // Tall window: 800x1200 -> Letterboxed (bars on top and bottom)
-    auto vpTall = btd4::LogicalResolution::calculateViewport(800, 1200);
+    // PSP-style aspect-preserved mode: tall windows letterbox.
+    auto vpTall = btd4::LogicalResolution::calculateViewport(800, 1200, true);
     TEST_ASSERT_EQ(vpTall.x, 0);
     TEST_ASSERT(vpTall.y > 0);
     TEST_ASSERT_EQ(vpTall.width, 800);
