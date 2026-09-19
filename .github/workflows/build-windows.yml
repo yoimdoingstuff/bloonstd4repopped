@@ -36,7 +36,7 @@ jobs:
         cp build/Release/btd4_game.exe package/bin/ || cp build/btd4_game.exe package/bin/
         cp build/Release/btd4_builder.exe package/bin/ || cp build/btd4_builder.exe package/bin/
         cp build/Release/btd4_importer.exe package/bin/ || cp build/btd4_importer.exe package/bin/
-        find build -type f \( -iname 'SDL2.dll' -o -iname 'SDL2_image*.dll' \) -exec cp -f {} package/bin/ \; 2>/dev/null || true
+        find build -type f \( -iname 'SDL2.dll' -o -iname 'SDL2_image*.dll' -o -iname 'SDL2_mixer*.dll' \) -exec cp -f {} package/bin/ \; 2>/dev/null || true
         cp build/Release/*.dll package/bin/ 2>/dev/null || true
         cp CMakeLists.txt package/bin/CMakeLists.txt
         cp assets/placeholder/rounds/default_rounds.json package/bin/assets/placeholder/rounds/default_rounds.json
