@@ -60,7 +60,7 @@ jobs:
           cp -L "$lib" package/bin/lib/
         done < <(find build -type f -name 'libSDL2_mixer*.so*' -print)
 
-        cat > package/bin/run-btd4-game.sh <<'EOF
+        cat > package/bin/run-btd4-game.sh <<'EOF'
         #!/usr/bin/env bash
         set -e
         DIR="$(cd "$(dirname "$0")" && pwd)"
