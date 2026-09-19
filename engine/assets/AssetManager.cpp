@@ -360,6 +360,11 @@ void AssetManager::drawMainMenu(IRenderer& renderer, float pointerX, float point
     renderer.drawText("Mouse + keyboard", panelX + 17.0f, 257.0f, 0.68f, {175, 190, 180, 255});
 }
 
+bool AssetManager::drawGameUiRegion(IRenderer& renderer, const std::string& region,
+                                      float x, float y, float w, float h) const {
+    return gameUiAtlas() && drawAtlasRegion(renderer, *gameUiAtlas(), region, x, y, w, h);
+}
+
 void AssetManager::drawHUD(IRenderer& renderer,const Economy& economy,int currentRound,size_t totalRounds,double fps,TowerType selectedPlacementType,bool hasPlacement) const{
     // Desktop/HD-style gameplay HUD. The renderer can scale this existing
     // world-space layout to any native desktop resolution, while PSP/Xbox keep
@@ -370,10 +375,12 @@ void AssetManager::drawHUD(IRenderer& renderer,const Economy& economy,int curren
     renderer.drawRect(0.0f, 0.0f, 480.0f, 30.0f, {8, 20, 12, 238}, true);
     renderer.drawRect(0.0f, 29.0f, 480.0f, 1.0f, {120, 190, 125, 255}, true);
 
-    renderer.drawText("LIVES", 10.0f, 7.0f, 0.9f, {190, 225, 195, 255});
-    renderer.drawText(std::to_string(economy.lives()), 48.0f, 6.0f, 1.35f, Color::red());
-    renderer.drawText("CASH", 92.0f, 7.0f, 0.9f, {190, 225, 195, 255});
-    renderer.drawText("$" + std::to_string(economy.cash()), 130.0f, 6.0f, 1.25f, {255, 225, 85, 255});
+    const bool livesArt = towerAtlas() && drawAtlasRegion(renderer, *towerAtlas(), "lives_icon.png", 8.0f, 4.0f, 17.0f, 17.0f);
+    const bool cashArt = towerAtlas() && drawAtlasRegion(renderer, *towerAtlas(), "cash_icon.png", 90.0f, 4.0f, 11.0f, 20.0f);
+    if (!livesArt) renderer.drawText("LIVES", 10.0f, 7.0f, 0.9f, {190, 225, 195, 255});
+    renderer.drawText(std::to_string(economy.lives()), 28.0f, 6.0f, 1.2f, Color::red());
+    if (!cashArt) renderer.drawText("CASH", 92.0f, 7.0f, 0.9f, {190, 225, 195, 255});
+    renderer.drawText("$" + std::to_string(economy.cash()), 105.0f, 6.0f, 1.15f, {255, 225, 85, 255});
     renderer.drawText("ROUND", 222.0f, 7.0f, 0.9f, {190, 225, 195, 255});
     renderer.drawText(std::to_string(currentRound) + "/" + std::to_string(totalRounds), 270.0f, 6.0f, 1.15f, Color::white());
 
@@ -417,8 +424,13 @@ void AssetManager::drawHUD(IRenderer& renderer,const Economy& economy,int curren
             : (affordable ? Color{24, 53, 32, 240} : Color{22, 28, 24, 225});
         const Color outline = selected ? Color{190, 245, 180, 255} : Color{77, 120, 85, 235};
 
-        renderer.drawRect(panelX + 7.0f, y, panelW - 14.0f, 31.0f, fill, true);
-        renderer.drawRect(panelX + 7.0f, y, panelW - 14.0f, 31.0f, outline, false);
+        const bool authenticBox = drawGameUiRegion(renderer, "tower_box.png", panelX + 7.0f, y, panelW - 14.0f, 31.0f);
+        if (!authenticBox) {
+            renderer.drawRect(panelX + 7.0f, y, panelW - 14.0f, 31.0f, fill, true);
+            renderer.drawRect(panelX + 7.0f, y, panelW - 14.0f, 31.0f, outline, false);
+        } else if (selected) {
+            renderer.drawRect(panelX + 7.0f, y, panelW - 14.0f, 31.0f, Color{255,255,255,60}, true);
+        }
 
         std::string towerRegion;
         switch (tt) {
