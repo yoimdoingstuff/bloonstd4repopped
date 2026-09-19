@@ -19,6 +19,7 @@ TowerType towerForAction(InputAction action, bool& matched) {
         case InputAction::SelectTower3: return TowerType::BombTower;
         case InputAction::SelectTower4: return TowerType::BoomerangThrower;
         case InputAction::SelectTower5: return TowerType::SuperMonkey;
+        case InputAction::SelectTower6: return TowerType::SniperMonkey;
         default: matched = false; return TowerType::DartMonkey;
     }
 }
