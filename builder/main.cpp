@@ -35,10 +35,8 @@ std::filesystem::path findExecutableRoot() {
         if (buffer.size() > 32768) return {};
     }
 #else
-    if (char* basePath = SDL_GetBasePath()) {
-        std::filesystem::path root = std::filesystem::path(basePath).lexically_normal();
-        SDL_free(basePath);
-        return root;
+    if (const char* basePath = SDL_GetBasePath()) {
+        return std::filesystem::path(basePath).lexically_normal();
     }
     return {};
 #endif

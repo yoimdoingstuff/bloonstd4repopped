@@ -13,10 +13,9 @@
 
 namespace {
 std::string executableDirectory() {
-    char* base = SDL_GetBasePath();
+    const char* base = SDL_GetBasePath();
     if (!base) return ".";
     std::string result(base);
-    SDL_free(base);
     while (!result.empty() && (result.back() == '/' || result.back() == '\\')) result.pop_back();
     return result.empty() ? "." : result;
 }

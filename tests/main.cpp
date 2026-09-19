@@ -6,7 +6,6 @@
 #include "../platform/common/PlatformRegistry.hpp"
 #include "../platform/common/NativeFileSystem.hpp"
 #include "../platform/common/NullAudio.hpp"
-#define SDL_MAIN_HANDLED
 #include "../platform/common/SDLInput.hpp"
 #include "../engine/map/Map.hpp"
 #include "../engine/game/Bloon.hpp"
@@ -14,7 +13,8 @@
 #include "../engine/game/Tower.hpp"
 #include "../engine/game/Economy.hpp"
 #include "../engine/game/GameState.hpp"
-#include <SDL.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <filesystem>
 #include <thread>
 #include <chrono>
@@ -217,14 +217,14 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
     // before Engine::frame() runs.
     input.beginFrame();
     SDL_Event mouseDown{};
-    mouseDown.type = SDL_MOUSEBUTTONDOWN;
+    mouseDown.type = SDL_EVENT_MOUSE_BUTTON_DOWN;
     mouseDown.button.button = SDL_BUTTON_LEFT;
     mouseDown.button.x = 240;
     mouseDown.button.y = 136;
     input.processEvent(mouseDown, viewport);
 
     SDL_Event mouseUp{};
-    mouseUp.type = SDL_MOUSEBUTTONUP;
+    mouseUp.type = SDL_EVENT_MOUSE_BUTTON_UP;
     mouseUp.button.button = SDL_BUTTON_LEFT;
     mouseUp.button.x = 240;
     mouseUp.button.y = 136;
@@ -238,7 +238,7 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
     // an action that remains physically held by the other source.
     input.beginFrame();
     SDL_Event keyDown{};
-    keyDown.type = SDL_KEYDOWN;
+    keyDown.type = SDL_EVENT_KEY_DOWN;
     keyDown.key.keysym.sym = SDLK_SPACE;
     keyDown.key.keysym.scancode = SDL_SCANCODE_SPACE;
     input.processEvent(keyDown, viewport);
@@ -252,7 +252,7 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
     TEST_ASSERT(input.isActionDown(btd4::InputAction::Confirm));
 
     SDL_Event keyUp{};
-    keyUp.type = SDL_KEYUP;
+    keyUp.type = SDL_EVENT_KEY_UP;
     keyUp.key.keysym.sym = SDLK_SPACE;
     keyUp.key.keysym.scancode = SDL_SCANCODE_SPACE;
     input.processEvent(keyUp, viewport);
@@ -266,7 +266,7 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
     input.processEvent(keyDown, viewport);
 
     SDL_Event returnDown{};
-    returnDown.type = SDL_KEYDOWN;
+    returnDown.type = SDL_EVENT_KEY_DOWN;
     returnDown.key.keysym.sym = SDLK_RETURN;
     returnDown.key.keysym.scancode = SDL_SCANCODE_RETURN;
     input.processEvent(returnDown, viewport);
@@ -279,7 +279,7 @@ TEST_CASE(SDLInputTracksEdgesAndSeparateBindings) {
     TEST_ASSERT(!input.isActionJustReleased(btd4::InputAction::Confirm));
 
     SDL_Event returnUp{};
-    returnUp.type = SDL_KEYUP;
+    returnUp.type = SDL_EVENT_KEY_UP;
     returnUp.key.keysym.sym = SDLK_RETURN;
     returnUp.key.keysym.scancode = SDL_SCANCODE_RETURN;
     input.processEvent(returnUp, viewport);
