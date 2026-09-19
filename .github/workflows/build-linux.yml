@@ -78,7 +78,7 @@ jobs:
         test -x package/bin/run-btd4-game.sh
         test -x package/bin/run-btd4-builder.sh
         test -n "$(find package/bin/lib -maxdepth 1 -type f -name 'libSDL3*.so*' -print -quit)"
-        test -n "$(find package/bin/lib -maxdepth 1 -type f -name 'libSDL3_mixer*.so* -print -quit)"
+        test -n "$(find package/bin/lib -maxdepth 1 -type f -name 'libSDL3_mixer*.so*' -print -quit)"
 
         tar -czf btd4-linux-x86_64.tar.gz -C package bin
 
