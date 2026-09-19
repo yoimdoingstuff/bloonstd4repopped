@@ -13,7 +13,7 @@ namespace btd4 {
 namespace fs = std::filesystem;
 
 namespace {
-constexpr float kGridWidth = 24.0f * 16.0f;
+constexpr float kGridWidth = 21.0f * 16.0f;
 constexpr float kGridHeight = 14.0f * 16.0f;
 
 Color styleGround(int style) {
@@ -541,8 +541,8 @@ void TrackEditor::render(IRenderer& renderer) const {
         }
     }
 
-    renderer.drawRect(350.0f, 24.0f, 126.0f, 242.0f, {15, 20, 18, 235}, true);
-    renderer.drawRect(350.0f, 24.0f, 126.0f, 242.0f, Color::white(), false);
+    renderer.drawRect(350.0f, 24.0f, 126.0f, 242.0f, {15, 20, 18, 245}, true);
+    renderer.drawRect(350.0f, 24.0f, 126.0f, 242.0f, {120, 195, 125, 240}, false);
 
     auto button = [&renderer](float y, const char* text, bool selected) {
         renderer.drawRect(356.0f, y, 114.0f, 22.0f,
