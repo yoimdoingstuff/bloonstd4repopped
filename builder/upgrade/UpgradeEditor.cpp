@@ -145,7 +145,7 @@ void UpgradeEditor::render(const std::string& projectRoot) {
     std::vector<const char*> labels;
     for (const auto& upgrade : m_upgrades.upgrades) {
         names.push_back(upgrade.displayName + " [" + towerTypeName(upgrade.tower) + " " +
-                        std::to_string(upgrade.path + 1) + "-" + std::to_string(upgrade.tier) + "]");
+                        std::string("Level ") + std::to_string(upgrade.tier) + "]");
     }
     for (const auto& name : names) labels.push_back(name.c_str());
     ImGui::Combo("Upgrade", &m_selected, labels.data(), static_cast<int>(labels.size()));
@@ -160,15 +160,14 @@ void UpgradeEditor::render(const std::string& projectRoot) {
 
     ImGui::Text("ID: %s", upgrade.id.c_str());
 
-    const char* towers[] = {"DartMonkey","TackShooter","SniperMonkey","BoomerangThrower","BombTower","SuperMonkey"};
+    const char* towers[] = {"DartMonkey","TackShooter","BoomerangThrower","BombTower","SuperMonkey"};
     int towerIndex = static_cast<int>(upgrade.tower);
     if (ImGui::Combo("Tower", &towerIndex, towers, 6))
         upgrade.tower = static_cast<TowerType>(std::clamp(towerIndex, 0, 5));
 
-    int path = upgrade.path + 1;
-    int tier = upgrade.tier;
-    if (ImGui::InputInt("Path", &path)) upgrade.path = static_cast<uint8_t>(std::clamp(path - 1, 0, 1));
-    if (ImGui::InputInt("Tier", &tier)) upgrade.tier = static_cast<uint8_t>(std::clamp(tier, 1, 4));
+    int level = upgrade.tier;
+    upgrade.path = 0;
+    if (ImGui::InputInt("Level", &level)) upgrade.tier = static_cast<uint8_t>(std::clamp(level, 1, 4));
 
     int cost = effect.cost;
     int damage = effect.damageAdd;
