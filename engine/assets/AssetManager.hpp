@@ -51,6 +51,8 @@ public:
     void drawMainMenu(IRenderer& renderer, float pointerX = -1.0f, float pointerY = -1.0f) const;
     void drawHUD(IRenderer& renderer, const Economy& economy, int currentRound, size_t totalRounds,
                  double fps, TowerType selectedPlacementType, bool hasPlacement) const;
+    bool drawGameUiRegion(IRenderer& renderer, const std::string& region,
+                          float x, float y, float w, float h) const;
 
 private:
     AssetManager();
