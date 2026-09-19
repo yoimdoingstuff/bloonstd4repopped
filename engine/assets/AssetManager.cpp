@@ -4,6 +4,8 @@
 #include <cmath>
 #include <algorithm>
 #include <cctype>
+#include <fstream>
+#include <string_view>
 
 namespace btd4 {
 namespace fs = std::filesystem;
@@ -82,6 +84,82 @@ std::string findImportedTextureId(const AssetManifest& manifest, const IRenderer
 AssetManager& AssetManager::instance() { static AssetManager s_instance; return s_instance; }
 AssetManager::AssetManager() { setupFallbackColors(); }
 
+namespace {
+std::string xmlAttr(const std::string& line, const char* key) {
+    const std::string needle = std::string(key) + "="";
+    const size_t start = line.find(needle);
+    if (start == std::string::npos) return {};
+    const size_t valueStart = start + needle.size();
+    const size_t end = line.find('"', valueStart);
+    return end == std::string::npos ? std::string{} : line.substr(valueStart, end - valueStart);
+}
+
+bool parseCellLine(const std::string& line, std::string& name, Rect& rect) {
+    if (line.find("<Cell") == std::string::npos) return false;
+    name = xmlAttr(line, "name");
+    const std::string sx = xmlAttr(line, "x");
+    const std::string sy = xmlAttr(line, "y");
+    const std::string sw = xmlAttr(line, "w");
+    const std::string sh = xmlAttr(line, "h");
+    if (name.empty() || sx.empty() || sy.empty() || sw.empty() || sh.empty()) return false;
+    try {
+        rect = {std::stof(sx), std::stof(sy), std::stof(sw), std::stof(sh)};
+    } catch (...) {
+        return false;
+    }
+    return rect.w > 0.0f && rect.h > 0.0f;
+}
+}
+
+void AssetManager::loadRuntimeAtlases(const IFileSystem& fsBridge) {
+    m_towersAtlas.clear();
+    m_gameUiAtlas.clear();
+    m_towerSheetTextureId.clear();
+    m_gameUiTextureId.clear();
+
+    auto findTextureId = [this](std::initializer_list<const char*> candidates) -> std::string {
+        for (const char* id : candidates) {
+            if (m_manifest.textures.find(id) != m_manifest.textures.end()) return id;
+        }
+        return {};
+    };
+
+    m_towerSheetTextureId = findTextureId({
+        "towers_sheet_high_res@hd", "towers_sheet@hd",
+        "towers_sheet_high_res@phone", "towers_sheet@phone"
+    });
+    m_gameUiTextureId = findTextureId({
+        "game_ui_high_res@hd", "game_ui@hd",
+        "game_ui_high_res@phone", "game_ui@phone"
+    });
+
+    auto loadXmlAtlas = [&](const std::string& textureId, TextureAtlas& atlas) {
+        if (textureId.empty()) return;
+        const std::string imagePath = resolveTexturePath(textureId);
+        if (imagePath.empty()) return;
+        std::filesystem::path xmlPath(imagePath);
+        xmlPath.replace_extension(".xml");
+
+        std::vector<uint8_t> bytes;
+        if (!fsBridge.readFile(xmlPath.generic_string(), bytes)) return;
+        const std::string xml(bytes.begin(), bytes.end());
+        size_t cursor = 0;
+        while (cursor < xml.size()) {
+            const size_t end = xml.find('
+', cursor);
+            const std::string line = xml.substr(cursor, end == std::string::npos ? std::string::npos : end - cursor);
+            std::string name;
+            Rect rect;
+            if (parseCellLine(line, name, rect)) atlas.addRegion(name, textureId, rect);
+            if (end == std::string::npos) break;
+            cursor = end + 1;
+        }
+    };
+
+    loadXmlAtlas(m_towerSheetTextureId, m_towersAtlas);
+    loadXmlAtlas(m_gameUiTextureId, m_gameUiAtlas);
+}
+
 void AssetManager::setupFallbackColors() {
     m_fallbackColors["bloon_red"]={255,0,0}; m_fallbackColors["bloon_blue"]={30,144,255};
     m_fallbackColors["bloon_green"]={50,205,50}; m_fallbackColors["bloon_yellow"]={255,215,0};
@@ -96,15 +174,15 @@ void AssetManager::setupFallbackColors() {
 
 bool AssetManager::initialize(const IFileSystem& fsBridge, const std::string& dataDirectory) {
     m_dataDir=dataDirectory; m_manifest=AssetManifest{}; m_hasManifest=false; std::string err;
-    if(m_manifest.loadFromFile(fsBridge,m_dataDir+"/manifest.json",err)){m_hasManifest=true;return true;}
+    if(m_manifest.loadFromFile(fsBridge,m_dataDir+"/manifest.json",err)){m_hasManifest=true;loadRuntimeAtlases(fsBridge);return true;}
     std::error_code ec; fs::path root(m_dataDir);
     if(fs::is_directory(root,ec)){
         std::vector<fs::path> manifests;
         for(const auto& entry:fs::directory_iterator(root,fs::directory_options::skip_permission_denied,ec)){if(ec)break;if(!entry.is_directory(ec))continue;const fs::path manifest=entry.path()/"manifest.json";if(fs::is_regular_file(manifest,ec))manifests.push_back(manifest);}
         std::sort(manifests.begin(),manifests.end());
-        if(manifests.size()==1){const fs::path manifest=manifests.front();if(m_manifest.loadFromFile(fsBridge,manifest.generic_string(),err)){m_dataDir=manifest.parent_path().generic_string();m_hasManifest=true;return true;}}
+        if(manifests.size()==1){const fs::path manifest=manifests.front();if(m_manifest.loadFromFile(fsBridge,manifest.generic_string(),err)){m_dataDir=manifest.parent_path().generic_string();m_hasManifest=true;loadRuntimeAtlases(fsBridge);return true;}}
     }
-    if(m_manifest.loadFromFile(fsBridge,"assets/placeholder/manifest.json",err)){m_dataDir="assets/placeholder";m_hasManifest=true;return true;}
+    if(m_manifest.loadFromFile(fsBridge,"assets/placeholder/manifest.json",err)){m_dataDir="assets/placeholder";m_hasManifest=true;loadRuntimeAtlases(fsBridge);return true;}
     return true;
 }
 std::string AssetManager::resolveTexturePath(const std::string& assetId) const {if(m_hasManifest){auto it=m_manifest.textures.find(assetId);if(it!=m_manifest.textures.end())return m_dataDir+"/"+it->second;}return "";}
@@ -116,7 +194,40 @@ std::string AssetManager::getBloonAssetId(BloonType type){switch(type){case Bloo
 std::string AssetManager::getTowerAssetId(TowerType type){switch(type){case TowerType::DartMonkey:return "tower_dart_monkey";case TowerType::TackShooter:return "tower_tack_shooter";case TowerType::SniperMonkey:return "tower_sniper_monkey";case TowerType::BoomerangThrower:return "tower_boomerang";case TowerType::BombTower:return "tower_bomb_tower";case TowerType::SuperMonkey:return "tower_super_monkey";default:return "";}}
 std::string AssetManager::getProjectileAssetId(ProjectileType type){switch(type){case ProjectileType::Dart:return "projectile_dart";case ProjectileType::Tack:return "projectile_tack";case ProjectileType::Bomb:return "projectile_bomb";case ProjectileType::Boomerang:return "projectile_boomerang";case ProjectileType::SniperShot:return "projectile_bullet";case ProjectileType::Laser:return "projectile_laser";case ProjectileType::Plasma:return "projectile_plasma";default:return "";}}
 void AssetManager::drawBloon(IRenderer& renderer,const Bloon& bloon) const{if(!bloon.active)return;const std::string logical=getBloonAssetId(bloon.type);const std::string id=findImportedTextureId(m_manifest,renderer,logical);if(!id.empty())renderer.drawSprite(id,bloon.x-bloon.radius,bloon.y-bloon.radius,bloon.radius*2.0f,bloon.radius*2.0f);else{PlaceholderColor pc=getPlaceholderColor(logical);Color c{pc.r,pc.g,pc.b,255};renderer.drawCircle(bloon.x,bloon.y-1.0f,bloon.radius,c,true);renderer.drawCircle(bloon.x,bloon.y-1.0f,bloon.radius,Color::black(),false);renderer.drawCircle(bloon.x-bloon.radius*.35f,bloon.y-bloon.radius*.45f,1.5f,Color::white(),true);renderer.drawRect(bloon.x-1.0f,bloon.y+bloon.radius-1.0f,2.0f,2.0f,c,true);}}
-void AssetManager::drawTower(IRenderer& renderer,const Tower& tower,bool isSelected) const{if(isSelected)DebugRenderer::drawTowerRange(renderer,tower.x(),tower.y(),tower.range());const std::string logical=getTowerAssetId(tower.type());const std::string id=findImportedTextureId(m_manifest,renderer,logical);if(!id.empty())renderer.drawSprite(id,tower.x()-16.0f,tower.y()-16.0f,32.0f,32.0f);else{PlaceholderColor pc=getPlaceholderColor(logical);Color c{pc.r,pc.g,pc.b,255};renderer.drawCircle(tower.x(),tower.y(),12.0f,c,true);renderer.drawCircle(tower.x(),tower.y(),12.0f,Color::black(),false);renderer.drawCircle(tower.x(),tower.y(),4.0f,Color::white(),true);renderer.drawCircle(tower.x(),tower.y(),2.0f,Color::black(),true);}}
+bool AssetManager::drawAtlasRegion(IRenderer& renderer, const TextureAtlas& atlas, const std::string& region,
+                                      float x, float y, float w, float h) const {
+    const AtlasRegion* entry = atlas.getRegion(region);
+    if (!entry) return false;
+    renderer.drawSpriteRegion(entry->textureKey, entry->subRect, x, y, w, h);
+    return true;
+}
+
+void AssetManager::drawTower(IRenderer& renderer,const Tower& tower,bool isSelected) const {
+    if(isSelected) DebugRenderer::drawTowerRange(renderer,tower.x(),tower.y(),tower.range());
+
+    std::string region;
+    switch (tower.type()) {
+        case TowerType::DartMonkey: region = "dart_monkey_tower.png"; break;
+        case TowerType::TackShooter: region = "tack_shooter_tower.png"; break;
+        case TowerType::BoomerangThrower:
+            region = tower.upgradeLevel() >= 3 ? "lightsabre_thrower_tower.png"
+                : (tower.upgradeLevel() >= 2 ? "glaive_thrower_tower.png" : "boomerang_monkey_tower.png");
+            break;
+        case TowerType::BombTower: region = "animated_bomb_cannon_1.png"; break;
+        case TowerType::SuperMonkey:
+            region = tower.upgradeLevel() >= 4 ? "sun_god_tower.png"
+                : (tower.upgradeLevel() >= 3 ? "plasma_vision_tower.png"
+                : (tower.upgradeLevel() >= 2 ? "laser_vision_tower.png" : "supermonkey_tower.png"));
+            break;
+        default: break;
+    }
+
+    if (!region.empty() && towerAtlas() && drawAtlasRegion(renderer, *towerAtlas(), region,
+            tower.x() - 18.0f, tower.y() - 18.0f, 36.0f, 36.0f)) return;
+
+    // Missing imported art is not replaced by a fake tower. This keeps the
+    // desktop build faithful to the supplied BTD4 asset set.
+}
 void AssetManager::drawProjectile(IRenderer& renderer,const Projectile& proj) const{if(!proj.active)return;const std::string logical=getProjectileAssetId(proj.type);const std::string id=findImportedTextureId(m_manifest,renderer,logical);if(!id.empty())renderer.drawSprite(id,proj.x-4.0f,proj.y-4.0f,8.0f,8.0f);else if(proj.type==ProjectileType::Bomb){renderer.drawCircle(proj.x,proj.y,4.0f,Color::black(),true);renderer.drawCircle(proj.x,proj.y,4.0f,Color::red(),false);}else if(proj.type==ProjectileType::Plasma)renderer.drawCircle(proj.x,proj.y,5.0f,Color::cyan(),true);else{float len=6.0f,speed=std::sqrt(proj.vx*proj.vx+proj.vy*proj.vy);float dx=speed>.001f?proj.vx/speed:1.0f,dy=speed>.001f?proj.vy/speed:0.0f;renderer.drawLine(proj.x,proj.y,proj.x-dx*len,proj.y-dy*len,Color::yellow());}}
 void AssetManager::drawMap(IRenderer& renderer,const Map& map) const{
     std::string backgroundId;
@@ -309,10 +420,17 @@ void AssetManager::drawHUD(IRenderer& renderer,const Economy& economy,int curren
         renderer.drawRect(panelX + 7.0f, y, panelW - 14.0f, 31.0f, fill, true);
         renderer.drawRect(panelX + 7.0f, y, panelW - 14.0f, 31.0f, outline, false);
 
-        const std::string logical = getTowerAssetId(tt);
-        const std::string id = findImportedTextureId(m_manifest, renderer, logical);
-        if (!id.empty())
-            renderer.drawSprite(id, panelX + 10.0f, y + 2.0f, 27.0f, 27.0f);
+        std::string towerRegion;
+        switch (tt) {
+            case TowerType::DartMonkey: towerRegion = "dart_monkey_tower.png"; break;
+            case TowerType::TackShooter: towerRegion = "tack_shooter_tower.png"; break;
+            case TowerType::BombTower: towerRegion = "animated_bomb_cannon_1.png"; break;
+            case TowerType::BoomerangThrower: towerRegion = "boomerang_monkey_tower.png"; break;
+            case TowerType::SuperMonkey: towerRegion = "supermonkey_tower.png"; break;
+            default: break;
+        }
+        if (towerAtlas() && !towerRegion.empty())
+            drawAtlasRegion(renderer, *towerAtlas(), towerRegion, panelX + 10.0f, y + 2.0f, 27.0f, 27.0f);
 
         renderer.drawText(towerName(tt), panelX + 42.0f, y + 4.0f, 0.72f,
             affordable ? Color::white() : Color{115, 125, 118, 255});
