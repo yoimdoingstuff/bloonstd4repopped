@@ -236,8 +236,13 @@ bool Engine::applySelectedUpgrade(uint8_t path) {
         BTD4_LOG_WARN("Upgrade requested without a selected tower.");
         return false;
     }
-    const uint8_t tier = static_cast<uint8_t>(tower->upgradeTier(path) + 1);
-    const UpgradeDefinition* definition = findUpgrade(m_upgrades, tower->type(), path, tier);
+    (void)path;
+    const uint8_t tier = static_cast<uint8_t>(tower->upgradeLevel() + 1);
+    if (tier > 4) {
+        BTD4_LOG_INFO("This tower has reached its level 4 BTD4 upgrade.");
+        return false;
+    }
+    const UpgradeDefinition* definition = findUpgrade(m_upgrades, tower->type(), 0, tier);
     if (!definition) {
         BTD4_LOG_INFO("No further upgrades are defined for this path.");
         return false;
@@ -246,7 +251,7 @@ bool Engine::applySelectedUpgrade(uint8_t path) {
         BTD4_LOG_INFO("Cannot afford upgrade: " + definition->displayName);
         return false;
     }
-    if (!tower->applyUpgrade(definition->effect, path, tier)) {
+    if (!tower->applyUpgrade(definition->effect, 0, tier)) {
         m_simulation.economy().addCash(definition->effect.cost);
         BTD4_LOG_WARN("Upgrade application failed; purchase was refunded.");
         return false;
@@ -392,9 +397,11 @@ void Engine::frame(int windowWidth, int windowHeight) {
                 m_hasPlacement = false;
             }
         } else if (m_selectedTowerId != 0 &&
-                   ptr.logicalX >= 168.0f && ptr.logicalX < 362.0f &&
-                   ptr.logicalY >= 236.0f && ptr.logicalY < 266.0f) {
-            applySelectedUpgrade(ptr.logicalX < 265.0f ? 0 : 1);
+                   ptr.logicalX >= 160.0f && ptr.logicalX < 340.0f &&
+                   ptr.logicalY >= 233.0f && ptr.logicalY < 268.0f) {
+            const int level = static_cast<int>((ptr.logicalX - 160.0f) / 45.0f) + 1;
+            if (level == static_cast<int>(m_simulation.findTower(m_selectedTowerId)->upgradeLevel()) + 1)
+                applySelectedUpgrade(0);
         } else if (ptr.logicalX < 344.0f) {
             if (m_hasPlacement) {
                 if (m_simulation.placeTower(m_placementType, ptr.logicalX, ptr.logicalY)) cancelPlacement();
@@ -425,8 +432,8 @@ void Engine::frame(int windowWidth, int windowHeight) {
     }
 
     if (m_input.isActionJustPressed(InputAction::Upgrade)) applySelectedUpgrade(0);
-    if (m_input.isActionJustPressed(InputAction::UpgradePath1)) applySelectedUpgrade(0);
-    if (m_input.isActionJustPressed(InputAction::UpgradePath2)) applySelectedUpgrade(1);
+    // BTD4 has one upgrade button/sequence. The old cross-path actions are
+    // intentionally ignored rather than creating BTD3-style crosspaths.
     if (m_input.isActionJustPressed(InputAction::Sell) && m_selectedTowerId != 0) {
         if (m_simulation.sellTower(m_selectedTowerId)) {
             m_selectedTowerId = 0;
@@ -486,11 +493,10 @@ void Engine::frame(int windowWidth, int windowHeight) {
                 }
             };
 
-            // Keep selection information in the bottom command strip so the
-            // playfield itself is not obscured by a debug-looking banner.
-            m_renderer.drawRect(4.0f, 225.0f, 156.0f, 43.0f, {5, 18, 9, 235}, true);
-            m_renderer.drawRect(4.0f, 225.0f, 156.0f, 43.0f, {105, 180, 115, 230}, false);
-
+            // BTD4's upgrade model is one four-level sequence. Show the
+            // purchased levels and the next level as a compact progression strip.
+            m_renderer.drawRect(4.0f, 225.0f, 150.0f, 43.0f, {5, 18, 9, 235}, true);
+            m_renderer.drawRect(4.0f, 225.0f, 150.0f, 43.0f, {105, 180, 115, 230}, false);
             m_renderer.drawText(towerLabel(selectedTower->type()), 12.0f, 230.0f, 0.82f, Color::white());
 
             const char* targetingLabel = selectedTower->targetingMode() == TargetingMode::First ? "FIRST"
@@ -498,29 +504,35 @@ void Engine::frame(int windowWidth, int windowHeight) {
                 : (selectedTower->targetingMode() == TargetingMode::Close ? "CLOSE" : "STRONG"));
             m_renderer.drawText("TARGET " + std::string(targetingLabel), 12.0f, 247.0f, 0.72f,
                 {170, 225, 180, 255});
+            m_renderer.drawText("LEVEL " + std::to_string(selectedTower->upgradeLevel()) + "/4",
+                75.0f, 247.0f, 0.62f, {255, 225, 90, 255});
 
-            for (uint8_t path = 0; path < 2; ++path) {
-                const uint8_t nextTier = static_cast<uint8_t>(selectedTower->upgradeTier(path) + 1);
-                const UpgradeDefinition* upgrade = findUpgrade(m_upgrades, selectedTower->type(), path, nextTier);
-                const float boxX = path == 0 ? 168.0f : 265.0f;
-                m_renderer.drawRect(boxX, 236.0f, 92.0f, 30.0f, {18, 40, 26, 245}, true);
-                m_renderer.drawRect(boxX, 236.0f, 92.0f, 30.0f,
-                    upgrade ? Color{105, 165, 115, 230} : Color{70, 80, 74, 220}, false);
+            for (uint8_t level = 1; level <= 4; ++level) {
+                const float boxX = 160.0f + (level - 1) * 45.0f;
+                const bool purchased = selectedTower->upgradeLevel() >= level;
+                const bool next = selectedTower->upgradeLevel() + 1 == level;
+                const UpgradeDefinition* upgrade = findUpgrade(m_upgrades, selectedTower->type(), 0, level);
+                const bool affordable = upgrade && m_simulation.economy().canAfford(upgrade->effect.cost);
 
-                if (!upgrade) {
-                    m_renderer.drawText("PATH " + std::to_string(path + 1) + " MAX",
-                        boxX + 14.0f, 245.0f, 0.75f, {125, 135, 128, 255});
-                } else {
-                    const bool affordable = m_simulation.economy().canAfford(upgrade->effect.cost);
-                    const Color valueColor = affordable
-                        ? Color{255, 225, 90, 255}
-                        : Color{185, 95, 95, 255};
-                    m_renderer.drawText("PATH " + std::to_string(path + 1),
-                        boxX + 8.0f, 240.0f, 0.67f, Color::white());
-                    m_renderer.drawText(upgrade->displayName,
-                        boxX + 8.0f, 250.0f, 0.59f, Color::white());
-                    m_renderer.drawText("$" + std::to_string(upgrade->effect.cost),
-                        boxX + 58.0f, 240.0f, 0.65f, valueColor);
+                Color fill = purchased ? Color{48, 92, 55, 250} : Color{18, 40, 26, 245};
+                if (next) fill = affordable ? Color{64, 118, 66, 255} : Color{62, 44, 36, 245};
+                const Color outline = purchased ? Color{145, 215, 140, 255}
+                    : (next ? (affordable ? Color{255, 225, 90, 255} : Color{190, 105, 80, 255})
+                            : Color{70, 80, 74, 220});
+
+                m_renderer.drawRect(boxX, 233.0f, 40.0f, 35.0f, fill, true);
+                m_renderer.drawRect(boxX, 233.0f, 40.0f, 35.0f, outline, false);
+                m_renderer.drawText(std::to_string(level), boxX + 4.0f, 238.0f, 0.66f, Color::white());
+
+                if (upgrade) {
+                    const float nameScale = upgrade->displayName.size() > 12 ? 0.43f : 0.5f;
+                    m_renderer.drawText(upgrade->displayName, boxX + 4.0f, 248.0f, nameScale,
+                        purchased ? Color{180, 230, 175, 255} : Color::white());
+                    if (!purchased) {
+                        m_renderer.drawText("$" + std::to_string(upgrade->effect.cost),
+                            boxX + 4.0f, 259.0f, 0.43f,
+                            affordable ? Color{255, 225, 90, 255} : Color{185, 95, 95, 255});
+                    }
                 }
             }
         }
