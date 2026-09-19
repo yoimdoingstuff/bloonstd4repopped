@@ -160,10 +160,20 @@ void UpgradeEditor::render(const std::string& projectRoot) {
 
     ImGui::Text("ID: %s", upgrade.id.c_str());
 
-    const char* towers[] = {"DartMonkey","TackShooter","BoomerangThrower","BombTower","SuperMonkey"};
-    int towerIndex = static_cast<int>(upgrade.tower);
-    if (ImGui::Combo("Tower", &towerIndex, towers, 6))
-        upgrade.tower = static_cast<TowerType>(std::clamp(towerIndex, 0, 5));
+    const char* towerLabels[] = {"DartMonkey","TackShooter","BoomerangThrower","BombTower","SuperMonkey"};
+    const TowerType towerChoices[] = {
+        TowerType::DartMonkey, TowerType::TackShooter, TowerType::BoomerangThrower,
+        TowerType::BombTower, TowerType::SuperMonkey
+    };
+    int towerIndex = 0;
+    for (int i = 0; i < 5; ++i) {
+        if (upgrade.tower == towerChoices[i]) {
+            towerIndex = i;
+            break;
+        }
+    }
+    if (ImGui::Combo("Tower", &towerIndex, towerLabels, 5))
+        upgrade.tower = towerChoices[std::clamp(towerIndex, 0, 4)];
 
     int level = upgrade.tier;
     upgrade.path = 0;
