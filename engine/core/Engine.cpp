@@ -42,8 +42,8 @@ std::string findRuntimeDataDirectory(const std::string& root) {
 }
 }
 
-Engine::Engine(IRenderer& renderer, IInput& input, FrontendProfile frontendProfile)
-    : m_renderer(renderer), m_input(input), m_frontendProfile(frontendProfile) {}
+Engine::Engine(IRenderer& renderer, IInput& input, FrontendProfile frontendProfile, IAudio* audio)
+    : m_renderer(renderer), m_input(input), m_frontendProfile(frontendProfile), m_audio(audio) {}
 
 Engine::~Engine() { shutdown(); }
 
@@ -51,6 +51,9 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
     BTD4_LOG_INFO(m_frontendProfile == FrontendProfile::PspConsole
         ? "Initializing BTD4 Engine (PSP 480x272 frontend)..."
         : "Initializing BTD4 Engine (resizable desktop frontend)...");
+    if (m_audio && !m_audio->initialize()) {
+        BTD4_LOG_WARN("Audio backend failed to initialize; continuing silently.");
+    }
     if (!m_renderer.initialize(windowWidth, windowHeight)) {
         BTD4_LOG_ERROR("Failed to initialize renderer!");
         return false;
@@ -208,6 +211,7 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
         case FrontendProfile::PspConsole: BTD4_LOG_INFO("Frontend: PSP controls with D-pad/analog virtual cursor."); break;
         case FrontendProfile::XboxConsole: BTD4_LOG_INFO("Frontend: Xbox console controls with gamepad virtual cursor."); break;
     }
+    if (m_audio && m_audio->isInitialized()) m_audio->playMusic("btd4_music", true);
     BTD4_LOG_INFO("BTD4 Engine initialized successfully.");
     return true;
 }
@@ -215,6 +219,11 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
 void Engine::shutdown() {
     if (m_running) {
         BTD4_LOG_INFO("Shutting down BTD4 Engine...");
+        if (m_audio && m_audio->isInitialized()) {
+            m_audio->stopAllSounds();
+            m_audio->stopMusic();
+            m_audio->shutdown();
+        }
         m_renderer.shutdown();
         m_running = false;
         BTD4_LOG_INFO("BTD4 Engine shutdown complete.");
@@ -400,11 +409,15 @@ void Engine::frame(int windowWidth, int windowHeight) {
                    ptr.logicalX >= 160.0f && ptr.logicalX < 340.0f &&
                    ptr.logicalY >= 233.0f && ptr.logicalY < 268.0f) {
             const int level = static_cast<int>((ptr.logicalX - 160.0f) / 45.0f) + 1;
-            if (level == static_cast<int>(m_simulation.findTower(m_selectedTowerId)->upgradeLevel()) + 1)
-                applySelectedUpgrade(0);
+            if (Tower* selected = m_simulation.findTower(m_selectedTowerId)) {
+                if (level == static_cast<int>(selected->upgradeLevel()) + 1) applySelectedUpgrade(0);
+            }
         } else if (ptr.logicalX < 344.0f) {
             if (m_hasPlacement) {
-                if (m_simulation.placeTower(m_placementType, ptr.logicalX, ptr.logicalY)) cancelPlacement();
+                if (m_simulation.placeTower(m_placementType, ptr.logicalX, ptr.logicalY)) {
+                    if (m_audio && m_audio->isInitialized()) m_audio->playSound("tower_place_snd");
+                    cancelPlacement();
+                }
             } else {
                 m_selectedTowerId = 0;
                 for (const auto& tower : m_simulation.towers()) {
@@ -436,6 +449,7 @@ void Engine::frame(int windowWidth, int windowHeight) {
     // intentionally ignored rather than creating BTD3-style crosspaths.
     if (m_input.isActionJustPressed(InputAction::Sell) && m_selectedTowerId != 0) {
         if (m_simulation.sellTower(m_selectedTowerId)) {
+            if (m_audio && m_audio->isInitialized()) m_audio->playSound("selltower_snd");
             m_selectedTowerId = 0;
             m_hasPlacement = false;
         }
