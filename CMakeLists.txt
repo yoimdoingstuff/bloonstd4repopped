@@ -77,7 +77,9 @@ if(NOT TARGET_PSP)
             GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
             GIT_TAG release-2.8.0
             GIT_SHALLOW TRUE)
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+        # Keep the fetched SDL2 shared target visible as SDL2::SDL2. SDL_mixer
+        # itself remains static without forcing the project-wide BUILD_SHARED_LIBS off.
+        set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
         set(SDL2MIXER_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
         set(SDL2MIXER_VENDORED ON CACHE BOOL "" FORCE)
         set(SDL2MIXER_INSTALL OFF CACHE BOOL "" FORCE)
