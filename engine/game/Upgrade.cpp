@@ -68,8 +68,8 @@ bool validateUpgrades(const UpgradeSet& upgrades, std::string& error) {
     }
     for (size_t i = 0; i < upgrades.upgrades.size(); ++i) {
         const auto& u = upgrades.upgrades[i];
-        if (u.id.empty() || u.displayName.empty() || u.path > 1 || u.tier < 1 || u.tier > 4) {
-            error = "Invalid upgrade identity, path or tier";
+        if (u.id.empty() || u.displayName.empty() || u.path != 0 || u.tier < 1 || u.tier > 4) {
+            error = "Invalid BTD4 upgrade identity or level";
             return false;
         }
         if (u.effect.cost < 0 || !std::isfinite(u.effect.rangeAdd) ||
@@ -81,7 +81,7 @@ bool validateUpgrades(const UpgradeSet& upgrades, std::string& error) {
         }
         for (size_t j = i + 1; j < upgrades.upgrades.size(); ++j) {
             const auto& other = upgrades.upgrades[j];
-            if (u.id == other.id || (u.tower == other.tower && u.path == other.path && u.tier == other.tier)) {
+            if (u.id == other.id || (u.tower == other.tower && u.tier == other.tier)) {
                 error = "Duplicate upgrade id or tower/path/tier";
                 return false;
             }
@@ -203,7 +203,7 @@ const UpgradeDefinition* findUpgrade(const UpgradeSet& upgrades,
                                      TowerType tower, uint8_t path,
                                      uint8_t tier) {
     for (const auto& upgrade : upgrades.upgrades) {
-        if (upgrade.tower == tower && upgrade.path == path && upgrade.tier == tier) return &upgrade;
+        if (upgrade.tower == tower && upgrade.path == 0 && path == 0 && upgrade.tier == tier) return &upgrade;
     }
     return nullptr;
 }
