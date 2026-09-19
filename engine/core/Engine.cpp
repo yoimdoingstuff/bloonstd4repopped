@@ -57,6 +57,9 @@ bool Engine::initialize(int windowWidth, int windowHeight) {
     onResize(windowWidth, windowHeight);
     m_clock.reset();
     m_running = true;
+    m_desktopScreen = (m_frontendProfile == FrontendProfile::FlashDesktop)
+        ? DesktopScreen::MainMenu
+        : DesktopScreen::Gameplay;
 
     NativeFileSystem fs;
     const std::string dataDir = "game_data";
@@ -286,6 +289,61 @@ void Engine::frame(int windowWidth, int windowHeight) {
         m_renderer.endFrame();
         return;
     }
+    // Desktop gets a genuine front-end state instead of booting directly into
+    // gameplay. Console profiles intentionally keep their existing direct-to-game
+    // flow so the PSP/Xbox presentation remains distinct.
+    if (m_frontendProfile == FrontendProfile::FlashDesktop &&
+        m_desktopScreen == DesktopScreen::MainMenu) {
+        if (m_input.isActionJustPressed(InputAction::Cancel)) {
+            requestExit();
+        } else if (m_input.isActionJustPressed(InputAction::Confirm)) {
+            const bool play = ptr.logicalX >= 312.0f && ptr.logicalX <= 454.0f &&
+                              ptr.logicalY >= 145.0f && ptr.logicalY <= 175.0f;
+            const bool editor = ptr.logicalX >= 312.0f && ptr.logicalX <= 454.0f &&
+                                ptr.logicalY >= 182.0f && ptr.logicalY <= 212.0f;
+            const bool exit = ptr.logicalX >= 312.0f && ptr.logicalX <= 454.0f &&
+                              ptr.logicalY >= 219.0f && ptr.logicalY <= 249.0f;
+            if (play) {
+                m_desktopScreen = DesktopScreen::Gameplay;
+                m_simulation.setState(GameStateType::Playing);
+            } else if (editor) {
+                m_trackEditor.open(m_simulation.map());
+            } else if (exit) {
+                requestExit();
+            }
+        } else if (m_input.isActionJustPressed(InputAction::StartRound)) {
+            m_desktopScreen = DesktopScreen::Gameplay;
+            m_simulation.setState(GameStateType::Playing);
+        }
+
+        if (m_trackEditor.isOpen()) {
+            m_trackEditor.update(m_input, ptr);
+            Map editedMap;
+            if (m_trackEditor.consumeApplyRequest(editedMap)) {
+                m_simulation.reset();
+                m_simulation.setMap(std::move(editedMap));
+                m_simulation.setState(GameStateType::Playing);
+                m_selectedTowerId = 0;
+                m_hasPlacement = false;
+                BTD4_LOG_INFO("Track Editor play test applied to the active game map.");
+            }
+
+            m_renderer.beginFrame();
+            m_renderer.clear(Color::black());
+            m_renderer.setViewport(m_viewport);
+            m_trackEditor.render(m_renderer);
+            m_renderer.endFrame();
+            return;
+        }
+
+        m_renderer.beginFrame();
+        m_renderer.clear(Color::black());
+        m_renderer.setViewport(m_viewport);
+        AssetManager::instance().drawMainMenu(m_renderer, ptr.logicalX, ptr.logicalY);
+        m_renderer.endFrame();
+        return;
+    }
+
     const InputAction towerActions[] = {InputAction::SelectTower1, InputAction::SelectTower2,
         InputAction::SelectTower3, InputAction::SelectTower4, InputAction::SelectTower5};
     for (const InputAction action : towerActions) {
@@ -302,14 +360,12 @@ void Engine::frame(int windowWidth, int windowHeight) {
             ptr.logicalY >= 236.0f && ptr.logicalY <= 266.0f &&
             !m_simulation.roundActive()) {
             startNextRound();
-        } else if (ptr.logicalX >= 368.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 224.0f && ptr.logicalY < 244.0f) {
+        } else if (ptr.logicalX >= 344.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 224.0f && ptr.logicalY < 244.0f) {
             if (!m_simulation.roundActive()) {
-                m_trackEditor.open(m_simulation.map());
-            } else {
-                BTD4_LOG_INFO("Track Editor can only be opened between rounds.");
+                startNextRound();
             }
-        } else if (ptr.logicalX >= 368.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 50.0f && ptr.logicalY < 225.0f) {
-            const int idx = static_cast<int>((ptr.logicalY - 50.0f) / 35.0f);
+        } else if (ptr.logicalX >= 344.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 51.0f && ptr.logicalY < 221.0f) {
+            const int idx = static_cast<int>((ptr.logicalY - 51.0f) / 34.0f);
             if (idx >= 0 && idx < 5) {
                 static const TowerType tts[] = {TowerType::DartMonkey, TowerType::TackShooter, TowerType::BombTower,
                     TowerType::BoomerangThrower, TowerType::SuperMonkey};
@@ -321,7 +377,13 @@ void Engine::frame(int windowWidth, int windowHeight) {
                     tower->cycleTargetingMode();
                 }
             }
-        } else if (ptr.logicalX >= 368.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 247.0f) {
+        } else if (ptr.logicalX >= 344.0f && ptr.logicalX < 412.0f && ptr.logicalY >= 247.0f) {
+            if (!m_simulation.roundActive()) {
+                m_trackEditor.open(m_simulation.map());
+            } else {
+                BTD4_LOG_INFO("Track Editor can only be opened between rounds.");
+            }
+        } else if (ptr.logicalX >= 417.0f && ptr.logicalX <= 480.0f && ptr.logicalY >= 247.0f) {
             if (m_selectedTowerId != 0 && m_simulation.sellTower(m_selectedTowerId)) {
                 m_selectedTowerId = 0;
                 m_hasPlacement = false;
@@ -370,7 +432,15 @@ void Engine::frame(int windowWidth, int windowHeight) {
             m_hasPlacement = false;
         }
     }
-    if (m_input.isActionJustPressed(InputAction::Cancel)) { cancelPlacement(); m_selectedTowerId = 0; }
+    if (m_input.isActionJustPressed(InputAction::Cancel)) {
+        if (m_frontendProfile == FrontendProfile::FlashDesktop &&
+            !m_hasPlacement && m_selectedTowerId == 0) {
+            m_desktopScreen = DesktopScreen::MainMenu;
+            return;
+        }
+        cancelPlacement();
+        m_selectedTowerId = 0;
+    }
     if (m_input.isActionJustPressed(InputAction::Pause)) {
         if (m_simulation.state() == GameStateType::Paused) m_simulation.resume();
         else if (m_simulation.state() == GameStateType::Playing) m_simulation.pause();
@@ -439,13 +509,6 @@ void Engine::frame(int windowWidth, int windowHeight) {
             }
         }
         if (m_frontendProfile != FrontendProfile::FlashDesktop) m_renderer.drawRect(ptr.logicalX - 4.0f, ptr.logicalY - 4.0f, 8.0f, 8.0f, Color::white(), false);
-        if (!m_simulation.roundActive() && m_simulation.state() == GameStateType::Playing) {
-            m_renderer.drawRect(108.0f, 228.0f, 184.0f, 30.0f, {0, 0, 0, 185}, true);
-            m_renderer.drawRect(108.0f, 228.0f, 184.0f, 30.0f, Color::cyan(), false);
-            if (m_frontendProfile == FrontendProfile::FlashDesktop) m_renderer.drawText("CLICK: START ROUND", 118.0f, 238.0f, 1.0f, Color::white());
-            else if (m_frontendProfile == FrontendProfile::PspConsole) m_renderer.drawText("START: NEXT ROUND", 116.0f, 238.0f, 1.0f, Color::white());
-            else m_renderer.drawText("RB: NEXT ROUND", 126.0f, 238.0f, 1.0f, Color::white());
-        }
         if (m_simulation.state() == GameStateType::Paused) {
             m_renderer.drawRect(90.0f, 100.0f, 220.0f, 72.0f, {0, 0, 0, 210}, true);
             m_renderer.drawText("PAUSED", 170.0f, 118.0f, 2.0f, Color::white());
